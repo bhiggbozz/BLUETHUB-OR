@@ -43,6 +43,8 @@ import ParentProtectedRoute from '@/component/protected-routes/parent-routes';
 import ParentDashboard from '@/pages/parent/dashboard';
 import ParentAttendance from '@/pages/parent/attendance';
 import StudentIndex from '@/pages/student/component/main';
+import StudyGroupsIndex from '@/pages/student/study-groups';
+import StudyGroupDetailPage from '@/pages/student/study-groups/group-detail';
 import StudentSettings from '@/shared/setting';
 import ProfileLayout from '@/pages/student/profile/layout';
 import Profile from '@/pages/student/profile/profile';
@@ -74,8 +76,8 @@ import ViewQuestions from '@/pages/teacher/component/view-questions';
 import GenerateQuiz from '@/pages/teacher/component/generate-quiz';
 import Login from '@/pages/auth/login';
 import NewPassword from '@/pages/auth/new-password';
-// import ForgotPassword from '@/pages/auth/forgot-password';
-// import ResetPassword from '@/pages/auth/reset-password';
+import ForgotPassword from '@/pages/auth/forgot-password';
+import ResetPassword from '@/pages/auth/reset-password';
 import AdminProtectedRoute from '@/component/protected-routes/admin-routes';
 import { PublicRoute } from '@/component/protected-routes/public-route';
 import StudentProtectedRoute from '@/component/protected-routes/student-routes';
@@ -168,8 +170,24 @@ const router = createBrowserRouter([
                 element: <ErrorBoundary fallbackMessage="Login error">
                     <Login />
                 </ErrorBoundary>,
+            },
+            {
+                path: 'forgot-password',
+                element: <ErrorBoundary fallbackMessage="Forgot password error">
+                    <ForgotPassword />
+                </ErrorBoundary>,
             }
         ]
+    },
+    {
+        // Top-level, not under /auth — the emailed reset link
+        // (https://{tenant}.bluetsch.com/reset-password?token=...) resolves
+        // the user/school from the token alone, no tenant subdomain context
+        // or PublicRoute auth-redirect logic needed.
+        path: '/reset-password',
+        element: <ErrorBoundary fallbackMessage="Reset password error">
+            <ResetPassword />
+        </ErrorBoundary>,
     },
     {
         path: '/replay',
@@ -523,6 +541,13 @@ const router = createBrowserRouter([
                     { path: ':groupName/:groupId', element: <GroupChatRoom /> },
                 ]
 
+            },
+            {
+                path: "study-groups",
+                children: [
+                    { index: true, element: <StudyGroupsIndex /> },
+                    { path: ':groupId', element: <StudyGroupDetailPage /> },
+                ]
             }
 
         ],

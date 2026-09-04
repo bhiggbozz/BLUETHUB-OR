@@ -1,8 +1,9 @@
 import { Input } from "@bluethub/ui-kit"
 import { Link } from "react-router-dom";
-import { isStudentRoleData, useAuthContext } from "@/contexts/auth-context";
-import { studentService, type StudentSubjectItem, type SubjectStatsResponse } from "@/services/student";
+import { performanceService, type MyCourseListItemDto } from "@/services/performance";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { BookX, Loader2 } from "lucide-react";
 
 const subjectStyles: Record<string, { icon: string; bg: string; badgeBg: string; badgeText: string }> = {
   mathematics: { icon: "📐", bg: "#EEF0FF", badgeBg: "#EEF0FF", badgeText: "#4F61E8" },
@@ -23,75 +24,34 @@ export function getSubjectStyle(name: string) {
 }
 
 const Course = () => {
-  const { user } = useAuthContext();
-  const [subjects, setSubjects] = useState<StudentSubjectItem[]>([]);
-  const [totalSubjects, setTotalSubjects] = useState(0);
+  const [subjects, setSubjects] = useState<MyCourseListItemDto[]>([]);
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState<Record<string, SubjectStatsResponse>>({});
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    const load = async () => {
-      let classroomId: string | null = null;
-      const roleData = user?.roleData;
-      if (roleData && isStudentRoleData(roleData)) {
-        classroomId = roleData.classroom?.classroomId ?? null;
-        const major = (roleData.majorSubjects ?? []).map(s => ({
-          subjectId: s.subjectId,
-          subjectName: s.subjectName,
-          category: s.subjectCategory,
-          subjectType: "Major" as const,
-        }));
-        const minor = (roleData.minorSubjects ?? []).map(s => ({
-          subjectId: s.subjectId,
-          subjectName: s.subjectName,
-          category: s.subjectCategory,
-          subjectType: "Minor" as const,
-        }));
-        const all = [...major, ...minor];
-        if (all.length > 0) {
-          setSubjects(all);
-          setTotalSubjects(roleData.totalSubjects ?? all.length);
-          if (classroomId) {
-            fetchStats(all, classroomId);
-          }
-          return;
-        }
-      }
-
-      try {
-        const res = await studentService.getRegisteredSubjects();
-        const data = res?.data?.data;
-        if (data) {
-          const all = [...data.major, ...data.minor];
-          setSubjects(all);
-          setTotalSubjects(data.totalSubjects);
-          if (classroomId) {
-            fetchStats(all, classroomId);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load subjects", err);
-      }
-    };
-    load();
-  }, [user]);
-
-  const fetchStats = async (subjectList: StudentSubjectItem[], classroomId: string) => {
-    try {
-      const results = await Promise.allSettled(
-        subjectList.map(s => studentService.getSubjectStats(s.subjectId, classroomId))
-      );
-      const statsMap: Record<string, SubjectStatsResponse> = {};
-      results.forEach((r, i) => {
-        if (r.status === "fulfilled" && r.value?.data?.data) {
-          statsMap[subjectList[i].subjectId] = r.value.data.data;
-        }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError("");
+    performanceService
+      .getMyCourses()
+      .then((res) => {
+        if (cancelled) return;
+        setSubjects(res.data?.data ?? []);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to load my courses", err);
+        setLoadError("Couldn't load your subjects. Please try again.");
+        toast.error("Couldn't load your subjects. Please try again.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-      setStats(statsMap);
-    } catch (err) {
-      console.error("Failed to fetch subject stats", err);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = subjects.filter(s =>
     s.subjectName.toLowerCase().includes(search.toLowerCase())
@@ -104,14 +64,14 @@ const Course = () => {
           Choose a Subject
         </h2>
         <h4 className="text-[#6B6B85] font-medium text-xs leading-5">
-          Select a subject to browse recorded lessons, PDFs and assessments
+          Select a subject to see your quiz and assessment performance
         </h4>
       </div>
 
       <div className="mt-3.75 mb-5">
         <Input
           className="rounded-[10px] border border-[#6B6B8580] bg-white leading-5 text-[#6B6B85] text-sm"
-          placeholder="Search subjects or topics....."
+          placeholder="Search subjects....."
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
@@ -123,10 +83,30 @@ const Course = () => {
             All Subjects
           </h2>{" "}
           <h4 className="bg-[#4F61E81A] inline rounded-[15px] px-[10px] py-[4px] text-[#4F61E8] font-medium uppercase text-[10px]">
-            {totalSubjects}
+            {subjects.length}
           </h4>
         </div>
 
+        {loading ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#6B6B85]">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <p className="text-xs">Loading your subjects...</p>
+          </div>
+        ) : subjects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <BookX className="w-8 h-8 text-[#6B6B85]/40" />
+            <p className="text-sm font-medium text-[#3A3A3A]">
+              {loadError || "No subjects registered for this student yet."}
+            </p>
+            <p className="text-xs text-[#6B6B85]">
+              Ask your school admin to confirm your class and subject assignment.
+            </p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-xs text-[#6B6B85]">
+            No subjects match "{search}".
+          </p>
+        ) : (
         <div className="grid grid-cols-2 gap-[12px] mb-5">
           {filtered.map((subject) => {
             const style = getSubjectStyle(subject.subjectName);
@@ -134,7 +114,7 @@ const Course = () => {
               <Link
                 to={subject.subjectId}
                 key={subject.subjectId}
-                state={{ subjectName: subject.subjectName, category: subject.category, subjectType: subject.subjectType }}
+                state={{ subjectName: subject.subjectName }}
                 className="block"
               >
                 <div className="bg-[#FFFFFF] border border-[#E4E4EC] p-[14px] rounded-[16px] hover:shadow-sm transition">
@@ -149,22 +129,7 @@ const Course = () => {
                     {subject.subjectName}
                   </h3>
 
-                  {stats[subject.subjectId] && (
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-[10px] text-[#6B6B85]">
-                        📚 {stats[subject.subjectId].lessonCount} Lessons
-                      </span>
-                      <span className="text-[10px] text-[#6B6B85]">
-                        📝 {stats[subject.subjectId].quizCount} Quizzes
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 mt-1">
-                    <h2 className="text-[#6B6B85] text-[11px] flex-1 min-w-0 truncate">
-                      {subject.category}
-                    </h2>
-
+                  <div className="flex items-center gap-2 mt-2">
                     <h4
                       className="rounded-[15px] px-[10px] py-[4px] text-[10px] font-medium whitespace-nowrap shrink-0"
                       style={{
@@ -172,7 +137,7 @@ const Course = () => {
                         color: style.badgeText,
                       }}
                     >
-                      {subject.subjectType}
+                      {subject.isMinorSubject ? "Minor" : "Core"}
                     </h4>
                   </div>
                 </div>
@@ -180,6 +145,7 @@ const Course = () => {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   )

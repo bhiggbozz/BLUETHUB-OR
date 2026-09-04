@@ -91,8 +91,8 @@ const StudentMyClassroom = () => {
   }
 
   return (
-    <div className="font-poppins p-2 sm:p-4 md:p-6">
-      <div className="rounded-2xl border border-white/20 overflow-hidden bg-white/80 backdrop-blur-md shadow-lg">
+    <div className="font-poppins ">
+      <div className="md:rounded-2xl border border-white/20 overflow-hidden bg-white/80 backdrop-blur-md shadow-lg">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-[#292382] to-[#3D36A8]">
           <div className="flex items-center gap-3 min-w-0">
             {openMobileNav && (

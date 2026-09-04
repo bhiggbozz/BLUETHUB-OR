@@ -1,135 +1,134 @@
-import CourseHero from "./course-hero"
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
-import CourseOverview from "./course-overview";
-import CourseTopics from "./course-topics";
-import CourseAssessments from "./course-assessments";
-import CoursePDFs from "./course-pdfs";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { AxiosError } from "axios";
+import { ArrowLeft, Loader2, Trophy } from "lucide-react";
+import { performanceService, type MyCourseDetailDto, type MyCoursePerformanceStatDto } from "@/services/performance";
 import { getSubjectStyle } from "./course";
-import studentService, { type StudentPublishedLesson } from "@/services/student";
-import { isStudentRoleData, useAuthContext } from "@/contexts/auth-context";
-import { Loader2 } from "lucide-react";
 
-type Tab = "Overview" | "Topics" | "Assessments" | "PDFs";
+function ordinal(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+}
+
+function PerformancePanel({ title, stat }: { title: string; stat: MyCoursePerformanceStatDto }) {
+  const hasAttempts = stat.averageScore !== null;
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+      <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+      {hasAttempts ? (
+        <>
+          <div className="flex items-end gap-1.5">
+            <span className="text-3xl font-extrabold text-[#4F61E8]">{stat.averageScore!.toFixed(1)}%</span>
+            <span className="text-xs text-gray-400 mb-1">average score</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            {stat.position != null
+              ? `${ordinal(stat.position)} of ${stat.totalStudents}`
+              : "Not ranked yet"}
+          </div>
+          <p className="text-[11px] text-gray-400">
+            {stat.attemptCount} completed attempt{stat.attemptCount === 1 ? "" : "s"}
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-gray-400 py-4 text-center">No attempts yet</p>
+      )}
+    </div>
+  );
+}
 
 interface SubjectLocationState {
-    subjectName?: string;
-    category?: string;
-    subjectType?: string;
+  subjectName?: string;
 }
 
 const SubjectList = () => {
-    const { subjectId = "" } = useParams<{ subjectId: string }>();
-    const location = useLocation();
-    const locationState = (location.state as SubjectLocationState | null) ?? null;
-    const { user } = useAuthContext();
+  const { subjectId = "" } = useParams<{ subjectId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const stateSubjectName = (location.state as SubjectLocationState | null)?.subjectName;
 
-    const roleData = user?.roleData;
-    const classroomName = roleData && isStudentRoleData(roleData) ? roleData.classroom?.className ?? undefined : undefined;
+  const [detail, setDetail] = useState<MyCourseDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-    const TABS: Tab[] = ["Overview", "Topics", "Assessments", "PDFs"];
-    const [activeTab, setActiveTab] = useState<Tab>("Overview");
+  useEffect(() => {
+    if (!subjectId) return;
+    let cancelled = false;
+    setLoading(true);
+    setErrorMsg("");
+    performanceService
+      .getMyCourseDetail(subjectId)
+      .then((res) => {
+        if (!cancelled) setDetail(res.data?.data ?? null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const status = err instanceof AxiosError ? err.response?.status : undefined;
+        setErrorMsg(status === 404 ? "This subject couldn't be found." : "Couldn't load performance for this subject.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [subjectId]);
 
-    const [lessons, setLessons] = useState<StudentPublishedLesson[]>([]);
-    const [loading, setLoading] = useState(true);
+  const subjectName = detail?.subjectName ?? stateSubjectName ?? "Subject";
+  const style = getSubjectStyle(subjectName);
 
-    useEffect(() => {
-        if (!subjectId) return;
-        let cancelled = false;
-        setLoading(true);
-        studentService
-            .getLessonsBySubject(subjectId)
-            .then((res) => {
-                if (cancelled) return;
-                const payload = (res.data as any)?.data as
-                    | { lessons?: StudentPublishedLesson[]; Lessons?: StudentPublishedLesson[] }
-                    | undefined;
-                setLessons(payload?.lessons ?? payload?.Lessons ?? []);
-            })
-            .catch(() => {
-                if (!cancelled) setLessons([]);
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [subjectId]);
-
-    const subjectName = locationState?.subjectName || lessons[0]?.subjectName || "Subject";
-    const style = useMemo(() => getSubjectStyle(subjectName), [subjectName]);
-    const teacher = lessons[0]?.teacherName ?? "";
-
-    const topicsCount = useMemo(() => new Set(lessons.map((l) => l.topicId)).size, [lessons]);
-    const quizzesCount = useMemo(() => lessons.filter((l) => !!l.quizId).length, [lessons]);
-    const pdfsCount = useMemo(
-        () =>
-            lessons.reduce(
-                (acc, l) =>
-                    acc + (l.media ?? []).filter((m) => /pdf/i.test(m.mediaType ?? "") || /pdf/i.test(m.fileExtension ?? "")).length,
-                0,
-            ),
-        [lessons],
-    );
-
-    return (
-        <div className="min-h-screen bg-gray-50">
-            <CourseHero
-                department={locationState?.category}
-                title={subjectName}
-                teacher={teacher}
-                icon={style.icon}
-                topics={topicsCount}
-                lessons={lessons.length}
-                pdfs={pdfsCount}
-                quizzes={quizzesCount}
-            />
-
-            <div className="mx-3 my-[11px]">
-                {/* Tab Bar */}
-                <div className="bg-white drop-shadow-sm p-[4px] rounded-[10px] flex items-center gap-1 mb-4">
-                    {TABS.map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2 rounded-[8px] text-sm font-semibold transition-all duration-150 ${activeTab === tab
-                                ? "bg-[#4F61E8] text-white shadow-sm"
-                                : "text-gray-400 hover:text-gray-600"
-                                }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {loading ? (
-                <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading subject...
-                </div>
-            ) : (
-                <>
-                    {activeTab === "Overview" && (
-                        <CourseOverview
-                            subjectId={subjectId}
-                            lessons={lessons}
-                            topicsCount={topicsCount}
-                            quizzesCount={quizzesCount}
-                            category={locationState?.category}
-                            subjectType={locationState?.subjectType}
-                            classroomName={classroomName}
-                        />
-                    )}
-                    {activeTab === "Topics" && <CourseTopics lessons={lessons} />}
-                    {activeTab === "Assessments" && <CourseAssessments subjectId={subjectId} lessons={lessons} />}
-                    {activeTab === "PDFs" && <CoursePDFs lessons={lessons} />}
-                </>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
+      <div className="bg-[#4F61E8] px-6 pt-8 pb-10">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="text-white/80 flex items-center gap-1 text-xs mb-4 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={14} /> Back
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 shrink-0 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-2xl">
+            {style.icon}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-white text-xl font-extrabold truncate">{subjectName}</h1>
+            {detail && !detail.isEnrolled && (
+              <span className="inline-block mt-1 text-[10px] font-semibold text-amber-100 bg-white/15 rounded-full px-2 py-0.5">
+                Not one of your courses
+              </span>
             )}
-
+          </div>
         </div>
-    )
-}
+      </div>
 
-export default SubjectList
+      <div className="px-4 -mt-4 py-4 space-y-3 max-w-lg mx-auto">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-16 text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Loading performance...
+          </div>
+        ) : errorMsg ? (
+          <div className="text-center py-16">
+            <p className="text-sm font-semibold text-gray-600">{errorMsg}</p>
+          </div>
+        ) : detail ? (
+          <>
+            <PerformancePanel title="Quiz Performance" stat={detail.quiz} />
+            <PerformancePanel title="Assessment Performance" stat={detail.assessment} />
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+export default SubjectList;

@@ -6,7 +6,7 @@ import {
   Menu,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { approvalService, type Approval, type ApprovalPayload } from "@/services/approval";
+import { approvalService, getApprovalDisplay, type Approval, type ApprovalPayload } from "@/services/approval";
 import { useOutletContext } from "react-router-dom";
 import ApprovalReviewModal from "./approval-review-modal";
 
@@ -225,6 +225,9 @@ const ApprovalsPage = () => {
                   <tbody>
                     {shown.map((approval) => {
                       const payload = getPayload(approval.payload);
+                      const display = getApprovalDisplay(approval);
+                      const className = display.className || "—";
+                      const subjectName = display.subjectName || "—";
                       const s = approval.status?.toLowerCase();
                       const borderColor =
                         s === "pending" ? "border-l-[#C47C0A]" :
@@ -237,15 +240,15 @@ const ApprovalsPage = () => {
                         >
                           <td className="px-4 py-3">
                             <p className="text-sm font-semibold text-gray-900">
-                              {payload.Title || payload.title || approval.entityType}
+                              {display.title}
                             </p>
                             {payload.Term && (
                               <p className="text-[11px] text-gray-400">{payload.Term}</p>
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{approval.requestedByName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{payload.className || "—"}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{payload.subjectName || "—"}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{className}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{subjectName}</td>
                           <td className="px-4 py-3"><StatusBadge status={approval.status} /></td>
                           <td className="px-4 py-3">
                             <button

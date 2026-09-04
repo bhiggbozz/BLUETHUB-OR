@@ -218,6 +218,37 @@ export interface StudentSubtopicScoreDto {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MY COURSES — the student's own subject list + per-subject quiz/assessment
+// performance (ranked against classmates for core subjects, or against other
+// electees for minor subjects)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface MyCourseListItemDto {
+  subjectId: string;
+  subjectName: string;
+  /** false = a core subject from the student's classroom. true = an elective. */
+  isMinorSubject: boolean;
+}
+
+export interface MyCoursePerformanceStatDto {
+  /** null means no completed attempts of this kind yet — render "No attempts yet", not "0%". */
+  averageScore: number | null;
+  attemptCount: number;
+  /** null alongside averageScore when there are no attempts yet. */
+  position: number | null;
+  /** Size of the ranked pool being compared against — can legitimately be 1. */
+  totalStudents: number;
+}
+
+export interface MyCourseDetailDto {
+  subjectId: string;
+  subjectName: string;
+  isEnrolled: boolean;
+  quiz: MyCoursePerformanceStatDto;
+  assessment: MyCoursePerformanceStatDto;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SUBJECT TOPIC PERFORMANCE — Topic & subtopic scores
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -393,6 +424,18 @@ export const performanceService = {
   getStudentSubtopicScores: () =>
     API.get<TResponse<StudentSubtopicScoreDto[]>>(
       "api/performance/student/subtopic-scores",
+      { headers }
+    ),
+
+  getMyCourses: () =>
+    API.get<TResponse<MyCourseListItemDto[]>>(
+      "api/performance/my-courses",
+      { headers }
+    ),
+
+  getMyCourseDetail: (subjectId: string) =>
+    API.get<TResponse<MyCourseDetailDto>>(
+      `api/performance/my-courses/${subjectId}`,
       { headers }
     ),
 

@@ -1008,12 +1008,14 @@ const SubmitLesson = () => {
 
     setUploadFiles((p) => [...p, ...incoming]);
 
-    // Get credentials for PDFs (Supabase) and other files (Cloudinary)
-    const hasPdfs = Array.from(fileList).some(f => f.type === "application/pdf");
+    // Cloudinary signatures are general-purpose (no destination baked in) and
+    // safe to share across every non-PDF file in this batch. Supabase tokens
+    // are the opposite — uploadUrl/bucketPath point at one specific object,
+    // so each PDF must fetch its own token or concurrent uploads would all
+    // land on the same path and silently overwrite each other.
     const hasOthers = Array.from(fileList).some(f => f.type !== "application/pdf");
 
     let cloudinarySig: CloudinarySignature | null = null;
-    let supabaseSig: SupabaseUploadToken | null = null;
 
     try {
       if (hasOthers) {
@@ -1021,25 +1023,30 @@ const SubmitLesson = () => {
         const r = await lessonService.getUploadSignature(resolveMediaType(firstOther?.type ?? "video/mp4") as import("@/services/lesson").LessonMediaTypeValue);
         cloudinarySig = (r.data as any).data as CloudinarySignature;
       }
-      if (hasPdfs) {
-        const r = await lessonService.getSupabaseUploadToken("lesson-material");
-        // Support both TResponse<T> wrapper ({ data: {...} }) and bare response
-        supabaseSig = ((r.data as any).data ?? r.data) as SupabaseUploadToken;
-        // console.log("[SubmitLesson] supabase token", supabaseSig);
-      }
     } catch {
-      const uids = new Set(incoming.map((f) => f.uid));
+      const uids = new Set(incoming.filter((f) => f.file?.type !== "application/pdf").map((f) => f.uid));
       setUploadFiles((p) =>
         p.map((f) => uids.has(f.uid) ? { ...f, status: "error", error: "Could not get upload credentials" } : f)
       );
       toast.error("Could not get upload credentials");
-      return;
     }
 
-    await runConcurrent(incoming, UPLOAD_CONCURRENCY, ({ uid, file }) => {
+    await runConcurrent(incoming, UPLOAD_CONCURRENCY, async ({ uid, file }) => {
       const isPdf = file!.type === "application/pdf";
-      const sig = isPdf ? supabaseSig : cloudinarySig;
-      return runUpload(uid, file!, sig as any);
+      if (!isPdf) {
+        if (!cloudinarySig) return;
+        return runUpload(uid, file!, cloudinarySig);
+      }
+      try {
+        const r = await lessonService.getSupabaseUploadToken(file!.name || "lesson-material");
+        // Support both TResponse<T> wrapper ({ data: {...} }) and bare response
+        const sig = ((r.data as any).data ?? r.data) as SupabaseUploadToken;
+        return runUpload(uid, file!, sig);
+      } catch {
+        setUploadFiles((p) =>
+          p.map((f) => f.uid === uid ? { ...f, status: "error", error: "Could not get upload credentials" } : f)
+        );
+      }
     });
   }, [runUpload]);
 
@@ -1136,8 +1143,12 @@ const SubmitLesson = () => {
   const step2Done = aim.trim().length > 0 && description.trim().length > 0;
   const step3Done = allUploaded;
 
+  // scheduledDate is stored as a full ISO datetime (Calendar's onSelect uses
+  // date.toISOString()), so strip any existing time before appending our own
+  // — otherwise this produces "...T00:00:00.000ZT00:00:00", which .NET's
+  // DateTime parser rejects.
   const buildAccessDate = (): string | null =>
-    scheduledDate ? `${scheduledDate}T00:00:00` : null;
+    scheduledDate ? `${normalizeDateInput(scheduledDate)}T00:00:00` : null;
 
   const buildAccessTime = (): string | null =>
     scheduledTime ? `${scheduledTime}:00` : null;
@@ -1642,7 +1653,7 @@ const SubmitLesson = () => {
                   <p className="mt-3 text-xs text-sky-600 flex items-center gap-1.5">
                     <Clock className="w-3 h-3" />
                     Scheduled for{" "}
-                    {new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString("en-US", {
+                    {new Date(`${normalizeDateInput(scheduledDate)}T${scheduledTime}`).toLocaleString("en-US", {
                       weekday: "short", month: "short", day: "numeric",
                       year: "numeric", hour: "2-digit", minute: "2-digit",
                     })}

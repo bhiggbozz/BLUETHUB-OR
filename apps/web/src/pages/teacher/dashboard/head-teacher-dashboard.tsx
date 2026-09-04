@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { Menu, Users, BarChart3, ClipboardCheck, RefreshCw, Loader2, ChevronRight, CheckCircle2, School, Trophy, Eye, BookOpen, GraduationCap, Plus, Library } from "lucide-react";
 import { performanceService, type TeacherPerformanceDashboardDto, type PerformanceClassroomDto } from "@/services/performance";
 import { type ApprovalItemDto } from "@/services/lesson";
-import { approvalService } from "@/services/approval";
+import { approvalService, getApprovalDisplay } from "@/services/approval";
 import { useAuthContext, isTeacherRoleData } from "@/contexts/auth-context";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -352,23 +352,23 @@ const HeadTeacherDashboard = () => {
 
             {/* Pending approvals notification banner */}
             {pendingCount > 0 && (
-              <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
+              <div className="bg-gradient-to-r from-amber-50 to-blue-50 border border-amber-200 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-rose-100 flex items-center justify-center shrink-0">
-                    <ClipboardCheck className="w-4 h-4 text-rose-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                    <ClipboardCheck className="w-4 h-4 text-amber-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-rose-800">
-                      {pendingCount} lesson{pendingCount !== 1 ? "s" : ""} awaiting approval
+                    <p className="text-xs sm:text-sm font-semibold text-amber-800">
+                      {pendingCount} item{pendingCount !== 1 ? "s" : ""} awaiting your approval
                     </p>
-                    <p className="text-[10px] sm:text-xs text-rose-600 truncate">
-                      Review and approve or reject pending lesson submissions
+                    <p className="text-[10px] sm:text-xs text-amber-600 truncate">
+                      Lessons, study groups, and other submissions from your students and teachers
                     </p>
                   </div>
                 </div>
                 <a
                   href="#pending-approvals"
-                  className="shrink-0 text-[10px] sm:text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 px-3 py-1.5 sm:py-2 rounded-lg transition-colors"
+                  className="shrink-0 text-[10px] sm:text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 active:bg-amber-800 px-3 py-1.5 sm:py-2 rounded-lg transition-colors"
                 >
                   Review
                 </a>
@@ -382,7 +382,7 @@ const HeadTeacherDashboard = () => {
                   { label: "Assigned Classes", value: assignedClassrooms.length, icon: School, color: "from-blue-500 to-blue-600" },
                   { label: "Total Students", value: classroomAnalytics.reduce((a, c) => a + c.totalStudents, 0), icon: Users, color: "from-purple-500 to-purple-600" },
                   { label: "Overall Avg", value: fmtScore(classroomAnalytics.reduce((a, c) => a + c.avgScore, 0) / classroomAnalytics.length), icon: BarChart3, color: "from-green-500 to-green-600" },
-                  { label: "Pending Lessons", value: pendingCount, icon: ClipboardCheck, color: "from-rose-500 to-rose-600" },
+                  { label: "Pending Approvals", value: pendingCount, icon: ClipboardCheck, color: "from-amber-500 to-amber-600" },
                 ].map((card) => (
                   <div key={card.label} className="bg-white rounded-lg shadow-sm border border-gray-200/60 p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
                     <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center shrink-0`}>
@@ -428,7 +428,7 @@ const HeadTeacherDashboard = () => {
                   <ClipboardCheck className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   Pending Approvals
                   {pendingCount > 0 && (
-                    <span className="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-full">{pendingCount}</span>
+                    <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">{pendingCount}</span>
                   )}
                 </h2>
 
@@ -443,21 +443,33 @@ const HeadTeacherDashboard = () => {
                   )}
 
                   <div className="divide-y divide-gray-100">
-                    {approvals.map((a) => (
+                    {approvals.map((a) => {
+                      const display = getApprovalDisplay(a as any);
+                      return (
                       <div key={a.id} className="p-3 sm:p-4">
                         <div className="flex items-start gap-2.5">
                           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                             <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm font-semibold text-[#292382] truncate">{a.requestedByName}</p>
-                            <p className="text-[10px] sm:text-[11px] text-gray-500">
-                              {a.lesson?.subjectName ?? "Lesson"}
-                              {a.lesson?.className ? ` · ${a.lesson.className}` : ""}
-                            </p>
-                            {a.lesson?.aim && (
-                              <p className="text-[11px] sm:text-xs text-gray-600 mt-1 line-clamp-2">{a.lesson.aim}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs sm:text-sm font-semibold text-[#292382] truncate">{a.requestedByName}</p>
+                              {a.operationType === "CreateGroup" && (
+                                <span className="text-[9px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full shrink-0">Study Group</span>
+                              )}
+                              {a.operationType === "SubmitGroupContent" && (
+                                <span className="text-[9px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full shrink-0">Group Content</span>
+                              )}
+                            </div>
+                            {(display.subjectName ?? a.lesson?.subjectName) && (
+                              <p className="text-[10px] sm:text-[11px] text-gray-500">
+                                {display.subjectName ?? a.lesson?.subjectName}
+                                {(display.className ?? a.lesson?.className) ? ` · ${display.className ?? a.lesson?.className}` : ""}
+                              </p>
                             )}
+                            <p className="text-[11px] sm:text-xs text-gray-600 mt-1 line-clamp-2">
+                              {display.title}
+                            </p>
                             <p className="text-[9px] sm:text-[10px] text-gray-400 mt-0.5 sm:mt-1">
                               {new Date(a.createdAt).toLocaleDateString()} · {a.status}
                             </p>
@@ -488,7 +500,8 @@ const HeadTeacherDashboard = () => {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

@@ -10,8 +10,16 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { getApprovalDisplay } from "@/services/approval";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+export interface ApprovalSummary {
+  title?: string;
+  subjectName?: string;
+  className?: string;
+  description?: string;
+}
+
 export interface Approval {
   id: string;
   entityType: string;
@@ -25,6 +33,7 @@ export interface Approval {
   rejectionReason?: string;
   expiresAt?: string;
   payload: string | Record<string, unknown>;
+  summary?: ApprovalSummary | null;
 }
 
 interface ApprovalPayload {
@@ -44,6 +53,11 @@ interface ApprovalPayload {
   subTopic?: string;
   mediaCount?: number;
   hasRecording?: boolean;
+
+  // CreateGroup — not consistently mirrored into `summary`, so the group's
+  // own name lives here instead.
+  GroupName?: string;
+  groupName?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -142,19 +156,39 @@ function StepReview({
 }) {
   const payload = getPayload(approval.payload);
 
-  console.log("approval payload", approval.payload);
   const isPending = approval.status?.toLowerCase() === "pending";
   const isApproved = approval.status?.toLowerCase() === "approved";
   const isRejected = approval.status?.toLowerCase() === "rejected";
 
-  const infoItems = [
-    { label: "Teacher", value: approval.requestedByName },
-    { label: "Subject", value: payload.subjectName ?? "—" },
-    { label: "Class", value: payload.className ?? "—" },
-    { label: "Submitted", value: formatDate(approval.createdAt) },
-    { label: "Topic", value: payload.topicName ?? payload.Title ?? "—" },
-    { label: "Sub-Topic", value: payload.subTopic ?? payload.description ?? "—" },
-  ];
+  const isCreateGroup = approval.operationType === "CreateGroup";
+  const isSubmitGroupContent = approval.operationType === "SubmitGroupContent";
+
+  const display = getApprovalDisplay(approval as any);
+  const title = display.title;
+  const subjectName = display.subjectName ?? payload.subjectName;
+  const className = display.className ?? payload.className;
+
+  const infoItems = isCreateGroup
+    ? [
+        { label: "Requested by", value: approval.requestedByName },
+        { label: "Group Name", value: title },
+        { label: "Submitted", value: formatDate(approval.createdAt) },
+      ]
+    : isSubmitGroupContent
+      ? [
+          { label: "Requested by", value: approval.requestedByName },
+          { label: "Subject", value: subjectName ?? "—" },
+          { label: "Class", value: className ?? "—" },
+          { label: "Submitted", value: formatDate(approval.createdAt) },
+        ]
+      : [
+          { label: "Teacher", value: approval.requestedByName },
+          { label: "Subject", value: subjectName ?? "—" },
+          { label: "Class", value: className ?? "—" },
+          { label: "Submitted", value: formatDate(approval.createdAt) },
+          { label: "Topic", value: payload.topicName ?? payload.Title ?? "—" },
+          { label: "Sub-Topic", value: payload.subTopic ?? payload.description ?? "—" },
+        ];
 
   return (
     <>
@@ -164,10 +198,10 @@ function StepReview({
           <HeaderIcon status={approval.status} />
           <div className="min-w-0">
             <p className="text-sm font-bold text-gray-900 truncate">
-              {approval.entityType}
+              {title}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              {approval.requestedByName} · {payload.subjectName} · {payload.className} · {payload.Term}
+              {[approval.requestedByName, subjectName, className, payload.Term].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
@@ -309,6 +343,10 @@ function StepReject({
   responding: boolean;
 }) {
   const payload = getPayload(approval.payload);
+  const display = getApprovalDisplay(approval as any);
+  const title = display.title;
+  const subjectName = display.subjectName ?? payload.subjectName;
+  const className = display.className ?? payload.className;
   const [selectedReason, setSelectedReason] = useState("");
   const [feedback, setFeedback] = useState("");
   const [notifyEmail, setNotifyEmail] = useState(true);
@@ -341,9 +379,9 @@ function StepReject({
             <BookOpen className="w-3.5 h-3.5 text-orange-500" />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-800">{payload.Title || approval.entityType}</p>
+            <p className="text-sm font-bold text-gray-800">{title}</p>
             <p className="text-xs text-gray-400 mt-0.5">
-              {approval.requestedByName} · {payload.subjectName} · {payload.className} · {payload.Term}
+              {[approval.requestedByName, subjectName, className, payload.Term].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>

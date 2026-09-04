@@ -1,11 +1,11 @@
 import FamiconsChevron from "@/assets/svg/famicons_chevron.svg?react";
 import element from "@/assets/svg/sdashboard.svg?react";
-import classRoom from "@/assets/svg/class_room.svg?react";
 import moduleIcon from "@/assets/svg/class.svg?react";
 import my_course from "@/assets/svg/scourses.svg?react";
 import assignments from "@/assets/svg/assignment.svg?react";
 import quizzes from "@/assets/svg/quizzes.svg?react";
 import discussion from "@/assets/svg/Discussion_forum.svg?react";
+import studyGroups from "@/assets/svg/people.svg?react";
 import live_classes from "@/assets/svg/live_classes.svg?react";
 import Calendar from "@/assets/svg/calendar.svg?react";
 import recorded_class from "@/assets/svg/monitor_play.svg?react";
@@ -52,15 +52,6 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Learning",
         items: [
             {
-                name: "Classrooms",
-                icons: classRoom,
-                children: [
-                    { name: "Quiz", path: "/student/class-room/quiz" },
-                    { name: "Assessment", path: "/student/class-room/assessment" },
-                    { name: "Subject", path: "/student/class-room/subject" },
-                ],
-            },
-            {
                 name: "Assessment",
                 icons: moduleIcon,
                 children: [
@@ -70,7 +61,16 @@ const NAV_GROUPS: NavGroup[] = [
                     { name: "Subtopic Scores", path: "/student/assessment/subtopic-scores" },
                 ],
             },
-            { name: "My Classroom", path: "/student/module", icons: moduleIcon },
+            {
+                name: "My Classroom",
+                icons: moduleIcon,
+                children: [
+                    { name: "Overview", path: "/student/module" },
+                    { name: "Quiz", path: "/student/class-room/quiz" },
+                    { name: "Assessment", path: "/student/class-room/assessment" },
+                    { name: "Subject", path: "/student/class-room/subject" },
+                ],
+            },
             { name: "My Course", path: "/student/my-course", icons: my_course },
             { name: "Quizzes", path: "/student/Quizzes", icons: quizzes },
             { name: "Assignments", path: "/student/Assignments", icons: assignments, disabled: true },
@@ -88,6 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: "More",
         items: [
             { name: "Discussion Forum", path: "/student/Discussion-Forum", icons: discussion },
+            { name: "Study Groups", path: "/student/study-groups", icons: studyGroups },
             { name: "Grades & Progress", path: "/student/Grades-Progress", icons: grades, disabled: true },
             { name: "Premium", path: "/student/Premium", icons: premium, disabled: true },
             { name: "Bluethub AI", path: "/student/Bluethub-Ai", icons: bluethub_ai, disabled: true },
