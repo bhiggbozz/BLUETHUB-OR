@@ -13,7 +13,7 @@ export const endpoints = {
   createSchoolClass: "/api/school/createschoolclassroom",
   registerSubject: "/api/School/registersubject",
   getAllSchoolSubjects: "/api/School/getAllSchoolSubjects",
-  registerClassroomSubject: "/api/School/RegisterClassroomSubect",
+  registerClassroomSubject: "/api/School/RegisterClassroomSubject",
   updateSubject: "/api/School/updatesubject",
   updateClassroom: "/api/School/updateclassroom",
   getSubjectById: "/api/School/getSubjectById",
@@ -92,6 +92,11 @@ interface IdeleteSubjects {
   classroomId: string;
 }
 
+interface IRegisterClassroomSubject {
+  classroomId: string;
+  subjectIds: string[];
+}
+
 export const schoolService = {
   registerSubject: (data: IRegisterSubject) => {
     return API.post<TResponse<unknown>>(endpoints.registerSubject, data, {
@@ -127,6 +132,16 @@ export const schoolService = {
   deleteSubjects:(data: IdeleteSubjects) => {
     return API.delete<TResponse<unknown>>(endpoints.deleteSubjects, {
       data,
+      headers: {
+        "X-Tenant-ID": X_Tenant_ID,
+      },
+    });
+  },
+
+  // Registers one or more subjects to a classroom (inserts ClassroomSubject
+  // rows) — this is the classroom's curriculum.
+  registerClassroomSubject: (data: IRegisterClassroomSubject) => {
+    return API.post<TResponse<unknown>>(endpoints.registerClassroomSubject, data, {
       headers: {
         "X-Tenant-ID": X_Tenant_ID,
       },

@@ -1,6 +1,7 @@
 import { quizService, type GradingDetailDto } from "@/services/quiz";
-import { Loader2, Star, ChevronDown, ChevronRight, CheckCircle2, MessageSquare } from "lucide-react";
+import { Loader2, Star, ChevronDown, ChevronRight, CheckCircle2, MessageSquare, Menu } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 const DIFFICULTY_LABELS = ["", "Easy", "Medium", "Hard", "Expert"];
 
@@ -49,6 +50,7 @@ function StarSelector({
 }
 
 const QuizGrading = () => {
+  const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
   const [items, setItems] = useState<GradingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -132,7 +134,11 @@ const QuizGrading = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-5 md:justify-between">
+           <Menu
+            className="lg:hidden size-6 text-chestnut cursor-pointer"
+            onClick={openMobileNav}  // ✅ not onClick={() => openMobileNav()}
+          />
           <div>
             <h1 className="text-2xl font-bold text-[#292382]">Quiz Grading</h1>
             <p className="text-sm text-gray-500 mt-1">Grade student answers that need manual evaluation</p>
@@ -141,7 +147,7 @@ const QuizGrading = () => {
 
         {/* Summary */}
         {!loading && (
-          <div className="flex flex-wrap gap-4 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-2">
+          <div className="flex flex-wrap gap-4 text-xs text-gray-500 bg-white border border-gray-200 rounded-md px-4 py-2">
             <span>Pending: <strong className={pendingCount > 0 ? "text-amber-600" : "text-green-600"}>{pendingCount}</strong></span>
             {gradedCount > 0 && <span>Graded: <strong className="text-green-600">{gradedCount}</strong></span>}
             <span>Total: <strong>{items.length}</strong></span>
@@ -172,7 +178,7 @@ const QuizGrading = () => {
 
         {/* No items */}
         {!loading && !error && items.length === 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-md border border-gray-200 p-12 text-center">
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
             <p className="text-gray-700 font-medium">All caught up!</p>
             <p className="text-sm text-gray-400 mt-1">No answers pending manual grading.</p>
@@ -186,7 +192,7 @@ const QuizGrading = () => {
               const isQuizOpen = expandedQuiz === group.quizCode;
 
               return (
-                <div key={group.quizCode} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={group.quizCode} className="bg-white rounded-md border border-gray-200 overflow-hidden">
                   {/* ── Quiz Group Header ──────────────────────────────────── */}
                   <button
                     type="button"

@@ -202,9 +202,9 @@ const AssignAssessmentToStudent = () => {
 
   return (
     <div className="font-poppins min-h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden bg-white/70">
         {/* Header */}
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg flex items-center justify-between">
+        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5  flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="lg:hidden">
               <button onClick={openMobileNav} className="text-white">
@@ -224,9 +224,9 @@ const AssignAssessmentToStudent = () => {
           )}
         </div>
 
-        <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+        <div className="p-2 sm:px-2 max-w-5xl mx-auto space-y-6">
           {/* ── Assessment Lookup ────────────────────────────────────────────── */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-4 sm:px-5 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center gap-2">
               <Search className="w-4 h-4 text-chestnut" />
               <span className="text-sm font-bold text-slate-800">Find Assessment</span>
@@ -242,14 +242,14 @@ const AssignAssessmentToStudent = () => {
                     value={assessmentCodeInput}
                     onChange={(e) => setAssessmentCodeInput(e.target.value)}
                     placeholder="Paste assessment code here (e.g. MID-MATH-2025)"
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-chestnut/15 focus:border-chestnut"
+                    className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-chestnut/15 focus:border-chestnut"
                   />
                 </div>
                 <div className="flex items-end">
                   <button
                     onClick={handleLookup}
                     disabled={loadingAssessment}
-                    className="h-11 px-5 rounded-xl bg-chestnut hover:bg-chestnut/90 text-white text-sm font-semibold transition-all disabled:opacity-50 flex items-center gap-2 w-full sm:w-auto justify-center"
+                    className="h-11 px-5 rounded-md bg-chestnut hover:bg-chestnut/90 text-white text-base font-medium transition-all disabled:opacity-50 flex items-center gap-2 w-full sm:w-auto justify-center"
                   >
                     {loadingAssessment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     {loadingAssessment ? "Loading…" : "Load"}
@@ -304,7 +304,7 @@ const AssignAssessmentToStudent = () => {
           </div>
 
           {/* ── Student Selection ────────────────────────────────────────────── */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-4 sm:px-5 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-chestnut" />
@@ -457,7 +457,7 @@ const AssignAssessmentToStudent = () => {
 
           {/* ── Bottom Action Bar ────────────────────────────────────────────── */}
           <div className="sticky bottom-4 z-10">
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12)] p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="rounded-md border border-slate-200 bg-white shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12)] p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-800">
                   {selectedStudentIds.size > 0 ? (

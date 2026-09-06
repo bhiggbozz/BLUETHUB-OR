@@ -253,7 +253,7 @@ const PreClassModal = ({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+      <div className="relative bg-white rounded-md shadow-2xl w-full max-w-2xl z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -306,7 +306,7 @@ const PreClassModal = ({
                       <BookOpen size={20} className="text-chestnut" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold capitalize text-gray-900 text-base">
+                      <h3 className="font-medium capitalize text-gray-900 text-base">
                         {lesson.topicName}
                       </h3>
                       <p className="text-sm text-gray-500 mt-0.5">
@@ -422,14 +422,14 @@ const PreClassModal = ({
               {/* Acknowledgment Checkbox */}
               <div
                 onClick={() => setUnderstood(!understood)}
-                className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                className={`flex items-center gap-3 p-4 rounded-md border-2 cursor-pointer transition-all ${
                   understood
                     ? "border-emerald-400 bg-emerald-50"
                     : "border-gray-200 bg-gray-50 hover:border-gray-300"
                 }`}
               >
                 <div
-                  className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
                     understood
                       ? "border-emerald-500 bg-emerald-500"
                       : "border-gray-300 bg-white"

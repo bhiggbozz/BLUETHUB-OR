@@ -15,7 +15,11 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { mediaUploadService, type UploadProgress } from '@/services/media-upload';
-import { boardSessionService, type BoardBatchPayload } from '@/services/board-session';
+import {
+  boardSessionService,
+  type BoardBatchPayload,
+  type GroupContentBoardBatchPayload,
+} from '@/services/board-session';
 import {
   getAudioChunksBySession,
   getStrokeBatchesBySession,
@@ -284,20 +288,41 @@ export function useSessionUpload() {
       }
 
       try {
-        // Build payload for backend API
-        const payload: BoardBatchPayload = {
-          sessionId,
-          lessonId: batch.lessonId,
-          batchIndex: batch.batchIndex,
-          startMs: batch.startMs,
-          endMs: batch.endMs,
-          strokes: batch.strokes,
-          strokeCount: batch.strokeCount,
-          boardIndex: batch.strokes[0]?.currentBoard ?? 0,
-        };
+        // A student recording study-group content routes to its own
+        // queue/worker/collection (keyed by groupId, no sessionId) instead
+        // of the teacher's live-session endpoint.
+        const groupId = sessionStorage.getItem('boardGroupId');
 
-        // Submit to backend (returns 204 No Content on success)
-        await boardSessionService.submitBatch(sessionId, payload);
+        if (groupId) {
+          const groupPayload: GroupContentBoardBatchPayload = {
+            groupId,
+            batchIndex: batch.batchIndex,
+            startMs: batch.startMs,
+            endMs: batch.endMs,
+            strokes: batch.strokes,
+            strokeCount: batch.strokeCount,
+            sizeBytes: batch.sizeBytes,
+            boardIndex: batch.strokes[0]?.currentBoard ?? 0,
+            boardSwitches: batch.boardSwitches,
+            audioUrl: null,
+          };
+          await boardSessionService.submitGroupContentBatch(groupId, groupPayload);
+        } else {
+          // Build payload for backend API
+          const payload: BoardBatchPayload = {
+            sessionId,
+            lessonId: batch.lessonId,
+            batchIndex: batch.batchIndex,
+            startMs: batch.startMs,
+            endMs: batch.endMs,
+            strokes: batch.strokes,
+            strokeCount: batch.strokeCount,
+            boardIndex: batch.strokes[0]?.currentBoard ?? 0,
+          };
+
+          // Submit to backend (returns 204 No Content on success)
+          await boardSessionService.submitBatch(sessionId, payload);
+        }
 
         // Persist the backend-facing identifier so manifest assembly can reuse it later.
         await updateStrokeBatchStatus(batch.id, 'sent', {

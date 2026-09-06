@@ -3,9 +3,9 @@ import { performanceService, type StudentPerformanceDetailDto, type PerformanceA
 import { schoolService } from "@/services/school";
 import { moduleService, type ModuleStudent } from "@/services/module";
 import { quizService, type SubjectQuizPerformanceDto } from "@/services/quiz";
-import { Loader2, ChevronDown, ChevronRight, Users, Target, ClipboardCheck, BarChart3, Search, CheckCircle2, XCircle, GraduationCap, Trophy, FileQuestion } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Users, Target, ClipboardCheck, BarChart3, Search, CheckCircle2, XCircle, GraduationCap, Trophy, FileQuestion, Menu } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 interface SubjectInfo {
@@ -220,6 +220,8 @@ const ModuleQuiz = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+  const outletContext = useOutletContext<{ openMobileNav?: () => void } | null>();
+    const openMobileNav = outletContext?.openMobileNav ?? (() => {});
 
   useEffect(() => {
     if (view !== "student") return;
@@ -301,9 +303,10 @@ const ModuleQuiz = () => {
   return (
     <div className="min-h-dvh bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-6">
+        <Menu className="lg:hidden  w-5 h-5 text-black inline" onClick={openMobileNav} />
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4 sm:p-6">
-          <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">
+          <h1 className="text-base font-semibold text-[#292382]">
             {activeView === "student" ? "Student Performance" : activeView === "topic" ? "Topic Performance" : "Quiz Performance"}
           </h1>
           <div className="flex flex-col sm:flex-row gap-3 mt-4">

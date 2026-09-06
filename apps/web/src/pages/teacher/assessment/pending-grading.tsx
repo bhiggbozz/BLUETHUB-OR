@@ -148,9 +148,9 @@ const PendingGradingPage = () => {
   }, [filtered]);
 
   return (
-    <div className="font-poppins min-h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg flex items-center justify-between">
+    <div className="font-poppins">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden bg-white/70">
+        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5  flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <button onClick={openMobileNav} className="lg:hidden text-white p-1">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -170,7 +170,7 @@ const PendingGradingPage = () => {
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+        <div className="p-4 sm:p-6 min-h-screen max-w-5xl mx-auto space-y-5">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input

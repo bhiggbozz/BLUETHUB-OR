@@ -5,6 +5,7 @@ import './index.css'
 import { Toaster } from "@bluethub/ui-kit"
 import { useTokenRefresh } from './hooks/useTokenRefresh';
 import { ensureAllStoresExist } from './utils/db';
+import "katex/dist/katex.min.css";
 
 function App() {
   useTokenRefresh();

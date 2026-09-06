@@ -1326,7 +1326,7 @@ const CreateQuizQuestion = () => {
                 {contextLabel}
               </h1>
               <p className="text-[13px] text-[#7B7FA8] mt-1 font-normal">
-                Upload questions to the Teacher&apos;s portal
+                Upload questions to the Teacher's portal
               </p>
             </div>
             <Link
@@ -1537,7 +1537,7 @@ const CreateQuizQuestion = () => {
                   <Button
                     onClick={handlePublishAll}
                     disabled={isPublishingAll}
-                    className="flex items-center justify-center gap-2 px-8 py-5 rounded-xl cursor-pointer bg-chestnut hover:bg-chestnut/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-chestnut/20 w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 px-8 py-2 rounded-md cursor-pointer bg-chestnut hover:bg-chestnut/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-chestnut/20 w-full sm:w-auto"
                   >
                     {isPublishingAll ? (
                       <>

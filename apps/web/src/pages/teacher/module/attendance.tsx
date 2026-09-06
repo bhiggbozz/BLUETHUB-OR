@@ -34,7 +34,7 @@ const ModuleAttendance = () => {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4 sm:p-6">
           <div className="flex items-center gap-2">
             <UserSearch className="w-5 h-5 text-[#292382]" />
-            <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">Attendance Records</h1>
+            <h1 className="text-base font-semibold text-[#292382]">Attendance Records</h1>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Look up a student's attendance history across your classes and subjects.

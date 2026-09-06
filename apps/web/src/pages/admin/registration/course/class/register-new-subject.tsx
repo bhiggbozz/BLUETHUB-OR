@@ -85,8 +85,8 @@ const RegisterNewSubject = () => {
 
   return (
     <>
-      <div className="md:p-3 font-poppins">
-        <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden">
+      <div className="md:p-2 font-poppins">
+        <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
 
           {/* ── Top Nav ── */}
           <div className="flex items-center justify-between px-4 sticky top-0 z-30 py-4 sm:py-5 bg-chestnut">

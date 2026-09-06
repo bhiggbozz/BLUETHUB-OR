@@ -1,4 +1,5 @@
 import { useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
+import MathText from "@/component/math-text";
 import {
   Button,
   Dialog,
@@ -28,6 +29,10 @@ import {
 import { isTeacherRoleData, useAuthContext } from "@/contexts/auth-context";
 import { assessmentService, type CreateAssessmentPayload } from "@/services/assessment";
 import { localData } from "@/utils";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface ApiItem {
   id: string;
@@ -557,9 +562,9 @@ const AssessmentConfigPage = () => {
 
   return (
     <div className="font-poppins min-h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden bg-white/70">
         {/* Header */}
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg flex items-center justify-between">
+        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5  flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Menu className="lg:hidden w-5 h-5 text-white" onClick={openMobileNav} />
             <button onClick={() => navigate(-1)} className="p-1.5">
@@ -639,7 +644,7 @@ const AssessmentConfigPage = () => {
           </div>
 
           {/* ── Assessment Config ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="flex items-center gap-2 px-4 sm:px-5 py-3 bg-slate-50/80 border-b border-slate-100">
               <Settings2 className="w-4 h-4 text-chestnut" />
               <span className="text-sm font-bold text-slate-800">Assessment Settings</span>
@@ -693,7 +698,7 @@ const AssessmentConfigPage = () => {
               </div>
 
               {/* ── Expiry Date/Time ── */}
-              <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+              <div className="rounded-md border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
                     Expiry Date & Time
@@ -764,7 +769,7 @@ const AssessmentConfigPage = () => {
 
           {/* ── Topic chips ── */}
           {topics.length > 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+            <div className="rounded-md border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-sm font-semibold text-slate-700">Topics</h2>
@@ -837,7 +842,7 @@ const AssessmentConfigPage = () => {
           )}
 
           {/* ── Questions list ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0">
                 <button
@@ -917,9 +922,16 @@ const AssessmentConfigPage = () => {
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="text-xs text-slate-400 font-medium">#{idx + 1}</p>
-                              <p className="text-sm font-semibold text-slate-700 leading-5 mt-0.5 line-clamp-2">
-                                {question.title || "Untitled question"}
-                              </p>
+                              <div className="text-sm font-semibold text-slate-700 leading-5 mt-0.5">
+                                                      <ReactMarkdown
+                                                        remarkPlugins={[remarkMath]}
+                                                        rehypePlugins={[rehypeKatex]}
+                                                      >
+                                                        {(question.title || "Untitled question")
+                                                          .replace(/\\\(/g, "$")
+                                                          .replace(/\\\)/g, "$")}
+                                                      </ReactMarkdown>
+                                                    </div>
                               {question.imageUrl && (
                                 <img
                                   src={question.imageUrl}
@@ -1024,9 +1036,10 @@ const AssessmentConfigPage = () => {
                         )}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-700 leading-5 line-clamp-2">
-                          {q.title || "Untitled question"}
-                        </p>
+                        <MathText
+                          text={q.title || "Untitled question"}
+                          className="block text-sm font-medium text-slate-700 leading-5 line-clamp-2"
+                        />
                         {q.imageUrl && (
                           <img
                             src={q.imageUrl}

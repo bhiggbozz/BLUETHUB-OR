@@ -105,10 +105,10 @@ const ManageAssessmentsPage = () => {
   }, [assessments, searchQuery]);
 
   return (
-    <div className="font-poppins min-h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
+    <div className="font-poppins">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden bg-white/70">
         {/* Header */}
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg flex items-center justify-between">
+        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5  flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <button onClick={openMobileNav} className="lg:hidden text-white p-1">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -127,7 +127,7 @@ const ManageAssessmentsPage = () => {
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+        <div className="p-4 sm:p-6 min-h-screen max-w-5xl mx-auto space-y-5">
           {/* Search + stats */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
             <div className="relative flex-1 max-w-md">
@@ -141,7 +141,7 @@ const ManageAssessmentsPage = () => {
               />
             </div>
             <div className="flex items-center gap-3">
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 flex items-center gap-2">
+              <div className="rounded-md border border-slate-200 bg-white px-4 py-2 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-slate-400" />
                 <span className="text-xs text-slate-500">
                   Total: <span className="font-bold text-slate-800">{assessments.length}</span>
@@ -150,7 +150,7 @@ const ManageAssessmentsPage = () => {
               <button
                 onClick={() => void loadAssessments()}
                 disabled={loading}
-                className="h-10 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="h-10 px-4 rounded-md border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 <Loader2 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 Refresh
@@ -201,7 +201,7 @@ const ManageAssessmentsPage = () => {
                 return (
                   <div
                     key={a.assessmentId}
-                    className="rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all"
+                    className="rounded-md border border-slate-200 bg-white overflow-hidden transition-all"
                   >
                     {/* Summary row */}
                     <button
@@ -292,19 +292,19 @@ const ManageAssessmentsPage = () => {
                             Configuration
                           </p>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div className="rounded-xl bg-white border border-slate-100 p-3 text-center">
+                            <div className="rounded-md bg-white border border-slate-100 p-3 text-center">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">Questions</p>
                               <p className="text-base font-bold text-slate-800">{a.questionCount}</p>
                             </div>
-                            <div className="rounded-xl bg-white border border-slate-100 p-3 text-center">
+                            <div className="rounded-md bg-white border border-slate-100 p-3 text-center">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Marks</p>
                               <p className="text-base font-bold text-slate-800">{a.totalMarks}</p>
                             </div>
-                            <div className="rounded-xl bg-white border border-slate-100 p-3 text-center">
+                            <div className="rounded-md bg-white border border-slate-100 p-3 text-center">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">Shuffle</p>
                               <p className="text-base font-bold text-slate-800">{a.shuffleQuestions ? "Yes" : "No"}</p>
                             </div>
-                            <div className="rounded-xl bg-white border border-slate-100 p-3 text-center">
+                            <div className="rounded-md bg-white border border-slate-100 p-3 text-center">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">Show Result</p>
                               <p className="text-base font-bold text-slate-800">{a.showResultImmediately ? "Yes" : "No"}</p>
                             </div>
@@ -330,7 +330,7 @@ const ManageAssessmentsPage = () => {
                               Loading assignments…
                             </div>
                           ) : assignments.length === 0 ? (
-                            <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3">
+                            <div className="rounded-md border border-slate-200 bg-white p-4 flex items-center gap-3">
                               <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
                               <div>
                                 <p className="text-sm font-semibold text-slate-700">Not assigned yet</p>
@@ -340,7 +340,7 @@ const ManageAssessmentsPage = () => {
                           ) : (
                             <div className="space-y-2">
                               {classroomAssignments.length > 0 && (
-                                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                                <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
                                   <div className="px-4 py-2.5 bg-indigo-50/50 border-b border-slate-100 flex items-center gap-2">
                                     <School className="w-4 h-4 text-indigo-500" />
                                     <p className="text-xs font-semibold text-indigo-700">Classrooms ({classroomAssignments.length})</p>
@@ -357,7 +357,7 @@ const ManageAssessmentsPage = () => {
                               )}
 
                               {subjectAssignments.length > 0 && (
-                                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                                <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
                                   <div className="px-4 py-2.5 bg-emerald-50/50 border-b border-slate-100 flex items-center gap-2">
                                     <BookOpen className="w-4 h-4 text-emerald-500" />
                                     <p className="text-xs font-semibold text-emerald-700">Subjects ({subjectAssignments.length})</p>
@@ -374,7 +374,7 @@ const ManageAssessmentsPage = () => {
                               )}
 
                               {studentAssignments.length > 0 && (
-                                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                                <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
                                   <div className="px-4 py-2.5 bg-amber-50/50 border-b border-slate-100 flex items-center gap-2">
                                     <User className="w-4 h-4 text-amber-500" />
                                     <p className="text-xs font-semibold text-amber-700">Students ({studentAssignments.length})</p>

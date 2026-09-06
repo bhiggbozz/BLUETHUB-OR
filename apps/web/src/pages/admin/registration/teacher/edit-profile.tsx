@@ -1,8 +1,7 @@
-import { Button, Input, Label } from "@bluethub/ui-kit";
+import { Button, Dialog, DialogContent, DialogTitle, Input, Label } from "@bluethub/ui-kit";
 import { authService } from "@/services/auth";
 import { schoolService } from "@/services/school";
-import { Hashing } from "@/utils";
-import { ArrowLeft, BookOpen, GraduationCap, Loader2, Save, X } from "lucide-react";
+import { ArrowLeft, BookOpen, GraduationCap, LayoutGrid, Loader2, Plus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
@@ -82,6 +81,17 @@ const TeacherEditProfile = () => {
   const [allClassrooms, setAllClassrooms] = useState<SchoolClassroomDto[]>([]);
   const [loadingClassrooms, setLoadingClassrooms] = useState(false);
   const [selectedClassroomId, setSelectedClassroomId] = useState("");
+
+  // ── add-subject dialog (subject teacher only) ─────────────────────────────
+  // Subjects are scoped per-classroom — a subject teacher assigned to
+  // multiple classrooms can have a different subject catalog in each, so
+  // this is fetched fresh (per classroom) each time the dialog opens rather
+  // than once for the whole school.
+  type DialogSubject = { id: string; name: string; category: "Major" | "Minor" };
+  const [dialogSubjects, setDialogSubjects] = useState<DialogSubject[]>([]);
+  const [loadingDialogSubjects, setLoadingDialogSubjects] = useState(false);
+  const [addSubjectClassroomId, setAddSubjectClassroomId] = useState<string | null>(null);
+  const [pendingSubjectIds, setPendingSubjectIds] = useState<string[]>([]);
 
   // ── derived ───────────────────────────────────────────────────────────────
   const isAdmin = useMemo(() => userData?.roleId === ADMIN_ROLE_ID, [userData]);
@@ -173,13 +183,15 @@ const TeacherEditProfile = () => {
     setSavingProfile(true);
     setProfileMsg({ type: "", text: "" });
     try {
-      const hashPassword = await Hashing(userData.userName);
+      // Do not send hashPassword here — this form has no password field, and
+      // the backend applies whatever non-empty value it's given as a real
+      // password change (see EditUser). Sending a hash of the username was
+      // silently resetting the account's password on every save.
       await authService.editUser({
         id: userData.id,
         firstName: profileForm.firstName.trim(),
         lastName: profileForm.lastName.trim(),
         emailAddress: profileForm.emailAddress,
-        hashPassword,
         isActive: profileForm.isActive,
         hasAccess: userData.hasAccess,
         roleId: userData.roleId,
@@ -220,6 +232,61 @@ const TeacherEditProfile = () => {
           : c,
       ),
     );
+  };
+
+  const openAddSubjectDialog = async (classroomId: string) => {
+    setAddSubjectClassroomId(classroomId);
+    setPendingSubjectIds([]);
+    setDialogSubjects([]);
+    setLoadingDialogSubjects(true);
+    try {
+      const { data } = await schoolService.getSubjectsByClassroomId(classroomId);
+      const payload = (data as any)?.data ?? {};
+      const normalize = (rows: any[], category: "Major" | "Minor"): DialogSubject[] =>
+        (rows ?? []).map((s: any) => ({
+          id: String(s.id ?? s.subjectId ?? ""),
+          name: String(s.subject ?? s.subjectName ?? s.name ?? ""),
+          category,
+        }));
+      setDialogSubjects([
+        ...normalize(payload.majorSubjects, "Major"),
+        ...normalize(payload.minorSubjects, "Minor"),
+      ]);
+    } catch {
+      // Non-fatal — the dialog will just show "Nothing to add" for both columns.
+    } finally {
+      setLoadingDialogSubjects(false);
+    }
+  };
+
+  const togglePendingSubject = (subjectId: string) => {
+    setPendingSubjectIds((prev) =>
+      prev.includes(subjectId)
+        ? prev.filter((id) => id !== subjectId)
+        : [...prev, subjectId],
+    );
+  };
+
+  const confirmAddSubjects = () => {
+    if (addSubjectClassroomId && pendingSubjectIds.length > 0) {
+      setKeptClassrooms((prev) =>
+        prev.map((c) => {
+          if (c.classroomId !== addSubjectClassroomId) return c;
+          const existingIds = new Set((c.subjects ?? []).map((s) => s.subjectId));
+          const added: SubjectDto[] = dialogSubjects
+            .filter((s) => pendingSubjectIds.includes(s.id) && !existingIds.has(s.id))
+            .map((s) => ({
+              subjectId: s.id,
+              subjectName: s.name,
+              subjectCategory: s.category,
+            }));
+          return { ...c, subjects: [...(c.subjects ?? []), ...added] };
+        }),
+      );
+    }
+    setAddSubjectClassroomId(null);
+    setPendingSubjectIds([]);
+    setDialogSubjects([]);
   };
 
   // ── save assignments ───────────────────────────────────────────────────────
@@ -271,50 +338,38 @@ const TeacherEditProfile = () => {
       return;
     }
 
-    const original = userData.roleData?.classrooms ?? [];
-
-    const removedClassroomIds = original
-      .filter(
-        (c) => !keptClassrooms.some((k) => k.classroomId === c.classroomId),
-      )
-      .map((c) => c.classroomId);
-
-    const removedSubjectIds = original.flatMap((origClass) => {
-      const kept = keptClassrooms.find(
-        (k) => k.classroomId === origClass.classroomId,
-      );
-      if (!kept) return (origClass.subjects ?? []).map((s) => s.subjectId);
-      return (origClass.subjects ?? [])
-        .filter(
-          (s) =>
-            !(kept.subjects ?? []).some((ks) => ks.subjectId === s.subjectId),
-        )
-        .map((s) => s.subjectId);
-    });
-
-    const retainedClassroomIds = keptClassrooms.map((c) => c.classroomId);
-    const retainedSubjectIds = keptClassrooms.flatMap((c) =>
-      (c.subjects ?? []).map((s) => s.subjectId),
-    );
+    // Note: classroom removal has no backend endpoint yet (EditUser's
+    // removeClassroom/userClassroomsId fields are silently ignored — the
+    // ViewModel it binds to has no such properties), so only the per-classroom
+    // subject list is persisted below. Removing a teacher from a classroom
+    // entirely still needs its own endpoint.
 
     try {
-      const hashPassword = await Hashing(userData.userName);
+      // See saveProfile above — no password field on this form either, so
+      // hashPassword must not be sent.
       await authService.editUser({
         id: userData.id,
         firstName: profileForm.firstName.trim(),
         lastName: profileForm.lastName.trim(),
         emailAddress: profileForm.emailAddress,
-        hashPassword,
         isActive: profileForm.isActive,
         hasAccess: userData.hasAccess,
         roleId: userData.roleId,
         profileImage: userData.profileImage ?? "",
         guardianName: userData.guardianName ?? "",
-        userClassroomsId: retainedClassroomIds,
-        userSubjects: retainedSubjectIds,
-        removeClassroom: removedClassroomIds,
-        removeSubjects: removedSubjectIds,
       });
+
+      // PUT api/User/teacher/{teacherId}/subject is per-classroom, so one call
+      // per kept classroom — each call replaces that classroom's subject list.
+      await Promise.all(
+        keptClassrooms.map((cls) =>
+          authService.updateTeacherSubject(userData.id, {
+            classroomId: cls.classroomId,
+            subjectIds: (cls.subjects ?? []).map((s) => s.subjectId),
+          }),
+        ),
+      );
+
       setAssignMsg({
         type: "success",
         text: "Assignments updated successfully.",
@@ -335,10 +390,10 @@ const TeacherEditProfile = () => {
   // ── render ─────────────────────────────────────────────────────────────────
   return (
     <div className="px-4 sm:px-6 py-5 font-poppins">
-      <div className="max-w-3xl mx-auto space-y-5">
+      <div className=" space-y-5">
         {/* header */}
-        <div className="rounded-2xl bg-chestnut px-6 py-4 text-white">
-          <h1 className="text-lg sm:text-xl font-semibold">{pageTitle}</h1>
+        <div className="rounded-md bg-chestnut px-6 py-4 text-white">
+          <h1 className="text-base sm:text-lg font-semibold">{pageTitle}</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-white/80">
             Update profile details or manage assignments below.
           </p>
@@ -369,7 +424,7 @@ const TeacherEditProfile = () => {
         {!loading && !errorMsg && userData && (
           <>
             {/* ── CARD 1: Profile ── */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
                 <GraduationCap className="h-4 w-4 text-chestnut" />
                 <h2 className="text-sm font-semibold text-slate-700">Profile</h2>
@@ -485,7 +540,7 @@ const TeacherEditProfile = () => {
 
             {/* ── CARD 2: Assignments (hidden for Admin) ── */}
             {!isAdmin && (
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
                   <BookOpen className="h-4 w-4 text-chestnut" />
                   <h2 className="text-sm font-semibold text-slate-700">
@@ -546,32 +601,43 @@ const TeacherEditProfile = () => {
                         </div>
 
                         {/* Subjects — Subject Teacher only */}
-                        {isSubjectTeacher &&
-                          (cls.subjects ?? []).length > 0 && (
-                            <div className="flex flex-wrap gap-2 pl-1">
-                              {(cls.subjects ?? []).map((sub) => (
-                                <span
-                                  key={sub.subjectId}
-                                  className="inline-flex items-center gap-1 rounded-full border border-chestnut/20 bg-chestnut/5 px-2.5 py-0.5 text-xs font-medium text-chestnut"
-                                >
-                                  {sub.subjectName}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      removeSubject(
-                                        cls.classroomId,
-                                        sub.subjectId,
-                                      )
-                                    }
-                                    className="ml-0.5 text-chestnut/50 hover:text-red-500 transition-colors"
-                                    title="Remove subject"
+                        {isSubjectTeacher && (
+                          <div className="space-y-1.5 pl-1">
+                            {(cls.subjects ?? []).length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {(cls.subjects ?? []).map((sub) => (
+                                  <span
+                                    key={sub.subjectId}
+                                    className="inline-flex items-center gap-1 rounded-full border border-chestnut/20 bg-chestnut/5 px-2.5 py-0.5 text-xs font-medium text-chestnut"
                                   >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                                    {sub.subjectName}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeSubject(
+                                          cls.classroomId,
+                                          sub.subjectId,
+                                        )
+                                      }
+                                      className="ml-0.5 text-chestnut/50 hover:text-red-500 transition-colors"
+                                      title="Remove subject"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => openAddSubjectDialog(cls.classroomId)}
+                              className="flex items-center gap-1 text-xs font-semibold text-chestnut hover:opacity-70 transition-opacity"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add subject
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -602,7 +668,7 @@ const TeacherEditProfile = () => {
                       ) : (
                         <span className="inline-flex items-center gap-2">
                           <Save className="h-4 w-4" />
-                          Assign Classroom
+                          Save
                         </span>
                       )}
                     </Button>
@@ -613,6 +679,115 @@ const TeacherEditProfile = () => {
           </>
         )}
       </div>
+
+      {/* ── Add Subject Dialog (Subject Teacher only) ── */}
+      <Dialog
+        open={!!addSubjectClassroomId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddSubjectClassroomId(null);
+            setPendingSubjectIds([]);
+            setDialogSubjects([]);
+          }
+        }}
+      >
+        <DialogContent className="md:max-w-lg w-[90%] rounded-2xl p-0 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <DialogTitle className="text-sm font-bold text-chestnut">
+              Add Subject
+            </DialogTitle>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              {keptClassrooms.find((c) => c.classroomId === addSubjectClassroomId)?.className
+                ? `Choose subjects to add for ${keptClassrooms.find((c) => c.classroomId === addSubjectClassroomId)?.className}`
+                : "Choose subjects to add"}
+            </p>
+          </div>
+
+          <div className="flex gap-0 px-6 py-5">
+            {(["Major", "Minor"] as const).map((category, idx) => {
+              const existingIds = new Set(
+                (keptClassrooms.find((c) => c.classroomId === addSubjectClassroomId)?.subjects ?? [])
+                  .map((s) => s.subjectId),
+              );
+              const options = dialogSubjects.filter(
+                (s) => s.category === category && !existingIds.has(s.id),
+              );
+              return (
+                <div
+                  key={category}
+                  className={`flex-1 ${idx === 0 ? "pr-5 border-r border-gray-100" : "pl-5"}`}
+                >
+                  <p
+                    className={`text-[10px] font-bold mb-3 uppercase tracking-wide flex items-center gap-1.5 ${category === "Major" ? "text-chestnut" : "text-gray-400"
+                      }`}
+                  >
+                    <LayoutGrid className="w-3 h-3" />
+                    {category}
+                  </p>
+                  <div className="flex flex-col gap-0.5 max-h-60 overflow-y-auto pr-1">
+                    {loadingDialogSubjects ? (
+                      <div className="flex items-center gap-2 text-gray-400 py-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span className="text-xs">Loading...</span>
+                      </div>
+                    ) : options.length === 0 ? (
+                      <p className="text-xs text-gray-400 py-2">Nothing to add</p>
+                    ) : (
+                      options.map((s) => (
+                        <label
+                          key={s.id}
+                          onClick={() => togglePendingSubject(s.id)}
+                          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-chestnut/5 transition-colors"
+                        >
+                          <span
+                            className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${pendingSubjectIds.includes(s.id) ? "border-chestnut bg-chestnut" : "border-gray-300 bg-white"
+                              }`}
+                          >
+                            {pendingSubjectIds.includes(s.id) && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </span>
+                          <span className={`text-xs select-none ${pendingSubjectIds.includes(s.id) ? "text-chestnut font-semibold" : "text-gray-600 font-medium"}`}>
+                            {s.name}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[11px] text-gray-400 font-medium">
+              {pendingSubjectIds.length} subject{pendingSubjectIds.length !== 1 ? "s" : ""} selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border border-gray-200 text-gray-600 text-xs font-semibold rounded-lg px-5 py-2 hover:bg-gray-50"
+                onClick={() => {
+                  setAddSubjectClassroomId(null);
+                  setPendingSubjectIds([]);
+                  setDialogSubjects([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="text-white text-xs font-semibold rounded-lg px-5 py-2 hover:opacity-90 transition-opacity bg-chestnut"
+                onClick={confirmAddSubjects}
+                disabled={pendingSubjectIds.length === 0}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

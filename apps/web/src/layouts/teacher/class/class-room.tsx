@@ -195,7 +195,10 @@ const ClassRoomInner = () => {
     setIsReady(true);
 
     // Exit board after discard to avoid continuing in a deleted session context.
-    navigate('/teacher', { replace: true });
+    // A non-teacher caller stores its own exit destination before entering the
+    // board (see end-class.tsx's getExitPath) — falls back to /teacher so the
+    // existing teacher flow is unchanged.
+    navigate(sessionStorage.getItem('boardExitPath') || '/teacher', { replace: true });
   };
 
   return (

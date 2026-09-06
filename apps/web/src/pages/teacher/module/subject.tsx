@@ -16,8 +16,10 @@ import {
   XCircle,
   Clock,
   GraduationCap,
+  Menu,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 interface SubjectInfo {
@@ -193,6 +195,8 @@ const ModuleSubject = () => {
   const [performance, setPerformance] = useState<StudentQuizPerformanceScopedDto | null>(null);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
   const [performanceError, setPerformanceError] = useState("");
+ const outletContext = useOutletContext<{ openMobileNav?: () => void } | null>();
+  const openMobileNav = outletContext?.openMobileNav ?? (() => {});
 
   useEffect(() => {
     setPerformance(null);
@@ -233,9 +237,10 @@ const ModuleSubject = () => {
   return (
     <div className="min-h-dvh bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-6">
+        <Menu className="lg:hidden  w-5 h-5 text-black inline" onClick={openMobileNav} />
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4 sm:p-6">
-          <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">Student Quiz Performance</h1>
+          <h1 className="text-base font-semibold text-[#292382]">Student Quiz Performance</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             View how a student is performing on quizzes for a subject, or drill into a single subtopic.
           </p>

@@ -1,12 +1,12 @@
 import { AxiosError } from "axios";
-import { ArrowLeft, CheckCircle2, Loader2, User, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import {  CheckCircle2, ChevronLeft, Loader2, User, XCircle } from "lucide-react";
+import {  useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Link } from "react-router-dom";
 
 import { authService } from "@/services/auth";
-import { localData } from "@/utils";
+// import { localData } from "@/utils";
 import { forgotPasswordSchema } from "@/utils/validate";
 
 interface ForgotPasswordInput {
@@ -15,20 +15,20 @@ interface ForgotPasswordInput {
 
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
-  const [schoolLogoUrl, setSchoolLogoUrl] = useState<string | null>(null);
-  const [schoolName, setSchoolName] = useState<string | null>(null);
+  // const [schoolLogoUrl, setSchoolLogoUrl] = useState<string | null>(null);
+  // const [schoolName, setSchoolName] = useState<string | null>(null);
   // responseCode 99000 is always shown regardless of whether the username was
   // real (prevents enumeration) — AX1003 and 99001 are genuine, actionable
   // outcomes for the entered username, so they get an error treatment.
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
 
-  useEffect(() => {
-    const stored =
-      localData.retrieve<{ logoUrl: string; schoolName: string }>("th_school") ??
-      localData.retrieve<{ logoUrl: string; schoolName: string }>("schoolInfo");
-    if (stored?.logoUrl) setSchoolLogoUrl(stored.logoUrl);
-    if (stored?.schoolName) setSchoolName(stored.schoolName);
-  }, []);
+  // useEffect(() => {
+  //   const stored =
+  //     localData.retrieve<{ logoUrl: string; schoolName: string }>("th_school") ??
+  //     localData.retrieve<{ logoUrl: string; schoolName: string }>("schoolInfo");
+  //   if (stored?.logoUrl) setSchoolLogoUrl(stored.logoUrl);
+  //   if (stored?.schoolName) setSchoolName(stored.schoolName);
+  // }, []);
 
   const {
     register,
@@ -58,29 +58,29 @@ const ForgotPassword = () => {
 
   return (
     <div className="font-poppins flex flex-col gap-10 justify-center h-full rounded-[18px] py-13 px-7.5 shadow-[0_4px_16px_0px_rgba(41,35,130,0.08),0_24px_64px_0px_rgba(41,35,130,0.13)] lg:px-0 md:shadow-none md:max-w-md mx-auto lg:py-10">
+      <Link
+        to="/auth"
+        className="flex  md:hidden items-center gap-1.5 text-xs font-Poppins font-semibold  text-chestnut transition-colors mb-4"
+      >
+        <ChevronLeft className="size-7 text-black font-medium" />
+        Back to sign in
+      </Link>
       <div>
         {/* ── Heading ── */}
         <div className="mb-8">
-          <Link
-            to="/auth"
-            className="inline-flex items-center gap-1.5 text-xs font-Poppins font-semibold text-gray-400 hover:text-chestnut transition-colors mb-4"
-          >
-            <ArrowLeft size={14} />
-            Back to sign in
-          </Link>
           <span className="text-xs font-Poppins font-bold text-chestnut uppercase tracking-widest">
             Reset Password
           </span>
           <h1 className="text-2xl font-Poppins font-bold text-[#0F0F0E] mt-1">
             Forgot your password?
           </h1>
-          <p className="text-gray-400 font-Poppins text-sm mt-1.5">
+          {/* <p className="text-gray-400 font-Poppins text-sm mt-1.5">
             Enter your username and we'll email a reset link to the address on file.
-          </p>
+          </p> */}
         </div>
 
         {/* ── School branding ── */}
-        {schoolLogoUrl && (
+        {/* {schoolLogoUrl && (
           <div className="mb-6">
             <img
               src={schoolLogoUrl}
@@ -89,7 +89,7 @@ const ForgotPassword = () => {
               className="h-8 w-auto object-contain"
             />
           </div>
-        )}
+        )} */}
 
         {/* ── Result banner ── */}
         {result && (

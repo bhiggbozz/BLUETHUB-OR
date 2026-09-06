@@ -160,7 +160,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             const authToken = localStorage.getItem('token') || '';
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
             const tenantId = 'pearl'; // X-Tenant-ID
-            
+            // Present only for a student study-group recording — routes the
+            // upload to the group-content pipeline instead of the live session one.
+            const groupId = sessionStorage.getItem('boardGroupId') || undefined;
+
             console.log('[SessionContext] Initiating stroke batch uploads for session:', msg.sessionId);
             strokeUploadWorkerRef.current.postMessage({
               type: 'START_UPLOAD',
@@ -168,6 +171,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               apiBaseUrl,
               authToken,
               tenantId,
+              groupId,
             });
           }
           break;

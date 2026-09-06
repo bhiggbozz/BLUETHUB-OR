@@ -45,6 +45,7 @@ import ParentAttendance from '@/pages/parent/attendance';
 import StudentIndex from '@/pages/student/component/main';
 import StudyGroupsIndex from '@/pages/student/study-groups';
 import StudyGroupDetailPage from '@/pages/student/study-groups/group-detail';
+import SubmitGroupContentPage from '@/pages/student/study-groups/submit-content';
 import StudentSettings from '@/shared/setting';
 import ProfileLayout from '@/pages/student/profile/layout';
 import Profile from '@/pages/student/profile/profile';
@@ -102,6 +103,7 @@ import QuizDetailView from '@/pages/teacher/quiz/quiz-detail';
 import MySyllabus from '@/pages/teacher/Syllabus/my-syllabus';
 import CreateSyllabus from '@/pages/teacher/Syllabus/create-syllabus';
 import ApprovalsPage from '@/pages/admin/approvals';
+import GroupRecordingViewer from '@/pages/admin/approvals/group-recording-viewer';
 import TeacherProtectedRoute from '@/component/protected-routes/teacher-routes';
 import IdbViewer from '@/pages/dev/idb-viewer';
 import DraftLessons from '@/pages/teacher/drafts';
@@ -203,6 +205,15 @@ const router = createBrowserRouter([
         path: "teacher/board",
         element: <ErrorBoundary fallbackMessage="Whiteboard error">
             <TeacherProtectedRoute><ClassRoom /></TeacherProtectedRoute>
+        </ErrorBoundary>
+    },
+    {
+        // Same whiteboard component the teacher live-class flow uses — a board
+        // session is just whatever lessonId sessionStorage.activeLesson holds
+        // (see utils/launch-student-board.ts), so it works unchanged here.
+        path: "student/board",
+        element: <ErrorBoundary fallbackMessage="Whiteboard error">
+            <StudentProtectedRoute><ClassRoom /></StudentProtectedRoute>
         </ErrorBoundary>
     },
 
@@ -341,6 +352,10 @@ const router = createBrowserRouter([
                 element: <ApprovalsPage />
             },
             {
+                path: 'approvals/recording/:groupId/:studentId',
+                element: <GroupRecordingViewer />
+            },
+            {
                 path: 'analytics',
                 element: <AdminAnalytics />
             },
@@ -443,6 +458,7 @@ const router = createBrowserRouter([
             { path: "assessment/manage", element: <ManageAssessments /> },
             { path: "assessment/pending-grading", element: <PendingGrading /> },
             { path: "approvals", element: <ApprovalsPage /> },
+            { path: "approvals/recording/:groupId/:studentId", element: <GroupRecordingViewer /> },
             { path: "create-syllabus", element: <CreateSyllabus /> },
             { path: "analytics", element: <TeacherAnalytics /> },
             { path: "attendance", element: <Attendance /> },
@@ -547,6 +563,7 @@ const router = createBrowserRouter([
                 children: [
                     { index: true, element: <StudyGroupsIndex /> },
                     { path: ':groupId', element: <StudyGroupDetailPage /> },
+                    { path: ':groupId/content/new', element: <SubmitGroupContentPage /> },
                 ]
             }
 

@@ -618,7 +618,7 @@ const GenerateQuiz = () => {
 
         <div className="lg:p-6 p-3 space-y-4 sm:space-y-5 md:space-y-6">
           {/* ── Header card ── */}
-          <div className="rounded-2xl bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] border border-[#f3dccb] p-4 sm:p-5 md:p-6">
+          <div className="rounded-md bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] border border-[#f3dccb] p-4 sm:p-5 md:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-sm font-bold text-chestnut leading-tight">
@@ -634,7 +634,7 @@ const GenerateQuiz = () => {
           </div>
 
           {/* ── Quiz Settings card ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => setConfigExpanded((v) => !v)}
@@ -945,7 +945,7 @@ const GenerateQuiz = () => {
           )}
 
           {/* ── Questions list ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-3 sm:px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button

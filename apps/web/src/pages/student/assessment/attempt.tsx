@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import StudentAnswerBoard, { type AnswerBoardMeta, type BoardState } from "./student-answer-board";
 import RichTextEditor from "./rich-text-editor";
+import MathText from "@/component/math-text";
 
 const AttemptPage = () => {
   const { assessmentId, attemptId } = useParams<{ assessmentId: string; attemptId: string }>();
@@ -83,6 +84,15 @@ const AttemptPage = () => {
   const sessionId = assessmentId && studentId ? `${assessmentId}_${studentId}` : null;
   const questions = attemptData?.questions ?? [];
   const currentQuestion = questions[currentIndex];
+  // The backend shuffles each attempt's options (anti-cheat — same content,
+  // different label/position per student) but returns them in that shuffled
+  // array order too, so the raw array renders as e.g. B,E,D,A,C. Sorting by
+  // optionLabel just fixes the *display* order to A,B,C... — it doesn't
+  // touch which content each label holds, so it can't undo the shuffle.
+  const sortedOptions = useMemo(
+    () => [...(currentQuestion?.options ?? [])].sort((a, b) => a.optionLabel.localeCompare(b.optionLabel)),
+    [currentQuestion]
+  );
 
   const { totalAutoMarks, hasManualQuestions } = useMemo(() => {
     let auto = 0, manual = false;
@@ -255,15 +265,15 @@ const AttemptPage = () => {
               <span className="text-[11px] font-semibold text-slate-400 uppercase">{currentQuestion.questionType === 4 ? "True / False" : currentQuestion.options.length > 0 ? "Objective" : "Theory"} Question</span>
               <span className="text-[11px] font-semibold text-slate-400">{currentQuestion.marksAllocation} mark{currentQuestion.marksAllocation !== 1 ? "s" : ""}</span>
             </div>
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">{currentQuestion.title}</h3>
-            <p className="text-sm text-slate-600 mb-4">{currentQuestion.textContent}</p>
+            <MathText text={currentQuestion.title} className="block text-sm font-semibold text-slate-800 mb-1" />
+            <MathText text={currentQuestion.textContent} className="block text-sm text-slate-600 mb-4" />
             {currentQuestion.imageUrl && <div className="mb-4"><img src={currentQuestion.imageUrl} alt="Question image" className="max-w-full max-h-64 rounded-xl border border-slate-200 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} /></div>}
             {currentQuestion.boardSnapshotUrl && <div className="mb-4"><img src={currentQuestion.boardSnapshotUrl} alt="Board snapshot" className="max-w-full max-h-64 rounded-xl border border-slate-200 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} /></div>}
             {currentQuestion.options.length > 0 || currentQuestion.questionType === 4 ? (
               <div className="space-y-2">
-                {(currentQuestion.options.length > 0 ? currentQuestion.options : [{ questionId: currentQuestion.questionId, optionId: "true", optionLabel: "A", optionText: "True" }, { questionId: currentQuestion.questionId, optionId: "false", optionLabel: "B", optionText: "False" }]).map((opt: any) => {
+                {(sortedOptions.length > 0 ? sortedOptions : [{ questionId: currentQuestion.questionId, optionId: "true", optionLabel: "A", optionText: "True" }, { questionId: currentQuestion.questionId, optionId: "false", optionLabel: "B", optionText: "False" }]).map((opt: any) => {
                   const sel = selectedOptions[currentQuestion.questionId] === opt.optionId;
-                  return <button key={opt.optionId} onClick={() => setSelectedOptions(prev => ({ ...prev, [currentQuestion.questionId]: opt.optionId }))} className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${sel ? "border-[#4255db] bg-[#eef2ff] text-[#4255db]" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"}`}><span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${sel ? "bg-[#4255db] text-white" : "bg-slate-100 text-slate-500"}`}>{opt.optionLabel}</span><span className="text-sm">{opt.optionText}</span></button>;
+                  return <button key={opt.optionId} onClick={() => setSelectedOptions(prev => ({ ...prev, [currentQuestion.questionId]: opt.optionId }))} className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${sel ? "border-[#4255db] bg-[#eef2ff] text-[#4255db]" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"}`}><span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${sel ? "bg-[#4255db] text-white" : "bg-slate-100 text-slate-500"}`}>{opt.optionLabel}</span><MathText text={opt.optionText} className="text-sm" /></button>;
                 })}
               </div>
             ) : (

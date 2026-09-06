@@ -31,6 +31,24 @@ export interface BoardBatchPayload {
   audioChunkUrls?: string[];
 }
 
+// Body for POST /api/board/group-content/group/{groupId}/batch — the student
+// study-group content pipeline. No sessionId: the batch is keyed by groupId
+// (route + body) + the caller's student ID from the JWT + batchIndex, and is
+// published to its own queue/worker/Mongo collection so it never contends
+// with the teacher's live-session pipeline above.
+export interface GroupContentBoardBatchPayload {
+  groupId: string;
+  batchIndex: number;
+  startMs: number;
+  endMs: number;
+  strokeCount: number;
+  sizeBytes: number;
+  boardIndex: number;
+  strokes: CompressedStroke[];
+  boardSwitches?: Array<{ fromBoard: number; toBoard: number; timestampMs: number }>;
+  audioUrl?: string | null;
+}
+
 export interface SessionManifestPayload {
   version: string;
   session: {
@@ -121,6 +139,66 @@ export interface SessionManifestPayload {
   }>;
 }
 
+// Body for POST /api/board/group-content/group/{groupId}/manifest — same shape
+// as SessionManifestPayload minus session/lesson/mediaAssets/chapters, since
+// that metadata lives on GroupLessonContent (set via SubmitContent) rather
+// than on the board recording itself. Plain upsert on the backend — it does
+// not recompute stats from stored batches, so the client is the source of truth.
+export interface GroupContentManifestPayload {
+  groupId: string;
+  stats: {
+    totalDurationMs: number;
+    totalDurationFormatted: string;
+    chunkCount: number;
+    chunkDurationMs: number;
+    seekGranularityMs: number;
+    totalAudioSizeBytes: number;
+    totalStrokeCount: number;
+    boardCount: number;
+    strokeBatchCount: number;
+  };
+  strokeBatches: Array<{
+    batchIndex: number;
+    indexKey: string;
+    startMs: number;
+    endMs: number;
+    strokeCount: number;
+    sizeBytes: number;
+  }>;
+  boards: Array<{
+    index: number;
+    dimensions: { width: number; height: number };
+    strokeCount: number;
+  }>;
+  boardSwitches?: Array<{
+    fromBoard: number;
+    toBoard: number;
+    timestampMs: number;
+  }>;
+  audioFinalUrl?: string | null;
+}
+
+// Response for GET /api/board/group-content/group/{groupId}/status — tells the
+// frontend whether it's safe to start a new recording, should resume one in
+// progress, or must block re-recording because a GroupLessonContent already
+// exists for this group+student's recording slot.
+export type GroupContentStatusKind =
+  | "NoActiveContent"
+  | "RecordingInProgress"
+  | "AwaitingSubmission"
+  | "PendingApproval"
+  | "Approved"
+  | "Rejected";
+
+export interface GroupContentStatusData {
+  status: GroupContentStatusKind;
+  hasBoardRecording?: boolean;
+  hasManifest?: boolean;
+  lastBatchIndex?: number;
+  contentId?: string;
+  rejectionReason?: string | null;
+}
+
 export interface BoardSessionResponse {
   responseCode: string;
   responseMessage: string;
@@ -153,6 +231,18 @@ export const boardSessionService = {
   },
 
   /**
+   * Submit a stroke batch for student study-group content.
+   * Same 1-minute batching model as submitBatch, but routed to its own
+   * queue/worker/collection — never touches the teacher's live pipeline.
+   */
+  submitGroupContentBatch: async (groupId: string, payload: GroupContentBoardBatchPayload): Promise<void> => {
+    await API.post(`api/board/group-content/group/${groupId}/batch`, payload, {
+      headers: { 'X-Tenant-ID': X_Tenant_ID },
+      validateStatus: (status) => status === 204 || status === 200,
+    });
+  },
+
+  /**
    * Submit session manifest when class ends
    * Called once to finalize the recording session
    */
@@ -166,6 +256,68 @@ export const boardSessionService = {
       { headers: { 'X-Tenant-ID': X_Tenant_ID } }
     );
     return response.data;
+  },
+
+  /**
+   * Submit the finalized manifest for student study-group content.
+   * Saved to its own group_content_manifests collection (_id = groupId_studentId),
+   * separate from the teacher's session manifests.
+   */
+  submitGroupContentManifest: async (
+    groupId: string,
+    manifest: GroupContentManifestPayload
+  ): Promise<BoardSessionResponse> => {
+    const response = await API.post<BoardSessionResponse>(
+      `api/board/group-content/group/${groupId}/manifest`,
+      manifest,
+      { headers: { 'X-Tenant-ID': X_Tenant_ID } }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get a student's group-content recording manifest, for playback review
+   * (e.g. a teacher watching a submission before approving it). Same
+   * permission model as the batch fetch below: the recording's own student,
+   * the classroom's resolved approver, or any group member once Approved.
+   */
+  getGroupContentManifest: async (
+    groupId: string,
+    studentId: string
+  ): Promise<GroupContentManifestPayload | null> => {
+    const response = await API.get<{ data: GroupContentManifestPayload }>(
+      `api/board/group-content/group/${groupId}/student/${studentId}/manifest`,
+      { headers: { 'X-Tenant-ID': X_Tenant_ID } }
+    );
+    return response.data.data ?? null;
+  },
+
+  /**
+   * Get a single stroke batch from a student's group-content recording, by
+   * batchIndex (as referenced in that student's manifest.strokeBatches).
+   */
+  getGroupContentBatch: async (
+    groupId: string,
+    studentId: string,
+    batchIndex: number
+  ): Promise<FetchedStrokeBatch | null> => {
+    const response = await API.get<{ data: FetchedStrokeBatch }>(
+      `api/board/group-content/group/${groupId}/student/${studentId}/batch/${batchIndex}`,
+      { headers: { 'X-Tenant-ID': X_Tenant_ID } }
+    );
+    return response.data.data ?? null;
+  },
+
+  /**
+   * Check the current group-content recording state for this student in this
+   * group, before starting/resuming a board recording.
+   */
+  getGroupContentStatus: async (groupId: string): Promise<GroupContentStatusData> => {
+    const response = await API.get<{ data: GroupContentStatusData }>(
+      `api/board/group-content/group/${groupId}/status`,
+      { headers: { 'X-Tenant-ID': X_Tenant_ID } }
+    );
+    return response.data.data;
   },
 
   /**

@@ -221,7 +221,7 @@ export default function DraftLessons() {
           <div>
   <div className="flex items-center gap-3">
     <Menu className="lg:hidden w-5 h-5 text-black cursor-pointer" onClick={openMobileNav} />
-    <h1 className="text-2xl font-bold text-gray-900 sm:text-xl">
+    <h1 className="text-base font-semibold text-gray-900 sm:text-xl">
       My Drafts
     </h1>
   </div>

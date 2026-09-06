@@ -39,8 +39,10 @@ const TitleBar = ({
         ? "bg-gradient-to-r from-chestnut to-chestnut/90 hover:from-chestnut/90 hover:to-chestnut/80"
         : "bg-[#EC1B2C] hover:bg-[#EC1B2C]/90";
 
+        // lg:rounded-t-lg
+
     return (
-        <div className={`${bgClass} px-6 py-5 lg:rounded-t-lg flex items-center justify-between`}>
+        <div className={`${bgClass} px-6 py-5  flex items-center justify-between`}>
 
             {/* Left side — back arrow + title + chevron */}
             <div className={`flex items-center ${hasBackIcons ? "gap-2.5" : ""}`}>

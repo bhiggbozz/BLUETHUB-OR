@@ -13,8 +13,14 @@ import {
   Sparkles,
   X,
   CheckCircle2,
+  BookOpen, FileText
 } from "lucide-react";
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@bluethub/ui-kit";
+import {
+  Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@bluethub/ui-kit";
 import { lessonService, type LessonItem, type LessonSummary, type LessonForClassDto, type LessonMediaDto } from "@/services/lesson";
 import { imageGenerationService, type GeneratedLessonImage } from "@/services/image-generation";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -103,7 +109,7 @@ interface StatCardProps {
 }
 function StatCard({ count, label, sub, subColor = "text-gray-400", highlight }: StatCardProps) {
   return (
-    <div className={`rounded-2xl p-5 transition hover:shadow-md ${highlight ? "bg-chestnut border border-chestnut" : "bg-white border border-[#D9D9D9]"
+    <div className={` font-poppins rounded-md p-5 transition  ${highlight ? "bg-chestnut border border-chestnut" : "bg-white border border-[#D9D9D9]"
       }`}>
       <p className={`font-semibold text-xl leading-none tracking-tight text-center w-full ${highlight ? "text-white" : "text-[#0F0F0E]"}`}>
         {count}
@@ -313,8 +319,8 @@ const MyLesson = () => {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="md:p-3 min-h-screen">
-        <div className="lg:rounded-t-2xl overflow-hidden shadow-lg">
+      <div className="">
+        <div className="overflow-hidden">
 
           {/* Header bar */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-5 bg-chestnut">
@@ -327,7 +333,7 @@ const MyLesson = () => {
             </button>
           </div>
 
-          <div className="bg-white p-4 sm:p-6 space-y-5">
+          <div className="bg-white min-h-screen rounded-b-md overflow-hidden p-4 sm:p-6 space-y-5">
 
             {/* Title row */}
             <div className="flex items-start justify-between gap-4">
@@ -348,7 +354,7 @@ const MyLesson = () => {
             </div>
 
             {/* Stat cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               <StatCard highlight count={summary.total} label="Total submissions" sub="+this term" />
               <StatCard count={summary.pendingApproval} label="Pending review" sub="Processing" subColor="text-orange-400" />
               <StatCard count={summary.approved} label="Approved" sub="Completed" subColor="text-green-500" />
@@ -397,97 +403,131 @@ const MyLesson = () => {
                 <div className="hidden sm:block border border-[#E8E8E3] rounded-2xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <Table>
+                      {/* ── Header ── */}
                       <TableHeader>
-                        <TableRow className="bg-[#F5F5F1] h-12 hover:bg-gray-50/80">
-                          <TableHead className="text-[10px] font-bold uppercase tracking-wide text-[#29238280] px-5 w-1/3">
+                        <TableRow className="bg-[#F5F5F1] h-11 hover:bg-[#F5F5F1]">
+                          <TableHead className="text-[10px] font-bold uppercase tracking-widest text-[#29238280] px-5 w-[50%]">
                             Lesson Title
                           </TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase tracking-wide text-[#29238280]">
+                          <TableHead className="text-[10px] font-bold uppercase tracking-widest text-[#29238280] w-[18%]">
                             Submitted
                           </TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase tracking-wide text-[#29238280]">
+                          <TableHead className="text-[10px] font-bold uppercase tracking-widest text-[#29238280] w-[18%]">
                             Status
                           </TableHead>
-                          <TableHead />
+                          <TableHead className="text-[10px] font-bold uppercase tracking-widest text-[#29238280] w-[14%] text-right pr-5">
+                            Actions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
+
+                      {/* ── Body ── */}
                       <TableBody>
                         {lessons.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={4} className="py-14 text-center text-xs text-gray-400">
-                              No lessons found
+                            <TableCell colSpan={4} className="py-16 text-center">
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <BookOpen className="w-5 h-5 text-gray-300" />
+                                </div>
+                                <p className="text-[13px] text-gray-400 font-medium">No lessons found</p>
+                                <p className="text-[11.5px] text-gray-300">Submit a lesson to get started</p>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ) : (
                           lessons.map((lesson) => {
                             const style = STATUS_STYLE[lesson.status] ?? DEFAULT_STYLE;
+                            const isChecking = checkingLessonIds[lesson.id] === true;
+
                             return (
                               <TableRow
                                 key={lesson.id}
                                 className={`hover:bg-gray-50/60 transition-colors border-l-[3px] ${style.border}`}
                               >
-                                <TableCell className="px-5 py-3.5">
-                                  <p className="text-[#0F0F0E] font-medium text-sm leading-tight line-clamp-1">
+                                {/* ── Lesson title ── */}
+                                <TableCell className="px-5 py-4 align-middle">
+                                  <p className="text-[#0F0F0E] font-semibold text-[13.5px] leading-snug line-clamp-1">
                                     {buildLessonTitle(lesson)}
                                   </p>
                                   {lesson.subjectName && (
-                                    <p className="text-[11px] font-medium text-chestnut/70 mt-0.5">
+                                    <span className="inline-block mt-1.5 text-[10.5px] font-semibold text-chestnut bg-chestnut/8 px-2.5 py-0.5 rounded-full">
                                       {lesson.subjectName}
+                                    </span>
+                                  )}
+                                  {lesson.aim && (
+                                    <p className="text-[#A8A8A4] text-[11.5px] mt-1.5 leading-relaxed line-clamp-1 max-w-lg">
+                                      {lesson.aim}
                                     </p>
                                   )}
-                                  <p className="text-[#A8A8A4] text-[11px] mt-1 leading-relaxed whitespace-pre-wrap break-words">
-                                    {lesson.aim}
+                                </TableCell>
+
+                                {/* ── Submitted date ── */}
+                                <TableCell className="align-middle">
+                                  <p className="text-[#0F0F0E] text-[12.5px] font-medium whitespace-nowrap">
+                                    {formatDate(lesson.createdAt)}
                                   </p>
                                 </TableCell>
-                                <TableCell className="text-[#0F0F0E] text-xs font-medium">
-                                  {formatDate(lesson.createdAt)}
-                                </TableCell>
-                                <TableCell>
-                                  <span className={`inline-flex items-center gap-1.5 rounded-full py-1 px-2.5 text-[11px] font-medium ${style.badge}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+
+                                {/* ── Status badge ── */}
+                                <TableCell className="align-middle">
+                                  <span className={`inline-flex items-center gap-1.5 rounded-full py-1 px-2.5 text-[11px] font-semibold whitespace-nowrap ${style.badge}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
                                     {statusLabel(lesson.status)}
                                   </span>
                                 </TableCell>
-                                <TableCell className="pr-5 text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    {lesson.status === "Approved" && (() => {
-                                      const isChecking = checkingLessonIds[lesson.id] === true;
-                                      return (
-                                        <button
+
+                                {/* ── Actions ── */}
+                                <TableCell className="pr-5 align-middle text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-[#E8E8E3] bg-white hover:border-chestnut/30 hover:bg-chestnut/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-chestnut/20">
+                                        <EllipsisVertical size={15} className="text-gray-400" />
+                                      </button>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent
+                                      align="end"
+                                      sideOffset={6}
+                                      className="w-44 rounded-xl border border-[#E8E8E3] shadow-xl shadow-black/5 bg-white p-1.5"
+                                    >
+                                      {/* Start Class — Approved only */}
+                                      {lesson.status === "Approved" && (
+                                        <DropdownMenuItem
                                           onClick={() => handleStartClassWithChecks(lesson)}
                                           disabled={isChecking}
-                                          className={`flex items-center gap-1.5 text-white text-xs font-medium
-                                            px-3 py-1.5 rounded-lg transition-all shadow-sm ${isChecking
-                                              ? "bg-gray-300 cursor-not-allowed"
-                                              : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
-                                            }`}
+                                          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[12.5px] font-medium cursor-pointer text-emerald-600 hover:bg-emerald-50 focus:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                          {isChecking ? (
-                                            <Loader2 size={12} className="animate-spin" />
-                                          ) : (
-                                            <Play size={12} />
-                                          )}
+                                          {isChecking
+                                            ? <Loader2 size={13} className="animate-spin shrink-0" />
+                                            : <Play size={13} className="shrink-0" />
+                                          }
                                           {isChecking ? "Loading…" : "Start Class"}
-                                        </button>
-                                      );
-                                    })()}
-                                    <button
-                                      onClick={() => openAiImages(lesson)}
-                                      className="flex items-center gap-1.5 text-xs font-medium text-white bg-gradient-to-r from-violet-600 to-fuchsia-600
-                                        hover:from-violet-700 hover:to-fuchsia-700 px-3 py-1.5 rounded-lg transition-all shadow-sm"
-                                      title="View generated materials"
-                                    >
-                                      <Sparkles size={12} />
-                                      Images
-                                    </button>
-                                    <button
-                                      onClick={() => setReviewLesson(toRLesson(lesson, teacherName))}
-                                      className="border border-[#E8E8E3] hover:border-chestnut/30 hover:text-chestnut
-                                        text-[#0F0F0E] text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                                    >
-                                      Review
-                                    </button>
-                                  </div>
+                                        </DropdownMenuItem>
+                                      )}
+
+                                      {/* AI Images */}
+                                      <DropdownMenuItem
+                                        onClick={() => openAiImages(lesson)}
+                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[12.5px] font-medium cursor-pointer text-violet-600 hover:bg-violet-50 focus:bg-violet-50"
+                                      >
+                                        <Sparkles size={13} className="shrink-0" />
+                                        View Images
+                                      </DropdownMenuItem>
+
+                                      {/* Divider */}
+                                      <div className="h-px bg-[#F0F0EC] my-1 mx-1" />
+
+                                      {/* Review */}
+                                      <DropdownMenuItem
+                                        onClick={() => setReviewLesson(toRLesson(lesson, teacherName))}
+                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[12.5px] font-medium cursor-pointer text-[#0F0F0E] hover:bg-gray-50 focus:bg-gray-50"
+                                      >
+                                        <FileText size={13} className="shrink-0 text-gray-400" />
+                                        Review Lesson
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </TableCell>
                               </TableRow>
                             );
@@ -508,7 +548,7 @@ const MyLesson = () => {
                       return (
                         <div
                           key={lesson.id}
-                          className={`bg-white rounded-2xl border border-[#E8E8E3] border-l-4 ${style.border} p-4 shadow-sm`}
+                          className={`bg-white rounded-md border border-[#E8E8E3] border-l-4 ${style.border} p-4 shadow-sm`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">

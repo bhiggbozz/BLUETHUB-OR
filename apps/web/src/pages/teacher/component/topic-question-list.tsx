@@ -71,7 +71,7 @@ const SelectField = ({
         value={value ?? ""}
         disabled={disabled || loading}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-chestnut/15 focus:border-chestnut disabled:opacity-50"
+        className="h-11 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-chestnut/15 focus:border-chestnut disabled:opacity-50"
       >
         <option value="">{loading ? "Loading..." : placeholder}</option>
         {items.map((item) => (
@@ -420,11 +420,11 @@ Promise.resolve(roleClassrooms)
 
   return (
     <div className="font-poppins">
-      <div className="lg:rounded-2xl border border-white/20 overflow-hidden bg-white/80 backdrop-blur-sm">
+      <div className=" border border-white/20 overflow-hidden bg-white/80 backdrop-blur-sm">
         <TitleBar title="question" hasVertical hasBackIcons onBack={() => navigate(-1)} />
 
-        <div className="md:p-5 space-y-4 sm:space-y-5">
-          <div className="rounded-2xl bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] border border-[#f3dccb] p-4 sm:p-5">
+        <div className="md:p-5 space-y-4 sm:space-y-5 p-2">
+          <div className="rounded-md bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] border border-[#f3dccb] p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-sm sm:text-base font-bold text-chestnut leading-tight">
@@ -463,7 +463,7 @@ Promise.resolve(roleClassrooms)
             />
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+          <div className="rounded-md border border-slate-200 bg-white p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-slate-700">Topics</h2>
             </div>
@@ -559,15 +559,15 @@ Promise.resolve(roleClassrooms)
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="rounded-md border border-slate-200 bg-white p-3">
               <p className="text-[11px] uppercase tracking-widest text-slate-400">Saved</p>
               <p className="text-lg font-bold text-emerald-600 mt-1">{summary?.statusSummary?.published ?? 0}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="rounded-md border border-slate-200 bg-white p-3">
               <p className="text-[11px] uppercase tracking-widest text-slate-400">Pending Review</p>
               <p className="text-lg font-bold text-indigo-600 mt-1">{summary?.statusSummary?.pendingReview ?? 0}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 col-span-2 sm:col-span-1">
+            <div className="rounded-md border border-slate-200 bg-white p-3 col-span-2 sm:col-span-1">
               <p className="text-[11px] uppercase tracking-widest text-slate-400">Selection</p>
               <p className="text-sm font-semibold text-slate-700 mt-1 truncate">
                 {selectedSubtopic ? `${selectedSubtopic.name}` : "All subtopics"}
@@ -575,7 +575,7 @@ Promise.resolve(roleClassrooms)
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">All Subtopics</h3>
               <span className="text-xs font-semibold text-slate-500">
@@ -617,7 +617,7 @@ Promise.resolve(roleClassrooms)
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+          <div className="rounded-md border border-slate-200 bg-white p-4 space-y-3">
             <h3 className="text-sm font-semibold text-slate-700">Difficulty Breakdown</h3>
             <div className="flex flex-wrap gap-2">
               {(summary?.difficultyBreakdown ?? []).map((row) => (
@@ -636,7 +636,7 @@ Promise.resolve(roleClassrooms)
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">Questions List</h3>
               {questionsLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
@@ -755,7 +755,7 @@ Promise.resolve(roleClassrooms)
           <div className="sm:hidden">
             <Button
               onClick={() => navigate(createQuizHref)}
-              className="w-full h-11 rounded-xl bg-chestnut hover:bg-chestnut/90 text-white font-semibold"
+              className="w-full py-5 rounded-md bg-chestnut hover:bg-chestnut/90 text-white font-semibold"
             >
               Upload Question
             </Button>

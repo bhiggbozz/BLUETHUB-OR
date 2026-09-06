@@ -37,7 +37,11 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isAuthEndpoint =
+      originalRequest?.url?.includes("/User/login") ||
+      originalRequest?.url?.includes("/User/refresh-token");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // Park concurrent 401s — resolve them once refresh completes
         return new Promise<string>((resolve, reject) => {
@@ -190,7 +194,9 @@ export interface IEditUserRequest {
   firstName: string;
   lastName: string;
   emailAddress: string;
-  hashPassword: string;
+  /** Omit unless the caller actually intends to change the password — the
+   * backend applies this unconditionally whenever it's non-empty. */
+  hashPassword?: string;
   isActive: boolean;
   hasAccess: boolean;
   roleId: number;
@@ -206,6 +212,11 @@ export interface IAssignTeacherToClassroomRequest {
   teacherId: string;
   classroomId: string;
   isPrimary?: boolean;
+}
+
+export interface IUpdateTeacherSubjectRequest {
+  subjectIds: string[];
+  classroomId: string;
 }
 
 export interface IupdatePasswordRequest {
@@ -316,6 +327,10 @@ export const authService = {
         "X-Tenant-ID": getTenantFromUrl(),
       },
     });
+  },
+
+  updateTeacherSubject: (teacherId: string, data: IUpdateTeacherSubjectRequest) => {
+    return API.put<TResponse<unknown>>(`api/User/teacher/${teacherId}/subject`, data);
   },
 
   getStudents: (

@@ -93,7 +93,7 @@ const ClassviewAll = () => {
     return (
         <>
             <div className="md:p-3 font-poppins">
-                <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20  overflow-hidden">
+                <div className="backdrop-blur-sm border border-white/20  overflow-hidden">
 
                     {/* ── Top Nav ──────────────────────────────────────────────────── */}
                     <div

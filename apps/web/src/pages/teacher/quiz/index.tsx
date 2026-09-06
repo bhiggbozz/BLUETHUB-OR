@@ -5,7 +5,6 @@ import {
   Check,
   CircleHelp,
   EllipsisVertical,
-  LayoutGrid,
   Loader2,
   Menu,
   PlusIcon,
@@ -141,18 +140,18 @@ const QuizIndex = () => {
 
   return (
     <div className="font-poppins">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
         {/* ── Top Nav ──────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-4 py-5 sticky top-0 z-30 bg-chestnut">
           
           <div className="flex items-center gap-2.5">
-            <LayoutGrid className="w-6 h-6 text-white hidden lg:block" />
+            {/* <LayoutGrid className="w-6 h-6 text-white hidden lg:block" /> */}
             <Menu
             className="lg:hidden w-5 h-5 text-white cursor-pointer"
             onClick={openMobileNav}  // ✅ not onClick={() => openMobileNav()}
           />
           <ArrowLeft className="lg:hidden text-white" onClick={() => navigate(-1)} />
-            <span className="text-white font-bold text-sm">Quiz</span>
+            <span className="text-white font-semibold text-sm md:text-xl">Quiz</span>
           </div>
           <button className="text-white">
             <EllipsisVertical size={18} />
@@ -161,7 +160,7 @@ const QuizIndex = () => {
 
         {/* ── White card ───────────────────────────────────────────────── */}
         <div className="flex-1 p-4 bg-white/70 backdrop-blur-sm">
-          <div className="space-7-20">
+          <div className="space-y-20">
             {/* Page header row */}
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -229,7 +228,7 @@ const QuizIndex = () => {
 
             {/* Stats grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] my-[28px]">
-              <div className="border border-[#E8E8E3] bg-white rounded-[13px] py-[18px] px-5 space-y-1">
+              <div className="border border-[#E8E8E3] bg-white rounded-md py-[18px] px-5 space-y-1">
                 <div className="bg-[#EEF1FB] rounded-[9px] w-9 h-9 flex items-center justify-center">
                   <CircleHelp className="text-chestnut" />
                 </div>
@@ -238,7 +237,7 @@ const QuizIndex = () => {
                 </h4>
                 <p className="text-[#5A5A5A] font-normal text-xs">Quizzes</p>
               </div>
-              <div className="border border-[#E8E8E3] bg-white rounded-[13px] py-[18px] px-5 space-y-1">
+              <div className="border border-[#E8E8E3] bg-white rounded-md py-[18px] px-5 space-y-1">
                 <div className="bg-[#E6F7F2] rounded-[9px] w-9 h-9 flex items-center justify-center">
                   <Check className="text-[#16A37A]" />
                 </div>
@@ -247,7 +246,7 @@ const QuizIndex = () => {
                 </h4>
                 <p className="text-[#5A5A5A] font-normal text-xs">Attached</p>
               </div>
-              <div className="border border-[#E8E8E3] bg-white rounded-[13px] py-[18px] px-5 space-y-1">
+              <div className="border border-[#E8E8E3] bg-white rounded-md py-[18px] px-5 space-y-1">
                 <div className="bg-[#EEF1FB] rounded-[9px] w-9 h-9 flex items-center justify-center">
                   <SquareChartGantt className="text-chestnut" />
                 </div>
@@ -256,7 +255,7 @@ const QuizIndex = () => {
                 </h4>
                 <p className="text-[#5A5A5A] font-normal text-xs">Questions</p>
               </div>
-              <div className="border border-[#E8E8E3] bg-white rounded-[13px] py-[18px] px-5 space-y-1">
+              <div className="border border-[#E8E8E3] bg-white rounded-md py-[18px] px-5 space-y-1">
                 <div className="bg-[#FFF4DF] rounded-[9px] w-9 h-9 flex items-center justify-center">
                   <UserRound className="text-[#C0392B]" />
                 </div>

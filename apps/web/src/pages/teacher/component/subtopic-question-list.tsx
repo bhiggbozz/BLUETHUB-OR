@@ -5,6 +5,11 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
+// import { InlineMath } from "react-katex";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 const SubtopicQuestionList = () => {
   const navigate = useNavigate();
@@ -116,9 +121,16 @@ const SubtopicQuestionList = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs text-slate-400 font-medium">Question {idx + 1}</p>
-                      <p className="text-sm font-semibold text-slate-700 leading-5 mt-0.5">
-                        {question.title || "Untitled question"}
-                      </p>
+                      <div className="text-sm font-semibold text-slate-700 leading-5 mt-0.5">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {(question.title || "Untitled question")
+                            .replace(/\\\(/g, "$")
+                            .replace(/\\\)/g, "$")}
+                        </ReactMarkdown>
+                      </div>
                       <p className="text-xs text-slate-400 mt-1">
                         {question.topicName || question.topic || "No topic"}
                       </p>
@@ -167,9 +179,16 @@ const SubtopicQuestionList = () => {
                 <div className="p-5 space-y-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Question</p>
-                    <p className="mt-2 text-sm text-slate-700 leading-6">
-                      {selectedQuestion.title || "Untitled question"}
-                    </p>
+                    <div className="text-sm font-semibold text-slate-700 leading-5 mt-0.5">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {(selectedQuestion.title || "Untitled question")
+                          .replace(/\\\(/g, "$")
+                          .replace(/\\\)/g, "$")}
+                      </ReactMarkdown>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">

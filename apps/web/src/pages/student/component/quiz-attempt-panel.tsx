@@ -594,8 +594,12 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
         {questions.map((question, qIdx) => {
           const ans = answers[question.questionId];
           const isTrueFalse = question.questionType === 4;
+          // Backend shuffles each attempt's options for anti-cheat and returns
+          // them in that shuffled array order — sort by optionLabel so the
+          // display order is A,B,C... without touching which content each
+          // label holds (so it can't undo the shuffle).
           const options = question.options && question.options.length > 0
-            ? question.options
+            ? [...question.options].sort((a, b) => a.optionLabel.localeCompare(b.optionLabel))
             : isTrueFalse
               ? [{ optionId: "true", optionLabel: "A", optionText: "True" }, { optionId: "false", optionLabel: "B", optionText: "False" }]
               : [];

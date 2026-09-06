@@ -153,8 +153,8 @@ const Student = () => {
   }
 
   return (
-    <div className="md:px-3 font-poppins">
-      <div className="lg:rounded-2xl border border-white/20 overflow-hidden bg-white/75 backdrop-blur-sm">
+    <div className="md:p-3 font-poppins">
+      <div className="border border-white/20 overflow-hidden bg-white/75 backdrop-blur-sm">
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-30 bg-chestnut">
           <div className="flex items-center gap-2.5 min-w-0">
             <Menu className="lg:hidden text-white" onClick={openMobileNav} />
@@ -164,7 +164,7 @@ const Student = () => {
           <EllipsisVertical className="text-white" />
         </div>
 
-        <div className="p-5 sm:p-6 space-y-4">
+        <div className="p-5 sm:p-6 space-y-4 min-h-screen">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-xl font-bold text-[#12122A]">Students</h1>
@@ -172,13 +172,13 @@ const Student = () => {
                 {school?.schoolName ?? "School"} - {user?.firstName ?? ""} {user?.lastName ?? ""}
               </p>
             </div>
-            <Button onClick={() => navigate("/admin/registration/student/enrollment")} className="inline-flex items-center gap-2 rounded-lg bg-chestnut px-4 py-2 text-white text-sm font-semibold hover:opacity-90">
+            <Button onClick={() => navigate("/admin/registration/student/enrollment")} className="inline-flex items-center gap-2 rounded-md bg-chestnut px-4 py-2 text-white text-sm font-semibold hover:opacity-90">
               <PlusIcon className="w-4 h-4" />
               Add Student
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
             <Search className="h-4 w-4 text-slate-400" />
             <input
               value={search}
@@ -188,7 +188,7 @@ const Student = () => {
             />
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
             {/* Header row - hidden on mobile */}
             <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_120px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               <span>Student</span>

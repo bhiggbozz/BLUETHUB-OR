@@ -252,10 +252,10 @@ const ViewQuestions = () => {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="md:p-2 font-poppins min-h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
+    <div className="font-poppins">
+      <div className="backdrop-blur-sm   border border-white/20 overflow-hidden bg-white/70">
         {/* Header */}
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg flex items-center justify-between">
+        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Menu className="lg:hidden w-5 h-5 text-white" onClick={openMobileNav} />
             <h2 className="font-semibold text-sm text-white leading-none">Question Bank</h2>
@@ -389,9 +389,9 @@ const ViewQuestions = () => {
         </div>
 
         {/* ── Main Content ── */}
-        <div className="flex-1 flex flex-col min-h-[calc(100vh-14rem)]">
+        <div className="flex-1 flex flex-col min-h-screen">
           {!hasContext ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="flex flex-col items-center  justify-center h-[70vh]  gap-4">
               <LayoutList size={56} className="text-slate-200" />
               <p className="text-base text-slate-400 font-medium text-center max-w-sm">
                 Select a class and subject above to browse questions from the bank.
@@ -409,7 +409,7 @@ const ViewQuestions = () => {
                     value={searchText}
                     onChange={(e) => { setSearchText(e.target.value); setPage(1); }}
                     placeholder="Search questions…"
-                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 outline-none transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-md border border-slate-200 bg-white text-slate-700 placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 outline-none transition-all"
                   />
                   {searchText && (
                     <button
@@ -461,7 +461,7 @@ const ViewQuestions = () => {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                    <div className="rounded-xl border border-slate-200 bg-white overflow-x-scroll lg:overflow-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200">
@@ -543,7 +543,7 @@ const ViewQuestions = () => {
 
       {/* Question detail dialog */}
       <Dialog open={!!selectedQuestion} onOpenChange={(open) => !open && setSelectedQuestion(null)}>
-        <DialogContent className="max-w-xl sm:max-w-2xl rounded-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-xl sm:max-w-2xl rounded-md p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
           <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] flex items-center justify-between">
             <DialogTitle className="text-base font-semibold text-slate-800">Question Details</DialogTitle>
             <button
@@ -580,25 +580,25 @@ const ViewQuestions = () => {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                <span className="rounded-full border border-slate-200 px-3 py-1.5 text-slate-600 flex items-center gap-1.5">
+                <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600 flex items-center gap-1.5">
                   <Layers size={11} />
                   {selectedQuestion.questionTypeName || `Type ${selectedQuestion.questionType}`}
                 </span>
-                <span className="rounded-full border border-slate-200 px-3 py-1.5 text-slate-600 flex items-center gap-1.5">
+                <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600 flex items-center gap-1.5">
                   <Star size={11} />
                   <StarRating level={selectedQuestion.difficultyLevel} size={12} />
                 </span>
-                <span className="rounded-full border border-slate-200 px-3 py-1.5 text-slate-600 flex items-center gap-1.5">
+                <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600 flex items-center gap-1.5">
                   <BookOpen size={11} />
                   {selectedQuestion.topicName || selectedQuestion.topic || "No topic"}
                 </span>
-                <span className="rounded-full border border-slate-200 px-3 py-1.5 text-slate-600">
+                <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600">
                   Status: {selectedQuestion.statusName || `Status ${selectedQuestion.status}`}
                 </span>
-                <span className="rounded-full border border-slate-200 px-3 py-1.5 text-slate-600">
+                <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600">
                   Marks: {selectedQuestion.marksAllocation}
                 </span>
-                <span className="rounded-full border border-slate-200 px-3 py-1.5 text-slate-600">
+                <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600">
                   {selectedQuestion.creationDate}
                 </span>
               </div>

@@ -62,7 +62,7 @@ const ViewStudent = () => {
     return (
         <>
             <div className="p-6 font-poppins">
-                <div className="backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden">
+                <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
 
                     {/* ── Top Nav ─────────────────────────────────────────────── */}
                     <div className="flex items-center justify-between px-4 py-5 sticky top-0 z-30 bg-chestnut">

@@ -1,8 +1,8 @@
 import element from "@/assets/svg/element-4.svg";
 import Calendar from "@/assets/svg/calendar.svg";
 import message from "@/assets/svg/message.svg";
-import studentIcon from "@/assets/svg/student.svg";
-import coursesIcon from "@/assets/svg/courses.svg";
+// import studentIcon from "@/assets/svg/student.svg";
+// import coursesIcon from "@/assets/svg/courses.svg";
 import classIconIcon from "@/assets/svg/class.svg";
 import logoutIcon from "@/assets/svg/logout.svg";
 import settingsIcon from "@/assets/svg/settings.svg";
@@ -127,23 +127,23 @@ export const TACADEMIC_GROUPS = [
       },
     ],
   },
-  {
-    section: "Coming Soon",
-    items: [
-      {
-        icons: studentIcon,
-        name: "Student",
-        path: "/teacher/student",
-        disabled: true,
-      },
-      {
-        icons: coursesIcon,
-        name: "Courses",
-        path: "/teacher/courses",
-        disabled: true,
-      },
-    ],
-  },
+  // {
+  //   section: "Coming Soon",
+  //   items: [
+  //     {
+  //       icons: studentIcon,
+  //       name: "Student",
+  //       path: "/teacher/student",
+  //       disabled: true,
+  //     },
+  //     {
+  //       icons: coursesIcon,
+  //       name: "Courses",
+  //       path: "/teacher/courses",
+  //       disabled: true,
+  //     },
+  //   ],
+  // },
 ];
 
 

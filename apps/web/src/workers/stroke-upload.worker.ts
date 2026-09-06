@@ -29,9 +29,13 @@ type StrokeBatchMessage = {
   startMs: number;
   endMs: number;
   strokeCount: number;
+  sizeBytes: number;
   boardIndex: number;
   strokes: StrokePayload[];
   boardSwitches?: Array<{ fromBoard: number; toBoard: number; timestampMs: number }>;
+  // Set only for student study-group recordings — routes this batch to its
+  // own queue/worker/collection instead of the teacher's live-session endpoint.
+  groupId?: string;
 };
 
 type ToWorkerMessage =
@@ -48,6 +52,7 @@ type ToWorkerMessage =
       apiBaseUrl: string;
       authToken: string;
       tenantId: string;
+      groupId?: string;
     };
 
 type FromWorkerMessage =
@@ -65,19 +70,35 @@ async function submitBatch(
   batch: StrokeBatchMessage
 ): Promise<void> {
   const base = apiBaseUrl.replace(/\/$/, "");
-  const url = `${base}/api/board/session/${batch.sessionId}/batch`;
+  const isGroupContent = !!batch.groupId;
+  const url = isGroupContent
+    ? `${base}/api/board/group-content/group/${batch.groupId}/batch`
+    : `${base}/api/board/session/${batch.sessionId}/batch`;
 
-  const requestBody = {
-    sessionId: batch.sessionId,
-    lessonId: batch.lessonId,
-    batchIndex: batch.batchIndex,
-    startMs: batch.startMs,
-    endMs: batch.endMs,
-    strokes: batch.strokes,
-    strokeCount: batch.strokeCount,
-    boardIndex: batch.boardIndex,
-    boardSwitches: batch.boardSwitches ?? [],
-  };
+  const requestBody = isGroupContent
+    ? {
+        groupId: batch.groupId,
+        batchIndex: batch.batchIndex,
+        startMs: batch.startMs,
+        endMs: batch.endMs,
+        strokes: batch.strokes,
+        strokeCount: batch.strokeCount,
+        sizeBytes: batch.sizeBytes,
+        boardIndex: batch.boardIndex,
+        boardSwitches: batch.boardSwitches ?? [],
+        audioUrl: null,
+      }
+    : {
+        sessionId: batch.sessionId,
+        lessonId: batch.lessonId,
+        batchIndex: batch.batchIndex,
+        startMs: batch.startMs,
+        endMs: batch.endMs,
+        strokes: batch.strokes,
+        strokeCount: batch.strokeCount,
+        boardIndex: batch.boardIndex,
+        boardSwitches: batch.boardSwitches ?? [],
+      };
 
   console.log('[stroke-upload-worker] 📤 Submitting stroke batch:', {
     url,
@@ -151,6 +172,7 @@ self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
       }
 
       // Convert LocalStrokeBatch to StrokeBatchMessage format
+      const groupId = (msg as any).groupId as string | undefined;
       const batches: StrokeBatchMessage[] = sessionBatches.map((batch: LocalStrokeBatch) => ({
         localId: batch.id,
         sessionId: batch.sessionId,
@@ -159,9 +181,11 @@ self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
         startMs: batch.startMs,
         endMs: batch.endMs,
         strokeCount: batch.strokeCount,
+        sizeBytes: batch.sizeBytes,
         boardIndex: 0, // Default to first board
         strokes: batch.strokes as unknown as StrokePayload[],
         boardSwitches: batch.boardSwitches,
+        groupId,
       }));
 
       console.log('[stroke-upload-worker] ✅ Converted batches for upload:', {

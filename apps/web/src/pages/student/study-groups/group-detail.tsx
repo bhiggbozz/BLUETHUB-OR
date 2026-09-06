@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
@@ -8,12 +8,16 @@ import {
   FileText,
   Loader2,
   Mic,
+  PenLine,
   Plus,
+  Search,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { groupService, type GroupDetail as GroupDetailDto } from "@/services/groups";
 import { useAuthContext } from "@/contexts/auth-context";
+import { launchStudentBoardWithStatusCheck } from "@/utils/launch-student-board";
 import InviteMembersDialog from "./invite-members-dialog";
 
 function StatusBadge({ status }: { status: string }) {
@@ -57,6 +61,9 @@ const GroupDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const loadDetail = useCallback(() => {
     if (!groupId) return;
@@ -66,7 +73,16 @@ const GroupDetailPage = () => {
       .getGroupDetail(groupId)
       .then((res) => {
         const raw = res.data?.data;
-        setDetail(raw ? { ...raw, members: raw.members ?? [], content: raw.content ?? [] } : null);
+        // GetGroupDetail can return the same content row more than once for
+        // a submission that has a multi-batch board recording (looks like a
+        // backend JOIN against the recording's stroke batches without a
+        // GROUP BY/DISTINCT — duplicate count matches the batch count).
+        // Dedupe by contentId here so the feed doesn't show one card per
+        // minute of recording; worth fixing at the source too.
+        const dedupedContent = raw?.content
+          ? Array.from(new Map(raw.content.map((c) => [c.contentId, c])).values())
+          : [];
+        setDetail(raw ? { ...raw, members: raw.members ?? [], content: dedupedContent } : null);
       })
       .catch((err) => {
         const status = err instanceof AxiosError ? err.response?.status : undefined;
@@ -90,6 +106,31 @@ const GroupDetailPage = () => {
   )?.isCreator;
   const isCreator = stateIsCreator ?? membersIsCreator;
   const existingMemberIds = new Set((detail?.members ?? []).map((m) => m.studentId));
+
+  const filteredMembers = useMemo(() => {
+    const members = detail?.members ?? [];
+    const q = memberSearch.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter((m) => `${m.firstName} ${m.lastName}`.toLowerCase().includes(q));
+  }, [detail?.members, memberSearch]);
+
+  const initials = (firstName: string, lastName: string) =>
+    `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "?";
+
+  const handleRemoveMember = async (studentId: string) => {
+    if (!detail) return;
+    setRemovingId(studentId);
+    try {
+      await groupService.removeMember(detail.groupId, studentId);
+      toast.success("Student removed from group.");
+      setConfirmRemoveId(null);
+      loadDetail();
+    } catch (err) {
+      toast.error(extractMsg(err, "Failed to remove student."));
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   return (
     <div className="pt-[13px] px-2 lg:px-0 font-Poppins pb-6">
@@ -180,20 +221,77 @@ const GroupDetailPage = () => {
                 )
               )}
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {detail.members.map((m) => (
-                <span
-                  key={m.studentId}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[#E4E4EC] text-xs font-medium text-[#3A3A3A] px-2.5 py-1 rounded-full"
-                >
-                  {m.firstName} {m.lastName}
-                  {m.isCreator && (
-                    <span className="text-[9px] font-semibold text-student-chestnut bg-student-chestnut/10 px-1.5 py-0.5 rounded-full">
-                      Creator
-                    </span>
-                  )}
-                </span>
-              ))}
+            {detail.members.length > 6 && (
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  placeholder="Search members..."
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs outline-none focus:ring-2 focus:ring-student-chestnut/20"
+                />
+              </div>
+            )}
+
+            <div className="border border-[#E4E4EC] rounded-xl max-h-72 overflow-y-auto divide-y divide-gray-50">
+              {filteredMembers.length === 0 ? (
+                <p className="text-center text-xs text-[#6B6B85] py-6">
+                  {detail.members.length === 0 ? "No members yet." : "No matches."}
+                </p>
+              ) : (
+                filteredMembers.map((m) => {
+                  const canRemove = isCreator && !m.isCreator;
+                  const isConfirming = confirmRemoveId === m.studentId;
+                  const isRemoving = removingId === m.studentId;
+                  return (
+                    <div key={m.studentId} className="flex items-center gap-2.5 px-3 py-2">
+                      <div className="w-8 h-8 rounded-full bg-student-chestnut/10 flex items-center justify-center text-[10px] font-bold text-student-chestnut shrink-0">
+                        {initials(m.firstName, m.lastName)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-[#3A3A3A] truncate">
+                          {m.firstName} {m.lastName}
+                        </p>
+                        {m.isCreator && (
+                          <span className="text-[9px] font-semibold text-student-chestnut">Creator</span>
+                        )}
+                      </div>
+
+                      {canRemove && (
+                        isConfirming ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              disabled={isRemoving}
+                              onClick={() => handleRemoveMember(m.studentId)}
+                              className="text-[10px] font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md px-2 py-1 disabled:opacity-50"
+                            >
+                              {isRemoving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Remove"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isRemoving}
+                              onClick={() => setConfirmRemoveId(null)}
+                              className="text-[10px] font-semibold text-gray-500 hover:bg-gray-100 rounded-md px-2 py-1"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmRemoveId(m.studentId)}
+                            title={`Remove ${m.firstName}`}
+                            className="shrink-0 w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          </button>
+                        )
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </section>
 
@@ -203,42 +301,74 @@ const GroupDetailPage = () => {
               <h3 className="text-xs font-bold text-[#3A3A3A] uppercase tracking-wide">Content</h3>
               <button
                 type="button"
-                disabled
-                title="Coming soon"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-300 cursor-not-allowed"
+                onClick={() => navigate(`/student/study-groups/${detail.groupId}/content/new`)}
+                className="inline-flex items-center gap-1.5 bg-student-chestnut text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Content
               </button>
             </div>
 
             {detail.content.length === 0 ? (
-              <p className="text-xs text-[#6B6B85] py-6 text-center border border-dashed border-[#E4E4EC] rounded-xl">
-                No content yet. Content sharing is coming soon.
-              </p>
+              <button
+                type="button"
+                onClick={() => navigate(`/student/study-groups/${detail.groupId}/content/new`)}
+                className="w-full text-xs text-[#6B6B85] py-6 text-center border border-dashed border-[#E4E4EC] rounded-xl hover:border-student-chestnut/40 hover:bg-student-chestnut/5 transition-colors"
+              >
+                No content shared yet. Tap to add the first one for your group.
+              </button>
             ) : (
               <div className="space-y-2">
-                {detail.content.map((item) => (
-                  <div
-                    key={item.contentId}
-                    className="bg-white border border-[#E4E4EC] rounded-xl px-3.5 py-3 flex items-start gap-3"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-student-chestnut/10 flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4 text-student-chestnut" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[#3A3A3A] truncate">{item.aim}</p>
-                      <p className="text-[11px] text-[#6B6B85] mt-0.5">
-                        {item.subjectName} · {item.mediaCount} file{item.mediaCount === 1 ? "" : "s"}
-                        {item.hasRecording && (
-                          <span className="inline-flex items-center gap-0.5 ml-1.5">
-                            <Mic className="w-3 h-3 inline" /> recording
-                          </span>
+                {detail.content.map((item) => {
+                  const canRecord =
+                    !item.hasRecording &&
+                    user?.id &&
+                    item.createdBy?.toLowerCase() === user.id.toLowerCase();
+                  return (
+                    <div
+                      key={item.contentId}
+                      className="bg-white border border-[#E4E4EC] rounded-xl px-3.5 py-3 flex items-start gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-student-chestnut/10 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4 text-student-chestnut" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[#3A3A3A] truncate">{item.aim}</p>
+                        <p className="text-[11px] text-[#6B6B85] mt-0.5">
+                          {item.subjectName} · {item.mediaCount} file{item.mediaCount === 1 ? "" : "s"}
+                          {item.hasRecording && (
+                            <span className="inline-flex items-center gap-0.5 ml-1.5">
+                              <Mic className="w-3 h-3 inline" /> recording
+                            </span>
+                          )}
+                        </p>
+                        {canRecord && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              launchStudentBoardWithStatusCheck(
+                                navigate,
+                                {
+                                  contentId: item.contentId,
+                                  groupId: detail.groupId,
+                                  aim: item.aim,
+                                  subjectName: item.subjectName,
+                                  classroomId: detail.classroomId,
+                                  groupName: detail.name,
+                                },
+                                `/student/study-groups/${detail.groupId}`,
+                                toast
+                              )
+                            }
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-student-chestnut hover:opacity-70 transition-opacity mt-1"
+                          >
+                            <PenLine className="w-3 h-3" /> Add board recording
+                          </button>
                         )}
-                      </p>
+                      </div>
+                      <StatusBadge status={item.status} />
                     </div>
-                    <StatusBadge status={item.status} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

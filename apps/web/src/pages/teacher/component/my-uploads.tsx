@@ -209,7 +209,7 @@ const SummaryCard = ({
     failed:     "bg-red-50 text-red-500 border-red-200",
   }[tone];
   return (
-    <div className={`rounded-xl border p-3 flex flex-col gap-1 ${cls}`}>
+    <div className={`rounded-md border p-3 flex flex-col gap-1 ${cls}`}>
       <p className="text-[11px] font-semibold uppercase tracking-widest opacity-70">{label}</p>
       <p className="text-base font-bold">{value}</p>
     </div>
@@ -726,6 +726,11 @@ const MyUploads = () => {
   };
 
   const handleSaveEditedQuestions = async () => {
+    // Everything below runs synchronously up to setIsSavingEditedQuestions(true)
+    // — the button's disabled state doesn't take effect until React repaints,
+    // so a fast double-click could otherwise start two full save loops (each
+    // POSTing every question) before the first one flips the flag.
+    if (isSavingEditedQuestions) return;
     setSaveError(null);
 
     if (!previewJob) {
@@ -941,11 +946,11 @@ const MyUploads = () => {
 
   return (
     <div className="font-poppins">
-      <div className="lg:rounded-2xl border border-white/20 overflow-hidden bg-white/80 backdrop-blur-sm">
+      <div className="border min-h-screen  border-white/20 overflow-hidden bg-white/80 backdrop-blur-sm">
         <TitleBar title="My Uploads" hasVertical hasBackIcons onBack={() => navigate(-1)} />
 
         <div className="p-3 space-y-5">
-          <div className="rounded-2xl bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] border border-[#f3dccb] p-4 sm:p-5">
+          <div className="rounded-md bg-gradient-to-r from-[#fff4ec] via-[#fff] to-[#eef6ff] border border-[#f3dccb] p-4 sm:p-5">
             <h1 className="text-sm font-bold text-chestnut leading-tight">Question Upload Status</h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Track pending, processing, completed and failed question extraction jobs.
@@ -1009,7 +1014,7 @@ const MyUploads = () => {
             <SummaryCard label="Failed" value={summary.failed} tone="failed" />
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-700">Jobs</h2>
               {loadingJobs && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}

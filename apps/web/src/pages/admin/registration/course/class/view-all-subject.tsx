@@ -74,8 +74,8 @@ const ViewAllSubject = () => {
 
 
     return (
-        <div className="lg:p-6 font-poppins">
-            <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20  overflow-hidden">
+        <div className="lg:p-2 font-poppins">
+            <div className="backdrop-blur-sm  border border-white/20  overflow-hidden">
 
                 {/* ── Top Nav ──────────────────────────────────────────────────── */}
                 <div
@@ -151,7 +151,7 @@ const ViewAllSubject = () => {
                             ].map(({ icon, value, label }) => (
                                 <div
                                     key={label}
-                                    className="flex items-center gap-3 bg-gray-50 border border-[#E2E5F0] rounded-xl px-4 py-3"
+                                    className="flex items-center gap-3 bg-gray-50 border border-[#E2E5F0] rounded-md px-4 py-3"
                                 >
                                     {icon}
                                     <div className="min-w-0">
@@ -268,7 +268,7 @@ const ViewAllSubject = () => {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <EditSubjectModal />
+                                                        <EditSubjectModal onAction={s} />
                                                     </TableCell>
                                                 </TableRow>
                                             );

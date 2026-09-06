@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, EllipsisVertical, LayoutGrid, Search, Eye, Info, Loader2, ArrowLeft } from "lucide-react";
+import { X, LayoutGrid, Search, Info, Loader2, ArrowLeft } from "lucide-react";
 import ClassRegistered from "./class-registered";
 import { useNavigate } from "react-router-dom";
 import type { Subject } from "../main";
@@ -142,7 +142,7 @@ const filteredMinor = minorSubjects.filter(s =>
     return (
         <>
             <div className="md:p-3 font-poppins">
-                <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden">
+                <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
                     {/* ── Top Nav ───────────────────────────────────────────── */}
                     <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-30 bg-chestnut">
                         <div className="flex items-center gap-2.5">
@@ -152,15 +152,6 @@ const filteredMinor = minorSubjects.filter(s =>
                                 <p className="text-white font-medium text-sm leading-tight">Register New Class</p>
                                 <p className="text-white/60 text-[10px] leading-tight">Assign class details and configure subjects</p>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button className="hidden lg:flex items-center gap-1.5 bg-[#EC1B2C] px-3 py-1.5 rounded-md text-xs font-semibold text-white hover:opacity-90 transition-opacity">
-                                <Eye className="w-3.5 h-3.5" />
-                                View all Classes
-                            </button>
-                            <button className="text-white">
-                                <EllipsisVertical size={18} />
-                            </button>
                         </div>
                     </div>
 

@@ -529,7 +529,7 @@ const UploadScan = () => {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting || !imageFile || !classroomId || !subjectId || !topicId || !subtopicId}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-chestnut hover:bg-chestnut/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all cursor-pointer mt-2"
+                className="flex items-center justify-center gap-2 w-full py-2 rounded-md bg-chestnut hover:bg-chestnut/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-semibold transition-all cursor-pointer mt-2"
               >
                 {submitting ? (
                   <><Loader2 size={16} className="animate-spin" /> Submitting…</>

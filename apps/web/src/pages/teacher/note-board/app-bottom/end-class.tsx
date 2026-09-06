@@ -10,7 +10,11 @@ import { setEndClass } from "@/store/class-action-slice";
 import { useGlobalTimer } from "@/hooks/useGlobalTimer";
 import { useSession } from "@/contexts/session-context";
 import { useSessionUpload, type UploadResults } from "@/hooks/useSessionUpload";
-import { boardSessionService, type SessionManifestPayload } from "@/services/board-session";
+import {
+  boardSessionService,
+  type SessionManifestPayload,
+  type GroupContentManifestPayload,
+} from "@/services/board-session";
 import type { RootState } from "@/store";
 import {
   getSession,
@@ -23,6 +27,19 @@ import {
 import type { LocalSession, IActiveMedia } from "@/utils/constant";
 
 type ModalState = "closed" | "confirm" | "discard-confirm" | "uploading" | "complete" | "error" | "draft-saved";
+
+// A non-teacher caller (e.g. a student recording study-group content) stores
+// where "exit"/"drafts" should land before entering the board, since this
+// component has no route-scoped way to know its caller's context otherwise.
+// Falls back to the teacher destinations so existing behavior is unchanged.
+const getExitPath = () => sessionStorage.getItem("boardExitPath") || "/teacher";
+const getDraftsPath = () => sessionStorage.getItem("boardDraftsPath") || "/teacher/drafts";
+const isStudentBoard = () => sessionStorage.getItem("boardMode") === "student";
+
+// Students get a hard cap on a single recording — teachers are unaffected
+// (this only ever applies when boardMode === "student").
+const STUDENT_MAX_RECORDING_SECONDS = 30 * 60;
+const STUDENT_WARNING_AT_SECONDS = 25 * 60;
 
 const EndClass = () => {
   const dispatch = useDispatch();
@@ -38,12 +55,28 @@ const EndClass = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const allowExitRef = useRef(false);
   const backGuardInstalledRef = useRef(false);
+  const warnedAtLimitRef = useRef(false);
+  const autoEndedAtLimitRef = useRef(false);
 
   // Token-based upload hook
   const { uploadSession, abort: abortUpload } = useSessionUpload();
 
   // Class hasn't started yet if no time has elapsed
   const classNotStarted = timerElapsedSeconds === 0;
+
+  useEffect(() => {
+    if (!isStudentBoard()) return;
+    if (timerElapsedSeconds >= STUDENT_WARNING_AT_SECONDS && !warnedAtLimitRef.current) {
+      warnedAtLimitRef.current = true;
+      const minutesLeft = Math.max(0, Math.round((STUDENT_MAX_RECORDING_SECONDS - timerElapsedSeconds) / 60));
+      toast(`${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left on this recording`, { icon: "⏱️" });
+    }
+    if (timerElapsedSeconds >= STUDENT_MAX_RECORDING_SECONDS && !autoEndedAtLimitRef.current && modalState === "closed") {
+      autoEndedAtLimitRef.current = true;
+      toast.error("30-minute recording limit reached — finish up below.");
+      setModalState("confirm");
+    }
+  }, [timerElapsedSeconds, modalState]);
 
   useEffect(() => {
     if (classNotStarted || backGuardInstalledRef.current) return;
@@ -108,7 +141,7 @@ const EndClass = () => {
 
       toast.success("Recording discarded");
       allowExitRef.current = true;
-      navigate("/teacher");
+      navigate(getExitPath());
       setModalState("closed");
     } catch (err) {
       console.error("Failed to discard:", err);
@@ -209,7 +242,7 @@ const EndClass = () => {
       toast.success("Recording saved as draft");
 
       // Navigate directly to drafts page
-      navigate("/teacher/drafts");
+      navigate(getDraftsPath());
       setModalState("closed");
     } catch (err) {
       // Log FULL error details
@@ -277,8 +310,14 @@ const EndClass = () => {
       const session = await getSession(sessionId);
 
       if (session) {
-        const manifest = await buildManifest(session, results);
-        await boardSessionService.submitManifest(sessionId, manifest);
+        const groupId = sessionStorage.getItem("boardGroupId");
+        if (groupId) {
+          const groupManifest = await buildGroupContentManifest(session, results, groupId);
+          await boardSessionService.submitGroupContentManifest(groupId, groupManifest);
+        } else {
+          const manifest = await buildManifest(session, results);
+          await boardSessionService.submitManifest(sessionId, manifest);
+        }
 
         // Update session status
         session.status = "published";
@@ -287,9 +326,9 @@ const EndClass = () => {
       }
 
       setUploadProgress({ phase: "Complete!", current: 1, total: 1, percentage: 100 });
-      toast.success("Lesson uploaded successfully!");
+      toast.success(isStudentBoard() ? "Recording uploaded successfully!" : "Lesson uploaded successfully!");
       allowExitRef.current = true;
-      navigate("/teacher");
+      navigate(getExitPath());
 
     } catch (err) {
       console.error("Upload failed:", err);
@@ -468,6 +507,76 @@ const EndClass = () => {
     };
   };
 
+  // Same shape as buildManifest, minus session/lesson/mediaAssets/chapters —
+  // that metadata already lives on GroupLessonContent from the content-submit
+  // step, not on the board recording itself.
+  const buildGroupContentManifest = async (
+    session: Awaited<ReturnType<typeof getSession>>,
+    uploadResults: UploadResults,
+    groupId: string
+  ): Promise<GroupContentManifestPayload> => {
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    const { strokeBatches: uploadedStrokeBatches } = uploadResults;
+
+    const allAudioChunks = await getAudioChunksBySession(session.id);
+    const allStrokeBatches = await getStrokeBatchesBySession(session.id);
+
+    const strokeBatchMap = new Map<number, typeof allStrokeBatches[0]>();
+    for (const batch of allStrokeBatches) {
+      strokeBatchMap.set(batch.batchIndex, batch);
+    }
+
+    const strokeBatchesManifest = uploadedStrokeBatches.map((uploaded) => {
+      const idbBatch = strokeBatchMap.get(uploaded.batchIndex);
+      return {
+        batchIndex: uploaded.batchIndex,
+        indexKey: uploaded.indexKey,
+        startMs: idbBatch?.startMs ?? uploaded.batchIndex * 60000,
+        endMs: idbBatch?.endMs ?? (uploaded.batchIndex + 1) * 60000,
+        strokeCount: idbBatch?.strokeCount ?? 0,
+        sizeBytes: idbBatch?.sizeBytes ?? 0,
+      };
+    });
+
+    const boardIndices = new Set<number>();
+    allStrokeBatches.forEach(b => b.strokes.forEach(s => boardIndices.add(s.currentBoard)));
+    if (boardIndices.size === 0) boardIndices.add(0);
+
+    const totalAudioSizeBytes = allAudioChunks
+      .filter(c => c.syncStatus === 'sent')
+      .reduce((sum, c) => sum + c.sizeBytes, 0);
+
+    return {
+      groupId,
+      stats: {
+        totalDurationMs: session.recording.totalDurationMs,
+        totalDurationFormatted: formatDuration(session.recording.totalDurationMs),
+        chunkCount: 0,
+        chunkDurationMs: 60000,
+        seekGranularityMs: 10000,
+        totalAudioSizeBytes,
+        totalStrokeCount: allStrokeBatches.reduce((sum, b) => sum + b.strokeCount, 0),
+        boardCount: boardIndices.size,
+        strokeBatchCount: uploadedStrokeBatches.length,
+      },
+      strokeBatches: strokeBatchesManifest,
+      boards: Array.from(boardIndices).sort().map(index => ({
+        index,
+        dimensions: { width: session.recording.screenWidth, height: session.recording.screenHeight },
+        strokeCount: allStrokeBatches.flatMap(b => b.strokes).filter(s => s.currentBoard === index).length,
+      })),
+      boardSwitches: session.boardEvents.map(e => ({
+        fromBoard: e.fromBoard,
+        toBoard: e.toBoard,
+        timestampMs: e.timestampMs,
+      })),
+      audioFinalUrl: null,
+    };
+  };
+
   const formatDuration = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -487,7 +596,7 @@ const EndClass = () => {
       <Button
         onClick={handleEndClick}
         disabled={classNotStarted}
-        title={classNotStarted ? "Start the class first" : "End class"}
+        title={classNotStarted ? "Start recording first" : isStudentBoard() ? "Finish recording" : "End class"}
         className="size-10 cursor-pointer rounded-full bg-[#D92D25] text-white shadow-md transition-all duration-200 hover:bg-[#B61F19] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <PhoneIcon className="size-5 text-white" />
@@ -500,7 +609,7 @@ const EndClass = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                {modalState === "confirm" && "End Class"}
+                {modalState === "confirm" && (isStudentBoard() ? "Finish Recording" : "End Class")}
                 {modalState === "discard-confirm" && "Discard Recording?"}
                 {modalState === "uploading" && "Uploading Lesson"}
                 {modalState === "complete" && "Upload Complete"}
@@ -664,7 +773,7 @@ const EndClass = () => {
                       Close
                     </button>
                     <button
-                      onClick={() => navigate("/teacher/drafts")}
+                      onClick={() => navigate(getDraftsPath())}
                       className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
                     >
                       View Drafts

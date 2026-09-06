@@ -744,8 +744,8 @@ const TeacherAttendance = () => {
     (mode === AT.SUBTOPIC && !!classroomId && !!subjectId && !!subTopicId);
 
   return (
-    <div className="md:px-3 font-poppins">
-      <div className="lg:rounded-2xl border border-white/20 overflow-hidden bg-white/75 backdrop-blur-sm">
+    <div className="font-poppins">
+      <div className="border border-white/20 overflow-hidden bg-white/75 backdrop-blur-sm">
         {/* ── Top bar ── */}
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-30 bg-chestnut">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -836,7 +836,7 @@ const TeacherAttendance = () => {
           {/* ── Context pickers ── */}
           <section className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="mb-3">
-              <h3 className="text-sm font-semibold text-[#12122A]">
+              <h3 className="text-sm font-medium text-[#12122A]">
                 Select the {mode === AT.CLASS ? "class" : "class and lesson scope"} for this attendance
               </h3>
               {!isAdmin && (

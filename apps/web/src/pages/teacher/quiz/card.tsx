@@ -29,7 +29,7 @@ const Card = ({ quiz, subtopic, onViewDetails }: CardProps) => {
   };
 
   return (
-    <div className="border-t-[3px] border-r-[3px] border-b border-l border-[#292382] rounded-[14px] overflow-hidden">
+    <div className="border-t-[3px] border-r-[3px] border-b border-l border-[#292382] rounded-md overflow-hidden">
       <div className="px-[18px] space-y-1 pt-[17px]">
         <div className="flex items-center justify-between">
           <h3 className="text-[#0A5C43] font-bold text-[10px] rounded-[6px] bg-[#E6F7F2] py-1 px-2">

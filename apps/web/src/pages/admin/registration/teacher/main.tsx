@@ -11,7 +11,7 @@ import {
     DropdownMenuTrigger,
 } from "@bluethub/ui-kit";
 import { useEffect, useState } from "react";
-import {Check, ChevronDown, Loader2, Menu, Search, Sparkles, UserCircle, Users } from "lucide-react";
+import { Check, ChevronDown, Loader2, Menu, Search, Sparkles, UserCircle, Users } from "lucide-react";
 import { authService } from "@/services/auth";
 import { UserRole } from "@/utils/validate";
 import { localData } from "@/utils";
@@ -72,7 +72,7 @@ type UserDto = {
 };
 
 const TeacherMain = () => {
-     const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
+    const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
     const navigate = useNavigate();
     const [selectRole, setSelectRole] = useState<RoleOption | null>(null);
     console.log("selectRole", selectRole?.label);
@@ -131,15 +131,15 @@ const TeacherMain = () => {
 
     return (
         <div className="md:px-5 lg:p-3">
-            <section className="relative overflow-hidden lg:rounded-3xl border border-white/20 bg-white/85 shadow-sm">
+            <section className="relative overflow-hidden border border-white/20 bg-white/85 shadow-sm">
                 <div className="pointer-events-none absolute -top-12 -right-14 h-44 w-44 rounded-full bg-chestnut/10 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-14 -left-14 h-44 w-44 rounded-full bg-[#292382]/10 blur-3xl" />
 
                 <section className="relative bg-chestnut px-5 py-4 sm:px-7 flex gap-4 md:gap-0 md:block">
-                        <Menu
-              className="lg:hidden shrink-0 mb-2 text-white cursor-pointer"
-              onClick={openMobileNav}
-            />
+                    <Menu
+                        className="lg:hidden shrink-0 mb-2 text-white cursor-pointer"
+                        onClick={openMobileNav}
+                    />
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h1 className="font-poppins text-sm font-semibold text-white">
@@ -156,9 +156,9 @@ const TeacherMain = () => {
                     </div>
                 </section>
 
-                <div className="relative p-4 sm:p-6 lg:p-8">
+                <div className="relative p-4 sm:p-6 lg:p-8 min-h-screen">
                     <div className="grid gap-5 lg:grid-cols-[minmax(280px,1fr)_minmax(0,1.35fr)]">
-                        <div className="rounded-2xl border border-chestnut/15 bg-white p-4 sm:p-5 lg:p-6 shadow-sm">
+                        <div className="rounded-2xl border border-chestnut/15 bg-white  p-4 sm:p-5 lg:p-6 shadow-sm">
                             <label className="text-chestnut font-semibold text-sm sm:text-sm flex items-center gap-2">
                                 <UserCircle className="h-4 w-4" />
                                 Role
@@ -258,7 +258,7 @@ const TeacherMain = () => {
 
             {/* ── Edit Profile dialog ─────────────────────────────────────── */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-w-lg rounded-2xl p-0 overflow-hidden">
+                <DialogContent className="max-w-lg rounded-md p-0 overflow-hidden">
                     <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-[#fff4ec] via-white to-[#eef6ff]">
                         <DialogTitle className="text-base font-semibold text-slate-800">
                             {selectRole?.label} — Select user to edit
