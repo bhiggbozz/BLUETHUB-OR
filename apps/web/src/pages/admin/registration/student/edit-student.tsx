@@ -5,7 +5,6 @@ import {
   type IUpdateStudentAssignmentRequest,
 } from "@/services/auth";
 import { schoolService } from "@/services/school";
-import { Hashing } from "@/utils";
 import { UserRole } from "@/utils/validate";
 import { AxiosError } from "axios";
 import { ArrowLeft, Loader2, Save, SquarePen } from "lucide-react";
@@ -250,14 +249,16 @@ const EditStudent = () => {
     try {
       setSavingProfile(true);
       setErrorMsg("");
-      const hashPassword = await Hashing(student.userName);
 
+      // Do not send hashPassword — this form has no password field, and the
+      // backend applies whatever non-empty value it's given as a real
+      // password change. Hashing the username was silently resetting the
+      // student's password on every profile save.
       const payload: IEditUserRequest = {
         id: student.id,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         emailAddress: "",
-        hashPassword,
         isActive: form.isActive,
         hasAccess: student.hasAccess,
         roleId: student.roleId || UserRole.Student,

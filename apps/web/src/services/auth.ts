@@ -194,7 +194,9 @@ export interface IEditUserRequest {
   firstName: string;
   lastName: string;
   emailAddress: string;
-  hashPassword: string;
+  /** Omit unless the caller actually intends to change the password — the
+   * backend applies this unconditionally whenever it's non-empty. */
+  hashPassword?: string;
   isActive: boolean;
   hasAccess: boolean;
   roleId: number;

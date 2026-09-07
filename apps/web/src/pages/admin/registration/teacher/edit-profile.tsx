@@ -1,7 +1,6 @@
 import { Button, Dialog, DialogContent, DialogTitle, Input, Label } from "@bluethub/ui-kit";
 import { authService } from "@/services/auth";
 import { schoolService } from "@/services/school";
-import { Hashing } from "@/utils";
 import { ArrowLeft, BookOpen, GraduationCap, LayoutGrid, Loader2, Plus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -184,13 +183,15 @@ const TeacherEditProfile = () => {
     setSavingProfile(true);
     setProfileMsg({ type: "", text: "" });
     try {
-      const hashPassword = await Hashing(userData.userName);
+      // Do not send hashPassword here — this form has no password field, and
+      // the backend applies whatever non-empty value it's given as a real
+      // password change (see EditUser). Sending a hash of the username was
+      // silently resetting the account's password on every save.
       await authService.editUser({
         id: userData.id,
         firstName: profileForm.firstName.trim(),
         lastName: profileForm.lastName.trim(),
         emailAddress: profileForm.emailAddress,
-        hashPassword,
         isActive: profileForm.isActive,
         hasAccess: userData.hasAccess,
         roleId: userData.roleId,
@@ -344,13 +345,13 @@ const TeacherEditProfile = () => {
     // entirely still needs its own endpoint.
 
     try {
-      const hashPassword = await Hashing(userData.userName);
+      // See saveProfile above — no password field on this form either, so
+      // hashPassword must not be sent.
       await authService.editUser({
         id: userData.id,
         firstName: profileForm.firstName.trim(),
         lastName: profileForm.lastName.trim(),
         emailAddress: profileForm.emailAddress,
-        hashPassword,
         isActive: profileForm.isActive,
         hasAccess: userData.hasAccess,
         roleId: userData.roleId,

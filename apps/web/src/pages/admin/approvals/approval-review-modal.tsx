@@ -3,14 +3,18 @@ import {
   BookOpen,
   CheckCircle2,
   Download,
+  FileAudio,
   FileText,
   Loader2,
   Mail,
+  PlayCircle,
   X,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getApprovalDisplay } from "@/services/approval";
+import { groupService, type GroupContentDetail } from "@/services/groups";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface ApprovalSummary {
@@ -23,6 +27,7 @@ export interface ApprovalSummary {
 export interface Approval {
   id: string;
   entityType: string;
+  entityId?: string | null;
   status: "pending" | "approved" | "rejected";
   operationType: string;
   createdAt: string;
@@ -58,6 +63,36 @@ interface ApprovalPayload {
   // own name lives here instead.
   GroupName?: string;
   groupName?: string;
+
+  // SubmitGroupContent — needed to fetch the real content detail (real media
+  // URLs, board recording) instead of just the counts this payload carries.
+  groupId?: string;
+  GroupId?: string;
+  contentId?: string;
+  ContentId?: string;
+}
+
+// Media file entries come from two different producers with different field
+// names: the original lesson-submission shape ({name, url}), and the
+// group-content shape (SubmitGroupContentPayload's mediaFiles, which use
+// fileName/originalFileName/cloudinaryUrl — PascalCase once round-tripped
+// through the approval payload). Tolerate all of them rather than assuming
+// one, since a mismatch here silently produced blank rows and a dead
+// download button.
+function normalizeMediaFile(f: Record<string, unknown>): { name: string; url: string } {
+  const name = String(
+    f.name ?? f.Name ??
+    f.originalFileName ?? f.OriginalFileName ??
+    f.fileName ?? f.FileName ??
+    "Untitled file"
+  );
+  const url = String(
+    f.url ?? f.Url ??
+    f.cloudinaryUrl ?? f.CloudinaryUrl ??
+    f.fileUrl ?? f.FileUrl ??
+    ""
+  );
+  return { name, url };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -104,16 +139,62 @@ function HeaderIcon({ status }: { status: Approval["status"] }) {
 }
 
 // ── Media file row ────────────────────────────────────────────────────────────
-function MediaFileRow({ name }: { name: string }) {
+function MediaFileRow({ name, url }: { name: string; url: string }) {
   return (
     <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white">
       <FileText className="w-4 h-4 text-red-500 shrink-0" />
       <span className="flex-1 text-xs text-gray-600 truncate">{name}</span>
-      <button className="text-gray-400 hover:text-gray-600 transition-colors">
-        <Download className="w-3.5 h-3.5" />
-      </button>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Open ${name}`}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" />
+        </a>
+      ) : (
+        <Download className="w-3.5 h-3.5 text-gray-200" aria-hidden="true" />
+      )}
     </div>
   );
+}
+
+// ── Content media item (from GetContentDetail — real URL + real type) ───────
+function ContentMediaItem({ media }: { media: GroupContentDetail["media"][number] }) {
+  const type = (media.mediaType || media.fileExtension || "").toLowerCase();
+  const label = media.originalFileName || media.fileName || "Media file";
+
+  if (type.includes("image")) {
+    return (
+      <a
+        href={media.cloudinaryUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+        title={label}
+      >
+        <img src={media.cloudinaryUrl} alt={label} className="w-full h-32 object-cover" />
+      </a>
+    );
+  }
+  if (type.includes("video")) {
+    return (
+      <div className="rounded-lg overflow-hidden border border-gray-200 bg-black">
+        <video src={media.cloudinaryUrl} controls className="w-full max-h-56" />
+      </div>
+    );
+  }
+  if (type.includes("audio")) {
+    return (
+      <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white">
+        <FileAudio className="w-4 h-4 text-blue-500 shrink-0" />
+        <audio src={media.cloudinaryUrl} controls className="flex-1 h-8 min-w-0" />
+      </div>
+    );
+  }
+  return <MediaFileRow name={label} url={media.cloudinaryUrl} />;
 }
 
 // ── Info grid ─────────────────────────────────────────────────────────────────
@@ -154,7 +235,13 @@ function StepReview({
   onApprove: () => void;
   responding: boolean;
 }) {
+  const navigate = useNavigate();
   const payload = getPayload(approval.payload);
+  // getPayload only aliases PascalCase keys to camelCase, not the reverse —
+  // group-content submissions send `mediaFiles` (lowercase) as sent by the
+  // student, which payload.MediaFiles would miss entirely, silently hiding
+  // the whole media list instead of just failing to download it.
+  const mediaFiles = payload.MediaFiles ?? (payload as any).mediaFiles ?? [];
 
   const isPending = approval.status?.toLowerCase() === "pending";
   const isApproved = approval.status?.toLowerCase() === "approved";
@@ -162,6 +249,36 @@ function StepReview({
 
   const isCreateGroup = approval.operationType === "CreateGroup";
   const isSubmitGroupContent = approval.operationType === "SubmitGroupContent";
+
+  // GetContentDetail carries the real, openable media URLs (and the board
+  // recording's studentId) that the approval payload only summarizes as
+  // counts/booleans — fetch it for group-content submissions so the reviewer
+  // can actually see what the student posted instead of just a file count.
+  const detailGroupId = payload.groupId ?? payload.GroupId;
+  const detailContentId = approval.entityId ?? payload.contentId ?? payload.ContentId;
+  const [contentDetail, setContentDetail] = useState<GroupContentDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  useEffect(() => {
+    if (!isSubmitGroupContent || !detailGroupId || !detailContentId) return;
+    let cancelled = false;
+    setLoadingDetail(true);
+    groupService
+      .getContentDetail(detailGroupId, detailContentId)
+      .then((res) => {
+        if (!cancelled) setContentDetail(res.data.data);
+      })
+      .catch(() => {
+        // Non-fatal — falls back to the payload's summary (aim/mediaCount/hasRecording).
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDetail(false);
+      });
+    return () => { cancelled = true; };
+  }, [isSubmitGroupContent, detailGroupId, detailContentId]);
+
+  const hasRecording = contentDetail?.hasRecording ?? payload.hasRecording;
+  const useDetailMedia = isSubmitGroupContent && !!contentDetail;
 
   const display = getApprovalDisplay(approval as any);
   const title = display.title;
@@ -236,15 +353,47 @@ function StepReview({
         {/* Info grid */}
         <InfoGrid items={infoItems} />
 
-        {/* Media files */}
-        {payload.MediaFiles && payload.MediaFiles.length > 0 && (
+        {/* Group content: loading the full submission (real media + recording owner) */}
+        {isSubmitGroupContent && loadingDetail && (
+          <div className="flex items-center gap-2 text-gray-400 py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-xs">Loading full submission...</span>
+          </div>
+        )}
+
+        {/* Group content: real description, once fetched */}
+        {useDetailMedia && contentDetail!.description && (
+          <p className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3">
+            <span className="font-medium text-gray-700">Description: </span>
+            {contentDetail!.description}
+          </p>
+        )}
+
+        {/* Group content: real, openable media (image/video/audio inline, others as a link) */}
+        {useDetailMedia && contentDetail!.media.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-700">
-              Upload Media ({payload.MediaFiles.length} {payload.MediaFiles.length === 1 ? "File" : "Files"})
+              Upload Media ({contentDetail!.media.length} {contentDetail!.media.length === 1 ? "File" : "Files"})
             </p>
-            {payload.MediaFiles.map((f) => (
-              <MediaFileRow key={f.name} name={f.name} />
-            ))}
+            <div className="grid grid-cols-2 gap-2">
+              {contentDetail!.media.map((m, i) => (
+                <ContentMediaItem key={m.id ?? i} media={m} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fallback media list — non-group-content approvals, or group content
+            whose detail hasn't loaded yet / failed to load */}
+        {!useDetailMedia && mediaFiles.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-gray-700">
+              Upload Media ({mediaFiles.length} {mediaFiles.length === 1 ? "File" : "Files"})
+            </p>
+            {mediaFiles.map((f: Record<string, unknown>, i: number) => {
+              const { name, url } = normalizeMediaFile(f);
+              return <MediaFileRow key={`${name}-${i}`} name={name} url={url} />;
+            })}
           </div>
         )}
 
@@ -264,8 +413,8 @@ function StepReview({
           </div>
         )}
 
-        {/* Description */}
-        {payload.description && (
+        {/* Description — non-group-content, or group content before detail loads */}
+        {!useDetailMedia && payload.description && (
           <p className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3">
             <span className="font-medium text-gray-700">Description: </span>
             {payload.description}
@@ -282,19 +431,36 @@ function StepReview({
 
         {/* Media & Recording badges */}
         <div className="flex items-center gap-2 flex-wrap">
-          {payload.mediaCount != null && (
+          {(contentDetail?.media.length ?? payload.mediaCount) != null && (
             <span className="flex items-center gap-1.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-full">
               <FileText className="w-3.5 h-3.5" />
-              {payload.mediaCount} Media {payload.mediaCount === 1 ? "File" : "Files"}
+              {contentDetail?.media.length ?? payload.mediaCount} Media {(contentDetail?.media.length ?? payload.mediaCount) === 1 ? "File" : "Files"}
             </span>
           )}
-          <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border ${payload.hasRecording
+          <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border ${hasRecording
             ? "bg-green-50 text-green-600 border-green-100"
             : "bg-gray-50 text-gray-400 border-gray-100"
             }`}>
-            {payload.hasRecording ? "🎥 Has Recording" : "🎥 No Recording"}
+            {hasRecording ? "🎥 Has Recording" : "🎥 No Recording"}
           </span>
         </div>
+
+        {/* Watch the student's board recording */}
+        {isSubmitGroupContent && hasRecording && (
+          <button
+            type="button"
+            disabled={!contentDetail?.createdBy || !detailGroupId}
+            onClick={() => {
+              if (!contentDetail?.createdBy || !detailGroupId) return;
+              const prefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/teacher";
+              navigate(`${prefix}/approvals/recording/${detailGroupId}/${contentDetail.createdBy}`);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-white bg-[#292382] hover:bg-[#292382]/90 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <PlayCircle className="w-4 h-4" />
+            {loadingDetail ? "Loading recording..." : "Watch Board Recording"}
+          </button>
+        )}
       </div>
 
       {/* Footer */}

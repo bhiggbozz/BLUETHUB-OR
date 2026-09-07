@@ -73,7 +73,16 @@ const GroupDetailPage = () => {
       .getGroupDetail(groupId)
       .then((res) => {
         const raw = res.data?.data;
-        setDetail(raw ? { ...raw, members: raw.members ?? [], content: raw.content ?? [] } : null);
+        // GetGroupDetail can return the same content row more than once for
+        // a submission that has a multi-batch board recording (looks like a
+        // backend JOIN against the recording's stroke batches without a
+        // GROUP BY/DISTINCT — duplicate count matches the batch count).
+        // Dedupe by contentId here so the feed doesn't show one card per
+        // minute of recording; worth fixing at the source too.
+        const dedupedContent = raw?.content
+          ? Array.from(new Map(raw.content.map((c) => [c.contentId, c])).values())
+          : [];
+        setDetail(raw ? { ...raw, members: raw.members ?? [], content: dedupedContent } : null);
       })
       .catch((err) => {
         const status = err instanceof AxiosError ? err.response?.status : undefined;

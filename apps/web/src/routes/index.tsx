@@ -103,6 +103,7 @@ import QuizDetailView from '@/pages/teacher/quiz/quiz-detail';
 import MySyllabus from '@/pages/teacher/Syllabus/my-syllabus';
 import CreateSyllabus from '@/pages/teacher/Syllabus/create-syllabus';
 import ApprovalsPage from '@/pages/admin/approvals';
+import GroupRecordingViewer from '@/pages/admin/approvals/group-recording-viewer';
 import TeacherProtectedRoute from '@/component/protected-routes/teacher-routes';
 import IdbViewer from '@/pages/dev/idb-viewer';
 import DraftLessons from '@/pages/teacher/drafts';
@@ -351,6 +352,10 @@ const router = createBrowserRouter([
                 element: <ApprovalsPage />
             },
             {
+                path: 'approvals/recording/:groupId/:studentId',
+                element: <GroupRecordingViewer />
+            },
+            {
                 path: 'analytics',
                 element: <AdminAnalytics />
             },
@@ -453,6 +458,7 @@ const router = createBrowserRouter([
             { path: "assessment/manage", element: <ManageAssessments /> },
             { path: "assessment/pending-grading", element: <PendingGrading /> },
             { path: "approvals", element: <ApprovalsPage /> },
+            { path: "approvals/recording/:groupId/:studentId", element: <GroupRecordingViewer /> },
             { path: "create-syllabus", element: <CreateSyllabus /> },
             { path: "analytics", element: <TeacherAnalytics /> },
             { path: "attendance", element: <Attendance /> },

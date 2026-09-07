@@ -128,12 +128,19 @@ const HeadTeacher = () => {
       setErrorMsg("")
       setLoading(true);
       if (isEdit && editUserData) {
+        // The password field is pre-filled with the username just to satisfy
+        // regUserSchema's required() validator on this shared create/edit
+        // form — it's not a real password entry. Only send hashPassword if
+        // the admin actually changed it away from that pre-filled default;
+        // otherwise this silently resets the account's password on every edit.
+        const passwordChanged = data.password !== editUserData.userName;
+
         await authService.editUser({
           id: editUserData.id,
           firstName: data.firstName,
           lastName: data.lastName,
           emailAddress: data.email ?? "",
-          hashPassword,
+          ...(passwordChanged ? { hashPassword } : {}),
           isActive: true,
           hasAccess: true,
           roleId: editUserData.roleId ?? 0,

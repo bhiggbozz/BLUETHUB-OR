@@ -276,6 +276,39 @@ export const boardSessionService = {
   },
 
   /**
+   * Get a student's group-content recording manifest, for playback review
+   * (e.g. a teacher watching a submission before approving it). Same
+   * permission model as the batch fetch below: the recording's own student,
+   * the classroom's resolved approver, or any group member once Approved.
+   */
+  getGroupContentManifest: async (
+    groupId: string,
+    studentId: string
+  ): Promise<GroupContentManifestPayload | null> => {
+    const response = await API.get<{ data: GroupContentManifestPayload }>(
+      `api/board/group-content/group/${groupId}/student/${studentId}/manifest`,
+      { headers: { 'X-Tenant-ID': X_Tenant_ID } }
+    );
+    return response.data.data ?? null;
+  },
+
+  /**
+   * Get a single stroke batch from a student's group-content recording, by
+   * batchIndex (as referenced in that student's manifest.strokeBatches).
+   */
+  getGroupContentBatch: async (
+    groupId: string,
+    studentId: string,
+    batchIndex: number
+  ): Promise<FetchedStrokeBatch | null> => {
+    const response = await API.get<{ data: FetchedStrokeBatch }>(
+      `api/board/group-content/group/${groupId}/student/${studentId}/batch/${batchIndex}`,
+      { headers: { 'X-Tenant-ID': X_Tenant_ID } }
+    );
+    return response.data.data ?? null;
+  },
+
+  /**
    * Check the current group-content recording state for this student in this
    * group, before starting/resuming a board recording.
    */

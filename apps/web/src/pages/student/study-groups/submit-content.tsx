@@ -22,7 +22,7 @@ import { schoolService } from "@/services/school";
 import { lessonService, resolveMediaType, type CloudinarySignature, type SupabaseUploadToken } from "@/services/lesson";
 import { groupService, type GroupContentMediaFile } from "@/services/groups";
 import { runConcurrent, uploadToCloudinary, uploadToSupabase } from "@/utils/media-upload-helpers";
-import { launchStudentBoardWithStatusCheck } from "@/utils/launch-student-board";
+import { launchStudentBoard } from "@/utils/launch-student-board";
 
 const UPLOAD_CONCURRENCY = 2;
 
@@ -237,7 +237,11 @@ const SubmitContentPage = () => {
 
       if (thenRecordBoard) {
         toast.success("Content saved — opening the board...");
-        await launchStudentBoardWithStatusCheck(
+        // No status check here — this content was just created in the call
+        // above, so we already know for certain it has no recording yet.
+        // Checking would always come back PendingApproval (the content we
+        // just made) and block the recording from ever opening.
+        launchStudentBoard(
           navigate,
           {
             contentId: res.data.data.contentId,
@@ -249,8 +253,7 @@ const SubmitContentPage = () => {
             groupName,
             subTopic: subTopic.trim(),
           },
-          groupDetailPath,
-          toast
+          groupDetailPath
         );
         return;
       }
@@ -270,10 +273,12 @@ const SubmitContentPage = () => {
     }
   };
 
-  const handleRecordBoard = async () => {
+  const handleRecordBoard = () => {
     if (!submittedContent) return;
     const content = submittedContent;
-    await launchStudentBoardWithStatusCheck(
+    // Same reasoning as above — this content was created earlier in this
+    // same page visit, so we know its recording slot is still empty.
+    launchStudentBoard(
       navigate,
       {
         contentId: content.contentId,
@@ -285,8 +290,7 @@ const SubmitContentPage = () => {
         groupName,
         subTopic: content.subTopic,
       },
-      groupDetailPath,
-      toast
+      groupDetailPath
     );
   };
 
