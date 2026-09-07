@@ -47,7 +47,7 @@ export function TeacherActivity() {
   const displayTeachers = expanded ? teachers : teachers.slice(0, 5);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
+    <div className="bg-white rounded-md border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Teacher Activity</h3>

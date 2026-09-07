@@ -56,7 +56,7 @@ const SchoolProgress = () => {
           return (
             <div
               key={stat.key}
-              className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex flex-col gap-2"
+              className="bg-white rounded-md p-3 shadow-sm border border-gray-100 flex flex-col gap-2"
             >
               <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
                 <Icon className={stat.iconColor} size={16} />
