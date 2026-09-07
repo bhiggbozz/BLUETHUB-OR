@@ -205,7 +205,7 @@ const RegisterNewSubject = () => {
                       onClick={handleAddToList}
                       className="text-white text-sm bg-chestnut font-semibold rounded-md px-6 py-2.5 hover:opacity-90 transition-opacity"
                     >
-                      Add subject
+                      Add to List
                     </Button>
                   </div>
                 </div>
