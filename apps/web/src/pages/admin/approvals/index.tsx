@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { approvalService, getApprovalDisplay, type Approval, type ApprovalPayload } from "@/services/approval";
-import { useOutletContext } from "react-router-dom";
+import { useLocation, useOutletContext } from "react-router-dom";
 import ApprovalReviewModal from "./approval-review-modal";
 
 type Tab = "all" | "pending" | "approved" | "rejected";
@@ -66,12 +66,13 @@ export const StatusBadge = ({ status }: { status: string }) => {
 
 const ApprovalsPage = () => {
   const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
+  const location = useLocation();
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [selectedApproval, setSelectedApproval] = useState<Approval | null>(null);
-  
+
 
   const fetchApprovals = useCallback(async () => {
     setLoading(true);
@@ -87,6 +88,15 @@ const ApprovalsPage = () => {
   }, []);
 
   useEffect(() => { fetchApprovals(); }, [fetchApprovals]);
+
+  // Arriving from a link elsewhere (e.g. the dashboard's pending-approvals
+  // list) that names a specific item — open its review modal once loaded.
+  useEffect(() => {
+    const openApprovalId = (location.state as { openApprovalId?: string } | null)?.openApprovalId;
+    if (!openApprovalId || approvals.length === 0) return;
+    const match = approvals.find((a) => a.id === openApprovalId);
+    if (match) setSelectedApproval(match);
+  }, [location.state, approvals]);
 
   const handleRespond = async (id: string, approved: boolean, rejectionReason?: string) => {
     setResponding(id);
