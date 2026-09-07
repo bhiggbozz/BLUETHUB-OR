@@ -919,7 +919,7 @@ const Class = () => {
                                         key={s.id}
                                         points={s.points}
                                         stroke={s.color}
-                                        strokeWidth={s.type === "eraser" ? 30 : 5}
+                                        strokeWidth={s.type === "eraser" ? 30 : 2}
                                         lineCap="round"
                                         lineJoin="round"
                                         tension={0.5}
@@ -937,7 +937,7 @@ const Class = () => {
                                     <Line
                                         points={currentStroke}
                                         stroke={actions === ACTIONS.ERASER ? "#fff" : selectedFillColor || "#df4b26"}
-                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 5}
+                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 2}
                                         lineCap="round"
                                         lineJoin="round"
                                         opacity={1}
