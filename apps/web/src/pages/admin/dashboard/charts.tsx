@@ -40,7 +40,7 @@ const Charts = () => {
     <section className="font-poppins space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
         {/* Subject performance — takes 5/5 */}
-        <div className="md:col-span-5 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="md:col-span-5 bg-white rounded-md p-4 shadow-sm border border-gray-100">
           <div className="mb-4">
             <h3 className="text-xs font-semibold text-gray-900">Subject Performance</h3>
             <p className="text-[10px] text-gray-400 mt-0.5">Average scores this term</p>

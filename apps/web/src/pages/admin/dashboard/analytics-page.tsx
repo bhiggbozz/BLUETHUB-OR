@@ -5,8 +5,8 @@ import Charts from "./charts";
 
 const AdminAnalytics = () => {
   return (
-    <div className="font-poppins w-full">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden">
+    <div className="font-poppins w-full lg:py-1 lg:px-2">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
         <div className="flex items-center px-5 h-14 bg-chestnut">
           <span className="text-white font-semibold text-base">School Analytics</span>
         </div>

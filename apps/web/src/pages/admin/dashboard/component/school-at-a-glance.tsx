@@ -52,7 +52,7 @@ export function SchoolAtAGlance() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
+    <div className="bg-white rounded-md border border-gray-100 p-5">
       <p className="text-sm font-medium text-gray-900 mb-4">School at a glance</p>
       <div className="divide-y divide-gray-100">
         {glanceData.map(({ label, value, color }) => (
