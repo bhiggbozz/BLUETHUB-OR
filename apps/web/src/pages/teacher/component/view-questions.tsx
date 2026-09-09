@@ -188,11 +188,19 @@ const ViewQuestions = () => {
   }, [isAdmin, selectedClassId, teacherAssignments, selectedSubjectId]);
 
   // ── Fetch curriculum topics when subject changes ──────────────────────────
+  // The topic/subtopic selects are reset synchronously wherever selectedSubjectId
+  // is changed (see the Class/Subject onChange handlers below), so by the time
+  // this effect's own resets run, they're normally already empty. Using the
+  // functional-updater "bail out if already empty" form here means those
+  // resets return the SAME Set reference instead of a new empty one, so they
+  // don't re-trigger the questions-fetch effect a second time for nothing —
+  // that double reference change was firing GET .../questions twice per
+  // class/subject switch (once with the stale topic filter, once after reset).
   useEffect(() => {
     if (!selectedSubjectId) {
       setTopics([]);
-      setSelectedTopicIds(new Set());
-      setSelectedSubtopicIds(new Set());
+      setSelectedTopicIds(prev => prev.size === 0 ? prev : new Set());
+      setSelectedSubtopicIds(prev => prev.size === 0 ? prev : new Set());
       return;
     }
     schoolService
@@ -208,8 +216,8 @@ const ViewQuestions = () => {
             name: String(s.Name ?? s.name ?? s.subTopicName ?? ""),
           })),
         })));
-        setSelectedTopicIds(new Set());
-        setSelectedSubtopicIds(new Set());
+        setSelectedTopicIds(prev => prev.size === 0 ? prev : new Set());
+        setSelectedSubtopicIds(prev => prev.size === 0 ? prev : new Set());
       })
       .catch(() => toast.error("Failed to load topics"));
   }, [selectedSubjectId]);
@@ -281,6 +289,8 @@ const ViewQuestions = () => {
                 onChange={(e) => {
                   setSelectedClassId(e.target.value || undefined);
                   setSelectedSubjectId(undefined);
+                  setSelectedTopicIds(new Set());
+                  setSelectedSubtopicIds(new Set());
                   setPage(1);
                 }}
                 className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-700 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
@@ -301,6 +311,8 @@ const ViewQuestions = () => {
                 value={selectedSubjectId ?? ""}
                 onChange={(e) => {
                   setSelectedSubjectId(e.target.value || undefined);
+                  setSelectedTopicIds(new Set());
+                  setSelectedSubtopicIds(new Set());
                   setPage(1);
                 }}
                 disabled={!selectedClassId}
@@ -459,9 +471,15 @@ const ViewQuestions = () => {
                       <p className="text-xs text-slate-500 font-medium">
                         {questionsTotal} question{questionsTotal !== 1 ? "s" : ""} found
                       </p>
+                      {questionsLoading && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-500">
+                          <Loader2 size={12} className="animate-spin" />
+                          Updating…
+                        </span>
+                      )}
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white overflow-x-scroll lg:overflow-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <div className={`rounded-xl border border-slate-200 bg-white overflow-x-scroll lg:overflow-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden transition-opacity ${questionsLoading ? "opacity-50 pointer-events-none" : ""}`}>
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200">

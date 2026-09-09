@@ -76,6 +76,20 @@ export interface CreateQuestionPayload {
   imagePublicId?: string | null;
 }
 
+// POST /api/questions/batch's response — flat, not wrapped in TResponse<T>'s
+// `.data`. `data` is always null; the actual results live alongside the
+// envelope fields.
+export interface BatchCreateQuestionsResponse {
+  results: { clientId: string; questionId?: string; success: boolean; errorMessage?: string | null; isDuplicate?: boolean }[];
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  responseMessage: string;
+  responseCode: string;
+  status: string;
+  data: null;
+}
+
 export interface UpdateQuestionPayload {
   questionId: string;
   clientId?: string;
@@ -340,8 +354,11 @@ export const questionService = {
       },
     ),
 
+  // NOT a standard TResponse<T> — results/totalCount/successCount/failedCount
+  // come back at the top level alongside responseMessage/responseCode/status,
+  // with `data` always null. Don't reach into `.data` for these fields.
   createQuestionsBatch: (payloads: CreateQuestionPayload[]) =>
-    API.post<TResponse<{ results: { clientId: string; questionId?: string; success: boolean; isDuplicate?: boolean }[]; totalCount: number; successCount: number; failedCount: number }>>(
+    API.post<BatchCreateQuestionsResponse>(
       "api/questions/batch",
       { questions: payloads },
       {

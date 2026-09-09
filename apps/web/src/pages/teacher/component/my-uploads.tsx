@@ -786,17 +786,17 @@ const MyUploads = () => {
     const selectedTopicName = topics.find((topic) => topic.id === resolvedTopicId)?.name ?? previewJob.topicName ?? "";
 
     setIsSavingEditedQuestions(true);
-    let successfulSaves = 0;
 
     try {
-      for (let index = 0; index < editableQuestions.length; index++) {
-        const question = editableQuestions[index];
+      // One request for every question in the job, instead of one POST per
+      // question — /api/questions/batch already exists for exactly this.
+      const payloads = editableQuestions.map((question, index) => {
         const plainText = sanitizeQuestionTextForSave(question.questionText);
         const firstImageUrl = parseContentParts(question.contentParts)
           .find((part) => part.type === "image" && typeof part.value === "string" && /^https?:\/\//i.test(part.value ?? ""))
           ?.value;
 
-        const payload = {
+        return {
           clientId: `upload-${previewJob.jobId}-${question.localId}`,
           originDevice: "web",
           createdAtDevice: new Date().toISOString(),
@@ -824,30 +824,21 @@ const MyUploads = () => {
           imageUrl: typeof firstImageUrl === "string" ? firstImageUrl : null,
           imagePublicId: null,
         };
+      });
 
-        const response = await questionService.createQuestion(payload);
-        const rawResponse = response.data as any;
-        const nested = rawResponse?.data ?? {};
-        const responseCode = String(rawResponse?.responseCode ?? nested?.responseCode ?? "").toLowerCase();
-        const responseStatus = String(rawResponse?.status ?? nested?.status ?? "").toLowerCase();
-        const isDuplicate = !!(rawResponse?.isDuplicate ?? nested?.isDuplicate);
-        const hasQuestionId = !!(rawResponse?.questionId ?? nested?.questionId);
-        const isSuccessful =
-          responseStatus === "successful" ||
-          responseCode === "successful" ||
-          hasQuestionId ||
-          isDuplicate;
+      // Flat response — results/successCount/etc. sit alongside responseMessage,
+      // NOT nested under `.data` (which the backend always sends as null here).
+      const response = await questionService.createQuestionsBatch(payloads);
+      const results = response.data?.results ?? [];
+      const allSucceeded = results.length > 0 && results.every((r) => r.success || r.isDuplicate);
 
-        if (isSuccessful) {
-          successfulSaves += 1;
-        } else {
-          throw new Error(rawResponse?.responseMessage ?? nested?.responseMessage ?? "Create question failed");
-        }
-      }
-
-      if (successfulSaves !== editableQuestions.length) {
-        toast.error("Some questions could not be saved. Please retry.");
-        return;
+      if (!allSucceeded) {
+        const failed = results.filter((r) => !r.success && !r.isDuplicate);
+        throw new Error(
+          failed.length > 0
+            ? `${failed.length} of ${payloads.length} question(s) failed to save.`
+            : response.data?.responseMessage ?? "Create questions failed"
+        );
       }
 
       const savedJobId = previewJob.jobId;

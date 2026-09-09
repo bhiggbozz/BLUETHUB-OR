@@ -140,7 +140,7 @@ const HeadTeacher = () => {
           firstName: data.firstName,
           lastName: data.lastName,
           emailAddress: data.email ?? "",
-          ...(passwordChanged ? { hashPassword } : {}),
+          ...(passwordChanged ? { hashPassword, changePassword: true } : {}),
           isActive: true,
           hasAccess: true,
           roleId: editUserData.roleId ?? 0,
