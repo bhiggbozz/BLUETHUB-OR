@@ -31,13 +31,17 @@ export interface BoardBatchPayload {
   audioChunkUrls?: string[];
 }
 
-// Body for POST /api/board/group-content/group/{groupId}/batch — the student
-// study-group content pipeline. No sessionId: the batch is keyed by groupId
-// (route + body) + the caller's student ID from the JWT + batchIndex, and is
-// published to its own queue/worker/Mongo collection so it never contends
-// with the teacher's live-session pipeline above.
+// Body for POST /api/board/group-content/group/{groupId}/content/{contentId}/batch
+// — the student study-group content pipeline. No sessionId: the batch is keyed
+// by groupId + contentId (route + body) + the caller's student ID from the JWT
+// + batchIndex, and is published to its own queue/worker/Mongo collection so it
+// never contends with the teacher's live-session pipeline above. contentId
+// scopes the recording to one specific GroupLessonContent submission so a
+// second recording for a different submission in the same group can never
+// overwrite or leak into this one.
 export interface GroupContentBoardBatchPayload {
   groupId: string;
+  contentId: string;
   batchIndex: number;
   startMs: number;
   endMs: number;
@@ -146,6 +150,7 @@ export interface SessionManifestPayload {
 // not recompute stats from stored batches, so the client is the source of truth.
 export interface GroupContentManifestPayload {
   groupId: string;
+  contentId: string;
   stats: {
     totalDurationMs: number;
     totalDurationFormatted: string;
@@ -175,18 +180,28 @@ export interface GroupContentManifestPayload {
     toBoard: number;
     timestampMs: number;
   }>;
+  // Legacy single-file slot — always null in practice, since upload produces
+  // one URL per 60s batch, never one continuous file. Left for backend
+  // compatibility; audioChunks below is the real data.
   audioFinalUrl?: string | null;
+  // One entry per 60s upload batch — chunkIndex is the upload-batch index,
+  // same granularity/numbering as strokeBatches[].batchIndex.
+  audioChunks?: Array<{
+    chunkIndex: number;
+    url: string;
+    mediaId?: string | null;
+  }>;
 }
 
-// Response for GET /api/board/group-content/group/{groupId}/status — tells the
-// frontend whether it's safe to start a new recording, should resume one in
-// progress, or must block re-recording because a GroupLessonContent already
-// exists for this group+student's recording slot.
+// Response for GET /api/board/group-content/group/{groupId}/content/{contentId}/status
+// — tells the frontend whether it's safe to start a new recording for this
+// specific content item, should resume one in progress, already has a
+// recording, or must block because this content has already been decided
+// (Approved/Rejected).
 export type GroupContentStatusKind =
   | "NoActiveContent"
   | "RecordingInProgress"
-  | "AwaitingSubmission"
-  | "PendingApproval"
+  | "Recorded"
   | "Approved"
   | "Rejected";
 
@@ -235,8 +250,8 @@ export const boardSessionService = {
    * Same 1-minute batching model as submitBatch, but routed to its own
    * queue/worker/collection — never touches the teacher's live pipeline.
    */
-  submitGroupContentBatch: async (groupId: string, payload: GroupContentBoardBatchPayload): Promise<void> => {
-    await API.post(`api/board/group-content/group/${groupId}/batch`, payload, {
+  submitGroupContentBatch: async (groupId: string, contentId: string, payload: GroupContentBoardBatchPayload): Promise<void> => {
+    await API.post(`api/board/group-content/group/${groupId}/content/${contentId}/batch`, payload, {
       headers: { 'X-Tenant-ID': X_Tenant_ID },
       validateStatus: (status) => status === 204 || status === 200,
     });
@@ -260,15 +275,17 @@ export const boardSessionService = {
 
   /**
    * Submit the finalized manifest for student study-group content.
-   * Saved to its own group_content_manifests collection (_id = groupId_studentId),
-   * separate from the teacher's session manifests.
+   * Saved to its own group_content_manifests collection
+   * (_id = groupId_studentId_contentId), separate from the teacher's session
+   * manifests, and scoped to this one specific content submission.
    */
   submitGroupContentManifest: async (
     groupId: string,
+    contentId: string,
     manifest: GroupContentManifestPayload
   ): Promise<BoardSessionResponse> => {
     const response = await API.post<BoardSessionResponse>(
-      `api/board/group-content/group/${groupId}/manifest`,
+      `api/board/group-content/group/${groupId}/content/${contentId}/manifest`,
       manifest,
       { headers: { 'X-Tenant-ID': X_Tenant_ID } }
     );
@@ -276,45 +293,45 @@ export const boardSessionService = {
   },
 
   /**
-   * Get a student's group-content recording manifest, for playback review
+   * Get a content item's group-content recording manifest, for playback review
    * (e.g. a teacher watching a submission before approving it). Same
-   * permission model as the batch fetch below: the recording's own student,
+   * permission model as the batch fetch below: the content's own creator,
    * the classroom's resolved approver, or any group member once Approved.
    */
   getGroupContentManifest: async (
     groupId: string,
-    studentId: string
+    contentId: string
   ): Promise<GroupContentManifestPayload | null> => {
     const response = await API.get<{ data: GroupContentManifestPayload }>(
-      `api/board/group-content/group/${groupId}/student/${studentId}/manifest`,
+      `api/board/group-content/group/${groupId}/content/${contentId}/manifest`,
       { headers: { 'X-Tenant-ID': X_Tenant_ID } }
     );
     return response.data.data ?? null;
   },
 
   /**
-   * Get a single stroke batch from a student's group-content recording, by
-   * batchIndex (as referenced in that student's manifest.strokeBatches).
+   * Get a single stroke batch from a content item's group-content recording,
+   * by batchIndex (as referenced in that content's manifest.strokeBatches).
    */
   getGroupContentBatch: async (
     groupId: string,
-    studentId: string,
+    contentId: string,
     batchIndex: number
   ): Promise<FetchedStrokeBatch | null> => {
     const response = await API.get<{ data: FetchedStrokeBatch }>(
-      `api/board/group-content/group/${groupId}/student/${studentId}/batch/${batchIndex}`,
+      `api/board/group-content/group/${groupId}/content/${contentId}/batch/${batchIndex}`,
       { headers: { 'X-Tenant-ID': X_Tenant_ID } }
     );
     return response.data.data ?? null;
   },
 
   /**
-   * Check the current group-content recording state for this student in this
-   * group, before starting/resuming a board recording.
+   * Check the current group-content recording state for this specific content
+   * item, before starting/resuming a board recording.
    */
-  getGroupContentStatus: async (groupId: string): Promise<GroupContentStatusData> => {
+  getGroupContentStatus: async (groupId: string, contentId: string): Promise<GroupContentStatusData> => {
     const response = await API.get<{ data: GroupContentStatusData }>(
-      `api/board/group-content/group/${groupId}/status`,
+      `api/board/group-content/group/${groupId}/content/${contentId}/status`,
       { headers: { 'X-Tenant-ID': X_Tenant_ID } }
     );
     return response.data.data;

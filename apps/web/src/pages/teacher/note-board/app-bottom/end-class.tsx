@@ -311,9 +311,10 @@ const EndClass = () => {
 
       if (session) {
         const groupId = sessionStorage.getItem("boardGroupId");
-        if (groupId) {
-          const groupManifest = await buildGroupContentManifest(session, results, groupId);
-          await boardSessionService.submitGroupContentManifest(groupId, groupManifest);
+        const contentId = sessionStorage.getItem("boardContentId");
+        if (groupId && contentId) {
+          const groupManifest = await buildGroupContentManifest(session, results, groupId, contentId);
+          await boardSessionService.submitGroupContentManifest(groupId, contentId, groupManifest);
         } else {
           const manifest = await buildManifest(session, results);
           await boardSessionService.submitManifest(sessionId, manifest);
@@ -513,7 +514,8 @@ const EndClass = () => {
   const buildGroupContentManifest = async (
     session: Awaited<ReturnType<typeof getSession>>,
     uploadResults: UploadResults,
-    groupId: string
+    groupId: string,
+    contentId: string
   ): Promise<GroupContentManifestPayload> => {
     if (!session) {
       throw new Error('Session not found');
@@ -551,6 +553,7 @@ const EndClass = () => {
 
     return {
       groupId,
+      contentId,
       stats: {
         totalDurationMs: session.recording.totalDurationMs,
         totalDurationFormatted: formatDuration(session.recording.totalDurationMs),
@@ -573,7 +576,18 @@ const EndClass = () => {
         toBoard: e.toBoard,
         timestampMs: e.timestampMs,
       })),
+      // No single continuous audio file exists — useSessionUpload produces one
+      // URL per 60s upload batch (audioUrls), so that's the real data to send.
+      // audioFinalUrl stays null; nothing currently produces a single file.
       audioFinalUrl: null,
+      audioChunks: uploadResults.audioUrls
+        .slice()
+        .sort((a, b) => a.chunkIndex - b.chunkIndex)
+        .map((a) => ({
+          chunkIndex: a.chunkIndex,
+          url: a.url,
+          mediaId: a.mediaId,
+        })),
     };
   };
 

@@ -5,6 +5,7 @@ import {
   Download,
   FileAudio,
   FileText,
+  LayoutGrid,
   Loader2,
   Mail,
   PlayCircle,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AxiosError } from "axios";
 import { getApprovalDisplay } from "@/services/approval";
 import { groupService, type GroupContentDetail } from "@/services/groups";
 
@@ -162,21 +164,20 @@ function MediaFileRow({ name, url }: { name: string; url: string }) {
 }
 
 // ── Content media item (from GetContentDetail — real URL + real type) ───────
-function ContentMediaItem({ media }: { media: GroupContentDetail["media"][number] }) {
+function ContentMediaItem({ media, onPreview }: { media: GroupContentDetail["media"][number]; onPreview: (url: string, label: string) => void }) {
   const type = (media.mediaType || media.fileExtension || "").toLowerCase();
   const label = media.originalFileName || media.fileName || "Media file";
 
   if (type.includes("image")) {
     return (
-      <a
-        href={media.cloudinaryUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        type="button"
+        onClick={() => onPreview(media.cloudinaryUrl, label)}
         className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
         title={label}
       >
         <img src={media.cloudinaryUrl} alt={label} className="w-full h-32 object-cover" />
-      </a>
+      </button>
     );
   }
   if (type.includes("video")) {
@@ -195,6 +196,58 @@ function ContentMediaItem({ media }: { media: GroupContentDetail["media"][number
     );
   }
   return <MediaFileRow name={label} url={media.cloudinaryUrl} />;
+}
+
+// A student "just write on a board" snapshot (board-snapshot-tool.tsx) names
+// its files "board-N.png" (fileName) / "Board N.png" (originalFileName).
+// The backend currently mis-reports these as mediaType "Document" instead of
+// "Image", so ContentMediaItem's type sniffing above would otherwise render
+// them as plain generic download rows instead of board previews. Detect them
+// by name instead of trusting mediaType, and show them as their own
+// "Boards" section rather than mixed into "Upload Media".
+const BOARD_SNAPSHOT_NAME = /^board[\s-]?(\d+)\.png$/i;
+
+function boardSnapshotNumber(media: GroupContentDetail["media"][number]): number | null {
+  const match = BOARD_SNAPSHOT_NAME.exec(media.fileName || "") ?? BOARD_SNAPSHOT_NAME.exec(media.originalFileName || "");
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+function BoardThumbnail({ media, number, onPreview }: { media: GroupContentDetail["media"][number]; number: number; onPreview: (url: string, label: string) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPreview(media.cloudinaryUrl, `Board ${number}`)}
+      className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+      title={`Board ${number}`}
+    >
+      <img src={media.cloudinaryUrl} alt={`Board ${number}`} className="w-full h-32 object-cover bg-white" />
+      <p className="text-[11px] font-semibold text-gray-600 text-center py-1 bg-gray-50 border-t border-gray-100">
+        Board {number}
+      </p>
+    </button>
+  );
+}
+
+function ImageLightbox({ url, label, onClose }: { url: string; label: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[80] bg-black/85 flex items-center justify-center p-4" onClick={onClose}>
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+      >
+        <X className="w-4 h-4" />
+      </button>
+      <img
+        src={url}
+        alt={label}
+        onClick={(e) => e.stopPropagation()}
+        className="max-w-[92vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
+      />
+      <p className="absolute bottom-5 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/80">{label}</p>
+    </div>
+  );
 }
 
 // ── Info grid ─────────────────────────────────────────────────────────────────
@@ -258,9 +311,18 @@ function StepReview({
   const detailContentId = approval.entityId ?? payload.contentId ?? payload.ContentId;
   const [contentDetail, setContentDetail] = useState<GroupContentDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [previewImage, setPreviewImage] = useState<{ url: string; label: string } | null>(null);
 
   useEffect(() => {
-    if (!isSubmitGroupContent || !detailGroupId || !detailContentId) return;
+    if (!isSubmitGroupContent) return;
+    setDetailError("");
+    if (!detailGroupId || !detailContentId) {
+      // Previously failed silently here — the reviewer just saw a blank
+      // media area with no indication anything was even attempted.
+      setDetailError("Missing group/content id — can't load media or recording details for this submission.");
+      return;
+    }
     let cancelled = false;
     setLoadingDetail(true);
     groupService
@@ -268,8 +330,14 @@ function StepReview({
       .then((res) => {
         if (!cancelled) setContentDetail(res.data.data);
       })
-      .catch(() => {
-        // Non-fatal — falls back to the payload's summary (aim/mediaCount/hasRecording).
+      .catch((err) => {
+        if (cancelled) return;
+        // Previously swallowed entirely — the review UI just fell back to
+        // the payload summary with no sign the real detail fetch failed,
+        // so a genuine permission/lookup error looked identical to "no
+        // media was ever attached".
+        const message = err instanceof AxiosError ? err.response?.data?.responseMessage : undefined;
+        setDetailError(message || (err instanceof Error ? err.message : "Couldn't load the full submission."));
       })
       .finally(() => {
         if (!cancelled) setLoadingDetail(false);
@@ -277,8 +345,16 @@ function StepReview({
     return () => { cancelled = true; };
   }, [isSubmitGroupContent, detailGroupId, detailContentId]);
 
-  const hasRecording = contentDetail?.hasRecording ?? payload.hasRecording;
+  // Strict === true, not just truthy — some responses have sent this field
+  // back as the literal string "false" (truthy in JS), which would otherwise
+  // show a "Watch Recording" button pointing at nothing.
+  const rawHasRecording = (contentDetail?.hasRecording ?? payload.hasRecording) as unknown;
+  const hasRecording = rawHasRecording === true;
   const useDetailMedia = isSubmitGroupContent && !!contentDetail;
+  const boardSnapshots = (contentDetail?.media ?? [])
+    .filter((m) => boardSnapshotNumber(m) !== null)
+    .sort((a, b) => (boardSnapshotNumber(a) ?? 0) - (boardSnapshotNumber(b) ?? 0));
+  const otherMedia = (contentDetail?.media ?? []).filter((m) => boardSnapshotNumber(m) === null);
 
   const display = getApprovalDisplay(approval as any);
   const title = display.title;
@@ -361,6 +437,15 @@ function StepReview({
           </div>
         )}
 
+        {/* Previously this failed silently — a blank media area gave no clue
+            whether nothing was attached or the detail fetch itself failed. */}
+        {isSubmitGroupContent && !loadingDetail && detailError && (
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-3.5 py-3 text-xs">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>Couldn't load media/recording for this submission: {detailError}</span>
+          </div>
+        )}
+
         {/* Group content: real description, once fetched */}
         {useDetailMedia && contentDetail!.description && (
           <p className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3">
@@ -369,15 +454,40 @@ function StepReview({
           </p>
         )}
 
+        {/* Group content: board snapshots ("just write, no recording") — shown
+            as their own labeled section, not lumped in with other media. */}
+        {useDetailMedia && boardSnapshots.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+              <LayoutGrid className="w-3.5 h-3.5 text-gray-400" />
+              Boards ({boardSnapshots.length})
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {boardSnapshots.map((m, i) => (
+                <BoardThumbnail
+                  key={m.id ?? i}
+                  media={m}
+                  number={boardSnapshotNumber(m) ?? i + 1}
+                  onPreview={(url, label) => setPreviewImage({ url, label })}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Group content: real, openable media (image/video/audio inline, others as a link) */}
-        {useDetailMedia && contentDetail!.media.length > 0 && (
+        {useDetailMedia && otherMedia.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-700">
-              Upload Media ({contentDetail!.media.length} {contentDetail!.media.length === 1 ? "File" : "Files"})
+              Upload Media ({otherMedia.length} {otherMedia.length === 1 ? "File" : "Files"})
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {contentDetail!.media.map((m, i) => (
-                <ContentMediaItem key={m.id ?? i} media={m} />
+              {otherMedia.map((m, i) => (
+                <ContentMediaItem
+                  key={m.id ?? i}
+                  media={m}
+                  onPreview={(url, label) => setPreviewImage({ url, label })}
+                />
               ))}
             </div>
           </div>
@@ -431,10 +541,16 @@ function StepReview({
 
         {/* Media & Recording badges */}
         <div className="flex items-center gap-2 flex-wrap">
-          {(contentDetail?.media.length ?? payload.mediaCount) != null && (
+          {(contentDetail ? otherMedia.length : payload.mediaCount) != null && (
             <span className="flex items-center gap-1.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-full">
               <FileText className="w-3.5 h-3.5" />
-              {contentDetail?.media.length ?? payload.mediaCount} Media {(contentDetail?.media.length ?? payload.mediaCount) === 1 ? "File" : "Files"}
+              {contentDetail ? otherMedia.length : payload.mediaCount} Media {(contentDetail ? otherMedia.length : payload.mediaCount) === 1 ? "File" : "Files"}
+            </span>
+          )}
+          {boardSnapshots.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1.5 rounded-full">
+              <LayoutGrid className="w-3.5 h-3.5" />
+              {boardSnapshots.length} Board{boardSnapshots.length === 1 ? "" : "s"}
             </span>
           )}
           <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border ${hasRecording
@@ -449,11 +565,11 @@ function StepReview({
         {isSubmitGroupContent && hasRecording && (
           <button
             type="button"
-            disabled={!contentDetail?.createdBy || !detailGroupId}
+            disabled={!detailGroupId || !detailContentId}
             onClick={() => {
-              if (!contentDetail?.createdBy || !detailGroupId) return;
+              if (!detailGroupId || !detailContentId) return;
               const prefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/teacher";
-              navigate(`${prefix}/approvals/recording/${detailGroupId}/${contentDetail.createdBy}`);
+              navigate(`${prefix}/approvals/recording/${detailGroupId}/${detailContentId}`);
             }}
             className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-white bg-[#292382] hover:bg-[#292382]/90 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -490,6 +606,14 @@ function StepReview({
           </button>
         )}
       </div>
+
+      {previewImage && (
+        <ImageLightbox
+          url={previewImage.url}
+          label={previewImage.label}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </>
   );
 }

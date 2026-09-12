@@ -14,6 +14,7 @@ import {
   FileVideo,
   Loader2,
   PenLine,
+  PencilRuler,
   Sparkles,
   Upload,
   X,
@@ -23,6 +24,7 @@ import { lessonService, resolveMediaType, type CloudinarySignature, type Supabas
 import { groupService, type GroupContentMediaFile } from "@/services/groups";
 import { runConcurrent, uploadToCloudinary, uploadToSupabase } from "@/utils/media-upload-helpers";
 import { launchStudentBoard } from "@/utils/launch-student-board";
+import BoardSnapshotTool from "./board-snapshot-tool";
 
 const UPLOAD_CONCURRENCY = 2;
 
@@ -38,6 +40,7 @@ interface UploadFile {
   progress: number;
   error?: string;
   result?: GroupContentMediaFile;
+  isBoardSnapshot?: boolean;
 }
 
 interface SubmittedContent {
@@ -86,6 +89,7 @@ const SubmitContentPage = () => {
   const [aim, setAim] = useState("");
   const [description, setDescription] = useState("");
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+  const [showBoardTool, setShowBoardTool] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittingAction, setSubmittingAction] = useState<"approval" | "board" | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -103,9 +107,11 @@ const SubmitContentPage = () => {
         setClassroomId(data.classroomId);
       })
       .catch((err) => {
-        const status = err instanceof AxiosError ? err.response?.status : undefined;
-        if (status === 403) setGroupLoadError("You're not a member of this group.");
-        else if (status === 404) setGroupLoadError("This group couldn't be found.");
+        // GroupController maps every non-success response to HTTP 400 — the
+        // body's responseCode is what actually distinguishes these cases.
+        const code = err instanceof AxiosError ? err.response?.data?.responseCode : undefined;
+        if (code === "AX1003") setGroupLoadError("You're not a member of this group.");
+        else if (code === "99134") setGroupLoadError("This group couldn't be found.");
         else setGroupLoadError(extractMsg(err, "Couldn't load this group."));
       })
       .finally(() => setLoadingGroup(false));
@@ -215,16 +221,51 @@ const SubmitContentPage = () => {
 
   const removeFile = (uid: string) => setUploadFiles((prev) => prev.filter((f) => f.uid !== uid));
 
+  // Board snapshots (just-write, no recording) feed into the same attached-
+  // files list as regular uploads — already uploaded and "done", so they
+  // slot in identically to a picked file. Once the URLs come back, submit
+  // right away instead of dropping the student back on the form for a
+  // separate "Submit for Approval" click — that extra round trip was the bad
+  // UX being reported. Only falls back to "attach and wait" when Subject/
+  // Aim/Description genuinely aren't filled in yet, since the backend
+  // requires all three and we can't guess them.
+  const handleBoardSnapshotsSaved = async (entries: { file: File; result: GroupContentMediaFile }[]) => {
+    const newFiles: UploadFile[] = entries.map(({ file, result }) => ({
+      uid: uuidv4(),
+      file,
+      status: "done" as const,
+      progress: 100,
+      result,
+      isBoardSnapshot: true,
+    }));
+    const mergedFiles = [...uploadFiles, ...newFiles];
+    setUploadFiles(mergedFiles);
+    setShowBoardTool(false);
+
+    if (subjectId && aim.trim() && description.trim()) {
+      await handleSubmit(false, mergedFiles);
+    } else {
+      toast(
+        "Board saved. Fill in Subject, Aim and Description above, then submit.",
+        { icon: "📝" }
+      );
+    }
+  };
+
   const uploading = uploadFiles.some((f) => f.status === "uploading" || f.status === "idle");
   const canSubmit = subjectId && aim.trim() && description.trim() && !uploading;
+  // A board snapshot and a live board recording are two different ways of
+  // adding board content — once the student has already written on a board,
+  // offering to also record one doesn't make sense.
+  const hasBoardSnapshot = uploadFiles.some((f) => f.isBoardSnapshot);
 
-  const handleSubmit = async (thenRecordBoard: boolean) => {
-    if (!canSubmit) return;
+  const handleSubmit = async (thenRecordBoard: boolean, filesOverride?: UploadFile[]) => {
+    if (!filesOverride && !canSubmit) return;
     setSubmitting(true);
     setSubmittingAction(thenRecordBoard ? "board" : "approval");
     setErrorMsg("");
     try {
-      const mediaFiles = uploadFiles.filter((f) => f.status === "done" && f.result).map((f) => f.result!);
+      const mediaFiles = (filesOverride ?? uploadFiles).filter((f) => f.status === "done" && f.result).map((f) => f.result!);
       const res = await groupService.submitGroupContent(groupId, {
         subjectId,
         topicId: topicId || null,
@@ -308,6 +349,35 @@ const SubmitContentPage = () => {
       <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
         <AlertCircle className="w-8 h-8 text-red-300" />
         <p className="text-sm font-medium text-[#3A3A3A]">{groupLoadError}</p>
+      </div>
+    );
+  }
+
+  // Full-screen takeover — nothing else from the content form is reachable
+  // while writing, so it doesn't compete with Submit/Save & Record/other
+  // fields. Returns to the form (with the new board(s) attached) on save/cancel.
+  if (showBoardTool) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex flex-col font-Poppins">
+        <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowBoardTool(false)}
+            className="flex items-center gap-1 text-xs text-[#6B6B85] hover:text-student-chestnut transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back
+          </button>
+          <h1 className="text-sm font-bold text-gray-800">Write on a Board</h1>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="max-w-3xl mx-auto">
+            <BoardSnapshotTool
+              startingDisplayOrder={uploadFiles.length + 1}
+              onSaved={handleBoardSnapshotsSaved}
+              onCancel={() => setShowBoardTool(false)}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -482,38 +552,63 @@ const SubmitContentPage = () => {
                 )}
               </div>
 
-              <div className="flex items-start gap-3 bg-student-chestnut/5 border border-student-chestnut/15 rounded-xl px-4 py-3.5">
-                <div className="w-8 h-8 rounded-lg bg-student-chestnut/10 flex items-center justify-center shrink-0">
-                  <PenLine className="w-4 h-4 text-student-chestnut" />
+              {/* Just write/solve on a board — no recording, just a snapshot
+                  attached like any other image. Opens as a full-screen
+                  takeover (see the showBoardTool early-return above) so it
+                  doesn't compete with the rest of this form. Disabled until a
+                  subject is picked — the auto-submit after saving boards
+                  needs it, and there's no point drawing into a dead end. */}
+              <button
+                type="button"
+                onClick={() => setShowBoardTool(true)}
+                disabled={!subjectId}
+                title={!subjectId ? "Select a subject first" : undefined}
+                className="flex items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-student-chestnut/40 hover:bg-student-chestnut/5 hover:text-student-chestnut transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-500"
+              >
+                <PencilRuler className="w-4 h-4" />
+                Write on a board (no recording)
+              </button>
+
+              {!hasBoardSnapshot && (
+                <div className="flex items-start gap-3 bg-student-chestnut/5 border border-student-chestnut/15 rounded-xl px-4 py-3.5">
+                  <div className="w-8 h-8 rounded-lg bg-student-chestnut/10 flex items-center justify-center shrink-0">
+                    <PenLine className="w-4 h-4 text-student-chestnut" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Whiteboard recording</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Want to explain this with drawings and your voice? Choose "Save &amp; Record Board" below —
+                      it saves this content, then opens the whiteboard right away.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Whiteboard recording</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Want to explain this with drawings and your voice? Choose "Save &amp; Record Board" below —
-                    it saves this content, then opens the whiteboard right away.
-                  </p>
-                </div>
-              </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
                 <Button
                   type="button"
                   disabled={!canSubmit || submitting}
                   onClick={() => handleSubmit(false)}
-                  className="flex-1 h-11 rounded-lg border border-student-chestnut/30 bg-white hover:bg-student-chestnut/5 text-student-chestnut font-semibold text-sm"
+                  className={`h-11 rounded-lg font-semibold text-sm ${
+                    hasBoardSnapshot
+                      ? "flex-1 bg-student-chestnut hover:bg-student-chestnut/90 text-white"
+                      : "flex-1 border border-student-chestnut/30 bg-white hover:bg-student-chestnut/5 text-student-chestnut"
+                  }`}
                 >
                   {submittingAction === "approval" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   {submittingAction === "approval" ? "Submitting..." : uploading ? "Waiting for uploads..." : "Submit for Approval"}
                 </Button>
-                <Button
-                  type="button"
-                  disabled={!canSubmit || submitting}
-                  onClick={() => handleSubmit(true)}
-                  className="flex-1 h-11 rounded-lg bg-student-chestnut hover:bg-student-chestnut/90 text-white font-semibold text-sm flex items-center justify-center gap-1.5"
-                >
-                  {submittingAction === "board" ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenLine className="w-4 h-4" />}
-                  {submittingAction === "board" ? "Saving..." : "Save & Record Board"}
-                </Button>
+                {!hasBoardSnapshot && (
+                  <Button
+                    type="button"
+                    disabled={!canSubmit || submitting}
+                    onClick={() => handleSubmit(true)}
+                    className="flex-1 h-11 rounded-lg bg-student-chestnut hover:bg-student-chestnut/90 text-white font-semibold text-sm flex items-center justify-center gap-1.5"
+                  >
+                    {submittingAction === "board" ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenLine className="w-4 h-4" />}
+                    {submittingAction === "board" ? "Saving..." : "Save & Record Board"}
+                  </Button>
+                )}
               </div>
             </>
           )}
