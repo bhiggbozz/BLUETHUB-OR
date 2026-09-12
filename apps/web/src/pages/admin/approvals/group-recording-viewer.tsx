@@ -34,10 +34,10 @@ function clockToMs(value: string | null | undefined): number {
  * an offline-capable lesson downloader.
  */
 const GroupRecordingViewer = () => {
-  const { groupId = "", studentId = "" } = useParams<{ groupId: string; studentId: string }>();
+  const { groupId = "", contentId = "" } = useParams<{ groupId: string; contentId: string }>();
   const navigate = useNavigate();
 
-  const sessionKey = `group-content_${groupId}_${studentId}`;
+  const sessionKey = `group-content_${groupId}_${contentId}`;
 
   const [isReady, setIsReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -46,7 +46,7 @@ const GroupRecordingViewer = () => {
   const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
-    if (!groupId || !studentId) {
+    if (!groupId || !contentId) {
       setError("Missing group or student id.");
       return;
     }
@@ -58,7 +58,7 @@ const GroupRecordingViewer = () => {
         setStatusText("Downloading recording manifest...");
         setProgress(5);
 
-        const manifest = await boardSessionService.getGroupContentManifest(groupId, studentId);
+        const manifest = await boardSessionService.getGroupContentManifest(groupId, contentId);
         if (!manifest) throw new Error("No recording manifest found for this student.");
         if (cancelled) return;
 
@@ -70,14 +70,15 @@ const GroupRecordingViewer = () => {
         ]);
 
         const batches = [...(manifest.strokeBatches ?? [])].sort((a, b) => a.batchIndex - b.batchIndex);
-        const totalItems = Math.max(1, batches.length + (manifest.audioFinalUrl ? 1 : 0));
+        const audioChunks = [...(manifest.audioChunks ?? [])].sort((a, b) => a.chunkIndex - b.chunkIndex);
+        const totalItems = Math.max(1, batches.length + audioChunks.length);
         let done = 0;
         const allStrokes: CompressedStroke[] = [];
 
         for (const batch of batches) {
           if (cancelled) return;
           setStatusText(`Downloading board data ${batch.batchIndex + 1} / ${batches.length}...`);
-          const fetched = await boardSessionService.getGroupContentBatch(groupId, studentId, batch.batchIndex);
+          const fetched = await boardSessionService.getGroupContentBatch(groupId, contentId, batch.batchIndex);
           if (fetched?.strokes?.length) {
             const stamped = fetched.strokes.map((s) => ({ ...s, sessionId: sessionKey }));
             await addStrokes(stamped);
@@ -103,36 +104,42 @@ const GroupRecordingViewer = () => {
           ? anchorCandidates[Math.floor(anchorCandidates.length / 2)]
           : 0;
 
-        // A single continuous audio file spans the whole recording — unlike
-        // the teacher flow's many per-minute chunks. Its wall-clock
-        // "timestamp" (marking the batch's end, per Replay's convention) is
-        // anchored to the same sessionStartWallMs as the strokes above, so
-        // both timelines share one consistent reference frame.
+        // One audio file per 60s upload batch — same granularity as the stroke
+        // batches, not one continuous file (nothing in the upload pipeline
+        // produces that). Each chunk's wall-clock "timestamp" (marking the
+        // chunk's end, per Replay's convention) is anchored to the same
+        // sessionStartWallMs as the strokes above, so both timelines share one
+        // consistent reference frame.
         const totalDurationMs = Math.max(1, manifest.stats.totalDurationMs);
-        if (manifest.audioFinalUrl) {
+        const chunkDurationMs = manifest.stats.chunkDurationMs || 60000;
+
+        for (const chunk of audioChunks) {
           if (cancelled) return;
-          setStatusText("Downloading audio...");
+          setStatusText(`Downloading audio ${chunk.chunkIndex + 1} / ${audioChunks.length}...`);
           try {
-            const res = await fetch(manifest.audioFinalUrl);
+            const res = await fetch(chunk.url);
             if (res.ok) {
               const blob = await res.blob();
+              const startMs = chunk.chunkIndex * chunkDurationMs;
+              const endMs = Math.min(startMs + chunkDurationMs, totalDurationMs);
               const audioBatch: AudioBatch = {
-                id: `${sessionKey}_audio_0`,
+                id: `${sessionKey}_audio_${chunk.chunkIndex}`,
                 type: "audio",
                 sessionId: sessionKey,
-                batchId: 0,
-                timestamp: sessionStartWallMs + totalDurationMs,
+                batchId: chunk.chunkIndex,
+                timestamp: sessionStartWallMs + endMs,
                 blob,
-                duration: totalDurationMs / 1000,
+                duration: (endMs - startMs) / 1000,
                 size: blob.size,
               };
               await addAudio(audioBatch);
             }
           } catch {
-            // Non-fatal — replay opens board-only (silent) if audio can't be fetched.
+            // Non-fatal — replay opens board-only (silent) for chunks that fail
+            // to fetch, rather than aborting the whole recording.
           }
           done++;
-          if (!cancelled) setProgress(95);
+          if (!cancelled) setProgress(Math.min(95, Math.round((done / totalItems) * 95)));
         }
 
         const boardDims = manifest.boards?.find(
@@ -185,7 +192,7 @@ const GroupRecordingViewer = () => {
       deleteAudioBySession(sessionKey).catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, studentId]);
+  }, [groupId, contentId]);
 
   if (forbidden) {
     return (

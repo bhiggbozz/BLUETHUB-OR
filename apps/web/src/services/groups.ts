@@ -61,6 +61,7 @@ export interface GroupContentItem {
   createdAt: string;
   mediaCount: number;
   hasRecording: boolean;
+  hasTextContent?: boolean;
 }
 
 export interface GroupDetail {
@@ -124,6 +125,7 @@ export interface GroupContentDetail {
   groupId: string;
   aim: string;
   description: string;
+  textContent?: string | null;
   subjectId?: string;
   subjectName?: string;
   topicId?: string | null;
@@ -133,6 +135,8 @@ export interface GroupContentDetail {
   createdBy: string;
   createdByName?: string;
   createdAt: string;
+  approvedAt?: string | null;
+  rejectionReason?: string | null;
   hasRecording?: boolean;
   media: GroupContentMediaDto[];
 }

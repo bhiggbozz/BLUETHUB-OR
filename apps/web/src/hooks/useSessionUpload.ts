@@ -289,13 +289,16 @@ export function useSessionUpload() {
 
       try {
         // A student recording study-group content routes to its own
-        // queue/worker/collection (keyed by groupId, no sessionId) instead
-        // of the teacher's live-session endpoint.
+        // queue/worker/collection (keyed by groupId + contentId, no sessionId)
+        // instead of the teacher's live-session endpoint. contentId scopes
+        // this recording to one specific submission.
         const groupId = sessionStorage.getItem('boardGroupId');
+        const contentId = sessionStorage.getItem('boardContentId');
 
-        if (groupId) {
+        if (groupId && contentId) {
           const groupPayload: GroupContentBoardBatchPayload = {
             groupId,
+            contentId,
             batchIndex: batch.batchIndex,
             startMs: batch.startMs,
             endMs: batch.endMs,
@@ -306,7 +309,7 @@ export function useSessionUpload() {
             boardSwitches: batch.boardSwitches,
             audioUrl: null,
           };
-          await boardSessionService.submitGroupContentBatch(groupId, groupPayload);
+          await boardSessionService.submitGroupContentBatch(groupId, contentId, groupPayload);
         } else {
           // Build payload for backend API
           const payload: BoardBatchPayload = {

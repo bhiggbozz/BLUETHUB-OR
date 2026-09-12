@@ -2,6 +2,9 @@ import { useAuthContext, isTeacherRoleData } from "@/contexts/auth-context";
 import moduleService, { type ModuleStudent } from "@/services/module";
 import { performanceService, type PerformanceClassroomDto } from "@/services/performance";
 import quizService from "@/services/quiz";
+import { adminService, type ResetStudentPasswordData } from "@/services/admin";
+import ResetPasswordDialog from "@/component/reset-password-dialog";
+import toast from "react-hot-toast";
 import {
   BookOpen,
   Users,
@@ -14,6 +17,7 @@ import {
   School,
   FileQuestion,
   ClipboardCheck,
+  KeyRound,
   Target,
   Clock,
   CheckCircle2,
@@ -73,6 +77,32 @@ const MyClassroomPage = () => {
   const [quizHistoryModal, setQuizHistoryModal] = useState<ModuleStudent | null>(null);
   const [quizHistory, setQuizHistory] = useState<any[]>([]);
   const [loadingQuizHistory, setLoadingQuizHistory] = useState(false);
+
+  const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
+  const [resetPasswordResult, setResetPasswordResult] = useState<ResetStudentPasswordData | null>(null);
+  // SubjectTeachers don't get this — the endpoint 403s for them (a ClassTeacher
+  // is further restricted server-side to students in their own classroom).
+  const canResetPassword = user?.roleName === "ClassTeacher" || user?.roleName === "HeadTeacher";
+
+  const handleResetPassword = async (studentId: string) => {
+    setResettingPasswordId(studentId);
+    try {
+      const { data } = await adminService.resetStudentPassword(studentId);
+      if (data.status === "failed") {
+        toast.error(data.responseMessage || "Failed to generate a temporary password");
+        return;
+      }
+      setResetPasswordResult(data.data);
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.responseMessage ??
+        error?.message ??
+        "Failed to generate a temporary password";
+      toast.error(msg);
+    } finally {
+      setResettingPasswordId(null);
+    }
+  };
 
   const roleData = user?.roleData;
   const classrooms: ClassroomInfo[] = roleData && isTeacherRoleData(roleData)
@@ -397,6 +427,21 @@ const MyClassroomPage = () => {
                         <ClipboardCheck className="w-3 h-3" />
                         Assessment
                       </button>
+                      {canResetPassword && (
+                        <button
+                          onClick={() => handleResetPassword(student.id)}
+                          disabled={resettingPasswordId === student.id}
+                          title="Generate a temporary password for this student"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {resettingPasswordId === student.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <KeyRound className="w-3 h-3" />
+                          )}
+                          Reset PW
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -491,6 +536,8 @@ const MyClassroomPage = () => {
           </div>
         </div>
       )}
+
+      <ResetPasswordDialog data={resetPasswordResult} onClose={() => setResetPasswordResult(null)} />
     </div>
   );
 };

@@ -19,6 +19,7 @@ import { groupService, type GroupDetail as GroupDetailDto } from "@/services/gro
 import { useAuthContext } from "@/contexts/auth-context";
 import { launchStudentBoardWithStatusCheck } from "@/utils/launch-student-board";
 import InviteMembersDialog from "./invite-members-dialog";
+import ContentDetailDialog from "./content-detail-dialog";
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -64,6 +65,7 @@ const GroupDetailPage = () => {
   const [memberSearch, setMemberSearch] = useState("");
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
 
   const loadDetail = useCallback(() => {
     if (!groupId) return;
@@ -85,9 +87,12 @@ const GroupDetailPage = () => {
         setDetail(raw ? { ...raw, members: raw.members ?? [], content: dedupedContent } : null);
       })
       .catch((err) => {
-        const status = err instanceof AxiosError ? err.response?.status : undefined;
-        if (status === 403) setErrorMsg("You're not a member of this group.");
-        else if (status === 404) setErrorMsg("This group couldn't be found.");
+        // GroupController maps every non-success response to HTTP 400, so a
+        // plain status check (403/404) never actually distinguishes these —
+        // branch on the body's responseCode instead.
+        const code = err instanceof AxiosError ? err.response?.data?.responseCode : undefined;
+        if (code === "AX1003") setErrorMsg("You're not a member of this group.");
+        else if (code === "99134") setErrorMsg("This group couldn't be found.");
         else setErrorMsg(extractMsg(err, "Couldn't load this group."));
       })
       .finally(() => setLoading(false));
@@ -326,7 +331,8 @@ const GroupDetailPage = () => {
                   return (
                     <div
                       key={item.contentId}
-                      className="bg-white border border-[#E4E4EC] rounded-xl px-3.5 py-3 flex items-start gap-3"
+                      onClick={() => setSelectedContentId(item.contentId)}
+                      className="bg-white border border-[#E4E4EC] rounded-xl px-3.5 py-3 flex items-start gap-3 cursor-pointer hover:border-student-chestnut/40 hover:bg-student-chestnut/5 transition-colors"
                     >
                       <div className="w-8 h-8 rounded-lg bg-student-chestnut/10 flex items-center justify-center shrink-0">
                         <FileText className="w-4 h-4 text-student-chestnut" />
@@ -344,7 +350,8 @@ const GroupDetailPage = () => {
                         {canRecord && (
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               launchStudentBoardWithStatusCheck(
                                 navigate,
                                 {
@@ -357,8 +364,8 @@ const GroupDetailPage = () => {
                                 },
                                 `/student/study-groups/${detail.groupId}`,
                                 toast
-                              )
-                            }
+                              );
+                            }}
                             className="inline-flex items-center gap-1 text-[10px] font-semibold text-student-chestnut hover:opacity-70 transition-opacity mt-1"
                           >
                             <PenLine className="w-3 h-3" /> Add board recording
@@ -383,6 +390,12 @@ const GroupDetailPage = () => {
               toast.success("Classmates invited.");
               loadDetail();
             }}
+          />
+
+          <ContentDetailDialog
+            groupId={detail.groupId}
+            contentId={selectedContentId}
+            onClose={() => setSelectedContentId(null)}
           />
         </>
       )}

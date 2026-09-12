@@ -23,12 +23,15 @@ import { useState } from "react";
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { isStudentRoleData, useAuthContext } from "@/contexts/auth-context";
 import { StudentMobileHeader } from "./header-mobile";
+import NotificationPanel from "./notification";
+import { useNotifications } from "@/hooks/useNotifications";
 const StudentAppBar = () => {
   const outletContext = useOutletContext<{ openMobileNav?: () => void }>() ?? {};
   const openMobileNav = outletContext.openMobileNav ?? (() => undefined);
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const [notificationStatus, setNotificationStatus] = useState<string>('')
+  const { items: notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const today = new Date();
 
   const roleData = user?.roleData;
@@ -134,9 +137,21 @@ const StudentAppBar = () => {
               <span className="ml-1 font-medium tracking-normal text-slate-700">{formattedDate}</span>
             </p>
 
-            <div className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500">
-              <Notification />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="border-none cursor-pointer">
+                <div className="relative rounded-full border border-slate-200 bg-white p-1.5 text-slate-500">
+                  <Notification />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80 border border-white p-0 m-2.5" align="end">
+                <NotificationPanel items={notifications} onMarkRead={markRead} onMarkAllRead={markAllRead} />
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <DropdownMenu>
