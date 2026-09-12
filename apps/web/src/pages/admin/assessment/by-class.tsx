@@ -1,7 +1,8 @@
 import { schoolService } from "@/services/school";
 import { performanceService, type ClassroomAssessmentPerformanceDto } from "@/services/performance";
-import { Loader2, FileText, Users, CheckCircle2, XCircle, Clock, TrendingUp, BarChart3 } from "lucide-react";
+import { Loader2, FileText, Users, CheckCircle2, XCircle, Clock, TrendingUp, BarChart3, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 interface ClassroomInfo {
   classroomId: string;
@@ -9,6 +10,7 @@ interface ClassroomInfo {
 }
 
 const AssessmentByClass = () => {
+  const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
   const [classrooms, setClassrooms] = useState<ClassroomInfo[]>([]);
   const [selectedClassroomId, setSelectedClassroomId] = useState<string>("");
   const [assessments, setAssessments] = useState<ClassroomAssessmentPerformanceDto[]>([]);
@@ -71,10 +73,20 @@ const AssessmentByClass = () => {
     <div className="min-h-dvh bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4 sm:p-6">
-          <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">Assessment by Class</h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            View assessment performance metrics for each class
-          </p>
+          <div className="flex items-start gap-3">
+            <Menu
+              className="lg:hidden text-chestnut mt-1 shrink-0 cursor-pointer"
+              onClick={openMobileNav}
+            />
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">
+                Assessment by Class
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                View assessment performance metrics for each class
+              </p>
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <div className="flex-1 sm:max-w-xs">
               <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Class</label>

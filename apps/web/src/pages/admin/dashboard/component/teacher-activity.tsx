@@ -46,7 +46,7 @@ export function TeacherActivity() {
 
   const displayTeachers = expanded ? teachers : teachers.slice(0, 5);
 
-  return (
+ return (
     <div className="bg-white rounded-md border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -55,30 +55,45 @@ export function TeacherActivity() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+      <div className="overflow-x-auto -mx-5 px-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <table className="w-full text-left text-xs min-w-[480px]">
           <thead>
             <tr className="text-slate-400 border-b border-gray-100">
-              <th className="pb-2 font-semibold">Teacher</th>
-              <th className="pb-2 font-semibold">Created</th>
-              <th className="pb-2 font-semibold">Published</th>
-              <th className="pb-2 font-semibold">Draft</th>
-              <th className="pb-2 font-semibold">Pending</th>
-              <th className="pb-2 font-semibold">Rejected</th>
-              <th className="pb-2 font-semibold">Trust</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap pr-4 min-w-[90px]">Teacher</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Created</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Published</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Draft</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Pending</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Rejected</th>
+              <th className="pb-2.5 font-semibold whitespace-nowrap text-center">Trust</th>
             </tr>
           </thead>
           <tbody className="text-slate-700">
             {displayTeachers.map((t) => (
-              <tr key={t.teacherId} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                <td className="py-2.5 pr-3 font-medium text-slate-800">{t.teacherName}</td>
-                <td className="py-2.5 pr-3">{t.totalLessonsCreated}</td>
-                <td className="py-2.5 pr-3 text-green-600 font-medium">{t.publishedLessons}</td>
-                <td className="py-2.5 pr-3">{t.draftLessons}</td>
-                <td className="py-2.5 pr-3 text-amber-600">{t.pendingApprovalLessons}</td>
-                <td className="py-2.5 pr-3">{t.rejectedLessons > 0 ? <span className="text-red-500">{t.rejectedLessons}</span> : t.rejectedLessons}</td>
-                <td className="py-2.5">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${trustBadge(t.trustLevel)}`}>
+              <tr
+                key={t.teacherId}
+                className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+              >
+                <td className="py-3 pr-4 font-medium text-slate-800 whitespace-nowrap">
+                  {t.teacherName}
+                </td>
+                <td className="py-3 pr-3 text-center">{t.totalLessonsCreated}</td>
+                <td className="py-3 pr-3 text-center text-green-600 font-medium">
+                  {t.publishedLessons}
+                </td>
+                <td className="py-3 pr-3 text-center">{t.draftLessons}</td>
+                <td className="py-3 pr-3 text-center text-amber-600">
+                  {t.pendingApprovalLessons}
+                </td>
+                <td className="py-3 pr-3 text-center">
+                  {t.rejectedLessons > 0 ? (
+                    <span className="text-red-500 font-medium">{t.rejectedLessons}</span>
+                  ) : (
+                    <span className="text-slate-400">{t.rejectedLessons}</span>
+                  )}
+                </td>
+                <td className="py-3 text-center">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${trustBadge(t.trustLevel)}`}>
                     {t.trustScore.toFixed(0)}% · {t.trustLevel}
                   </span>
                 </td>
