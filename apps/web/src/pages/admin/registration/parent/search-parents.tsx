@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { AxiosError } from "axios";
 import {
   AlertCircle,
@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Link2,
   Loader2,
+  Menu,
   Search,
   Settings2,
   Users,
@@ -31,6 +32,7 @@ function extractMsg(err: unknown, fallback: string): string {
 const PAGE_SIZE = 20;
 
 const SearchParentsPage = () => {
+  const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();  
   const navigate = useNavigate();
   const [scope, setScope] = useState<SearchScope>("parent");
   const [query, setQuery] = useState(""); // "By Parent" scope only
@@ -157,13 +159,16 @@ const SearchParentsPage = () => {
 
   return (
     <div className="font-poppins min-h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg">
-          <h2 className="font-semibold text-base text-white leading-none">Search Parents</h2>
-          <p className="text-white/60 text-[11px] mt-1">
-            Find a parent by name/email, or narrow down by class then pick their child — results include
-            attached students.
-          </p>
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden bg-white/70">
+        <div className="flex gap-2 items-center px-5 h-20 bg-chestnut">
+          <Menu className="lg:hidden text-white" onClick={openMobileNav} />
+          <div className="">
+            <h2 className="font-semibold text-base text-white leading-none">Search Parents</h2>
+            <p className="text-white/60 text-[11px] mt-1">
+              Find a parent by name/email, or narrow down by class then pick their child — results include
+              attached students.
+            </p>
+          </div>
         </div>
 
         <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5">
@@ -173,18 +178,16 @@ const SearchParentsPage = () => {
               <button
                 type="button"
                 onClick={() => setScope("parent")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  scope === "parent" ? "bg-chestnut text-white shadow-sm" : "text-gray-500 hover:text-chestnut"
-                }`}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${scope === "parent" ? "bg-chestnut text-white shadow-sm" : "text-gray-500 hover:text-chestnut"
+                  }`}
               >
                 By Parent
               </button>
               <button
                 type="button"
                 onClick={() => setScope("student")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  scope === "student" ? "bg-chestnut text-white shadow-sm" : "text-gray-500 hover:text-chestnut"
-                }`}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${scope === "student" ? "bg-chestnut text-white shadow-sm" : "text-gray-500 hover:text-chestnut"
+                  }`}
               >
                 By Student
               </button>
@@ -312,9 +315,8 @@ const SearchParentsPage = () => {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                              parent.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
-                            }`}
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${parent.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+                              }`}
                           >
                             {parent.isActive ? "Active" : "Deactivated"}
                           </span>

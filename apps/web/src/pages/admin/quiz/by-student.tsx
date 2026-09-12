@@ -1,8 +1,9 @@
 import { moduleService, type ModuleStudent } from "@/services/module";
 import { schoolService } from "@/services/school";
 import { quizService, type StudentQuizPerformanceDto } from "@/services/quiz";
-import { Loader2, ChevronDown, ChevronRight, Search, Trophy, CheckCircle2, XCircle, Users } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Search, Trophy, CheckCircle2, XCircle, Users, Menu } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 interface ClassroomInfo {
   classroomId: string;
@@ -27,6 +28,7 @@ const normalizeStudent = (s: any): ModuleStudent => ({
 });
 
 const QuizByStudent = () => {
+  const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
   const [classrooms, setClassrooms] = useState<ClassroomInfo[]>([]);
   const [selectedClassroomId, setSelectedClassroomId] = useState<string>("");
   const [students, setStudents] = useState<ModuleStudent[]>([]);
@@ -103,8 +105,16 @@ const QuizByStudent = () => {
     <div className="min-h-dvh bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4 sm:p-6">
-          <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">Quiz by Student</h1>
+ <div className="flex items-start gap-3">
+            <Menu
+              className="lg:hidden text-chestnut mt-1 shrink-0 cursor-pointer"
+              onClick={openMobileNav}
+            />
+            <div>
+                      <h1 className="text-lg sm:text-2xl font-bold text-[#292382]">Quiz by Student</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">Select a class to view and search students&apos; quiz performance</p>
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <div className="flex-1">
               <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Class</label>

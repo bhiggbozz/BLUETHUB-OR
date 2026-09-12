@@ -2,6 +2,11 @@ import { API, type TResponse } from ".";
 
 const headers = { "X-Tenant-ID": import.meta.env.VITE_DEFAULT_TENANT };
 
+const endpoint = {
+  assignAdminPermissions: "api/user/AssignPermissions",
+  getAllAdminPermissions: "api/user/GetAllAdminPermissions",
+}
+
 // Admin Permission Flags
 export const AdminPermissionFlags = {
   ApproveClasses: 1,
@@ -54,7 +59,7 @@ export const adminPermissionsService = {
       permissions: number[];
       permissionNames: string[];
     }>>(
-      "api/user/AssignPermissions",
+      endpoint.assignAdminPermissions,
       payload,
       { headers }
     ),
@@ -62,7 +67,7 @@ export const adminPermissionsService = {
   // Get all admin permissions with pagination
   getAllAdminPermissions: (pageNumber: number = 1, pageSize: number = 50) =>
     API.get<TResponse<AdminPermissionsResponse>>(
-      "api/user/GetAllAdminPermissions",
+      endpoint.getAllAdminPermissions,
       {
         headers,
         params: { pageNumber, pageSize },
