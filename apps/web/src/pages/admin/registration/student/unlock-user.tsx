@@ -1,12 +1,14 @@
 import { useAuthContext } from "@/contexts/auth-context";
-import { adminService } from "@/services/admin";
+import { adminService, type ResetStudentPasswordData } from "@/services/admin";
 import { authService } from "@/services/auth";
 import { moduleService } from "@/services/module";
 import { schoolService } from "@/services/school";
 import { localData } from "@/utils";
 import { UserRole } from "@/utils/validate";
+import ResetPasswordDialog from "@/component/reset-password-dialog";
 import {
   EllipsisVertical,
+  KeyRound,
   LayoutGrid,
   Loader2,
   Lock,
@@ -93,6 +95,8 @@ const UnlockUser = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [search, setSearch] = useState("");
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<ResetStudentPasswordData | null>(null);
 
   const isStudentRole = selectedRole?.roleId === UserRole.Student;
 
@@ -201,6 +205,26 @@ const UnlockUser = () => {
       toast.error(msg);
     } finally {
       setUnlockingId(null);
+    }
+  };
+
+  const handleResetPassword = async (studentId: string) => {
+    setResettingId(studentId);
+    try {
+      const { data } = await adminService.resetStudentPassword(studentId);
+      if (data.status === "failed") {
+        toast.error(data.responseMessage || "Failed to generate a temporary password");
+        return;
+      }
+      setResetResult(data.data);
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.responseMessage ??
+        error?.message ??
+        "Failed to generate a temporary password";
+      toast.error(msg);
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -372,7 +396,7 @@ const UnlockUser = () => {
               </div>
             ) : (
               <>
-                <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_120px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_190px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   <span>User</span>
                   <span>Email</span>
                   <span>Class</span>
@@ -393,7 +417,7 @@ const UnlockUser = () => {
                     visibleUsers.map((u) => (
                       <div
                         key={u.id}
-                        className="flex flex-col gap-2 px-4 py-3 hover:bg-slate-50/80 transition-colors md:grid md:grid-cols-[2fr_1.5fr_1fr_1fr_120px] md:items-center md:gap-4"
+                        className="flex flex-col gap-2 px-4 py-3 hover:bg-slate-50/80 transition-colors md:grid md:grid-cols-[2fr_1.5fr_1fr_1fr_190px] md:items-center md:gap-4"
                       >
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-800 truncate">
@@ -424,19 +448,37 @@ const UnlockUser = () => {
                         >
                           {u.status}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUnlock(u.id)}
-                          disabled={unlockingId === u.id}
-                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-600/20 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 w-fit disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {unlockingId === u.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Unlock className="h-3.5 w-3.5" />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleUnlock(u.id)}
+                            disabled={unlockingId === u.id}
+                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-600/20 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 w-fit disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {unlockingId === u.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Unlock className="h-3.5 w-3.5" />
+                            )}
+                            {u.isActive ? "Active" : "Unlock"}
+                          </button>
+                          {isStudentRole && (
+                            <button
+                              type="button"
+                              onClick={() => handleResetPassword(u.id)}
+                              disabled={resettingId === u.id}
+                              title="Generate a temporary password for this student"
+                              className="inline-flex items-center gap-1 rounded-lg border border-indigo-600/20 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 w-fit disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {resettingId === u.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <KeyRound className="h-3.5 w-3.5" />
+                              )}
+                              Reset PW
+                            </button>
                           )}
-                          {u.isActive ? "Active" : "Unlock"}
-                        </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -446,6 +488,8 @@ const UnlockUser = () => {
           </div>
         </div>
       </div>
+
+      <ResetPasswordDialog data={resetResult} onClose={() => setResetResult(null)} />
     </div>
   );
 };

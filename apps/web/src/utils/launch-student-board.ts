@@ -63,9 +63,13 @@ export function launchStudentBoard(
   sessionStorage.setItem("boardExitPath", exitPath);
   sessionStorage.setItem("boardDraftsPath", exitPath);
   // Routes stroke-batch uploads to the group-content pipeline (its own
-  // queue/worker/Mongo collection, keyed by groupId + studentId + batchIndex —
-  // no sessionId) instead of the teacher's live-session endpoint.
+  // queue/worker/Mongo collection, keyed by groupId + studentId + contentId +
+  // batchIndex — no sessionId) instead of the teacher's live-session endpoint.
+  // contentId scopes the recording to this one specific submission so a
+  // second recording for a different submission in the same group can never
+  // overwrite or leak into this one.
   sessionStorage.setItem("boardGroupId", content.groupId);
+  sessionStorage.setItem("boardContentId", content.contentId);
   sessionStorage.setItem("activeLesson", JSON.stringify({
     lesson,
     media: [],
@@ -76,13 +80,12 @@ export function launchStudentBoard(
 }
 
 /**
- * Checks the group+student recording slot before opening the board, and only
- * launches when it's actually safe to. A GroupLessonContent already existing
- * for this slot (PendingApproval/Approved/Rejected) means it's already been
- * claimed by a submission and re-recording is blocked; AwaitingSubmission
- * means a finished recording is already sitting there unsubmitted. Fails open
- * (launches anyway) if the status check itself errors, so a backend hiccup
- * doesn't block a student who has never recorded anything.
+ * Checks this specific content item's recording slot before opening the
+ * board, and only launches when it's actually safe to. A content item that's
+ * already been decided (Approved/Rejected) can no longer have its recording
+ * changed; "Recorded" means this content already has a finished recording.
+ * Fails open (launches anyway) if the status check itself errors, so a
+ * backend hiccup doesn't block a student who has never recorded anything.
  */
 export async function launchStudentBoardWithStatusCheck(
   navigate: NavigateFunction,
@@ -91,7 +94,7 @@ export async function launchStudentBoardWithStatusCheck(
   toastFn: { error: (msg: string) => void; (msg: string, opts?: { icon?: string }): void }
 ): Promise<void> {
   try {
-    const result = await boardSessionService.getGroupContentStatus(content.groupId);
+    const result = await boardSessionService.getGroupContentStatus(content.groupId, content.contentId);
 
     switch (result.status) {
       case "NoActiveContent":
@@ -103,20 +106,17 @@ export async function launchStudentBoardWithStatusCheck(
         launchStudentBoard(navigate, content, exitPath);
         return;
       }
-      case "AwaitingSubmission":
-        toastFn.error("You already have a finished recording waiting to be submitted — check your content list before recording again.");
-        return;
-      case "PendingApproval":
-        toastFn.error("This group's recording is already awaiting your class teacher's approval.");
+      case "Recorded":
+        toastFn.error("This content already has a recording — check your content list to review or submit it.");
         return;
       case "Approved":
-        toastFn.error("This group's recording has already been approved.");
+        toastFn.error("This content has already been approved — its recording can no longer be changed.");
         return;
       case "Rejected":
         toastFn.error(
           result.rejectionReason
-            ? `The previous recording was rejected: ${result.rejectionReason}`
-            : "The previous recording was rejected."
+            ? `This content was rejected: ${result.rejectionReason}`
+            : "This content was rejected."
         );
         return;
     }

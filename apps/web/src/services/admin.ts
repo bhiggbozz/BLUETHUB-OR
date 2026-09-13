@@ -45,4 +45,21 @@ export const adminService = {
     API.post<TResponse<null>>(`/api/User/${userId}/unlock`, null, {
       headers: { "X-Tenant-ID": getTenantFromUrl() },
     }),
+
+  // Staff-initiated password reset for a forgetful student — no body, the
+  // student is identified by the route and the caller by their own JWT.
+  // 400 if the target isn't a Student, 403 if the caller isn't authorized
+  // (e.g. a ClassTeacher targeting a student outside their own classroom).
+  resetStudentPassword: (studentId: string) =>
+    API.post<TResponse<ResetStudentPasswordData>>(
+      `/api/User/students/${studentId}/reset-password`,
+      null,
+      { headers: { "X-Tenant-ID": getTenantFromUrl() } },
+    ),
 };
+
+export interface ResetStudentPasswordData {
+  studentId: string;
+  studentName: string;
+  tempPassword: string;
+}
