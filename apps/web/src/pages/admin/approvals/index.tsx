@@ -140,8 +140,8 @@ const ApprovalsPage = () => {
   ];
 
   return (
-    <div className="font-poppins h-screen">
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden">
+    <div className="font-poppins">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 bg-chestnut">
@@ -168,12 +168,12 @@ const ApprovalsPage = () => {
         </div>
 
         {/* Body */}
-        <div className="bg-white/70 backdrop-blur-sm p-3 lg:p-6">
+        <div className="bg-white/70 backdrop-blur-sm p-3 lg:p-6 min-h-screen">
           <div className="max-w-5xl mx-auto">
 
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              <div className="rounded-2xl p-4 bg-chestnut text-white">
+              <div className="rounded-md p-4 bg-chestnut text-white">
                 <p className="text-2xl font-bold">{approvals.length}</p>
                 <p className="text-xs text-white/70 mt-0.5">Total submissions</p>
               </div>

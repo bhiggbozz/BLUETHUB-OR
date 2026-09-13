@@ -175,7 +175,7 @@ const RegisterTeacherRole = () => {
         setErrorMsg("")
         if (!role) { setErrorMsg("Please select a role"); return; }
         if (selectedClasses.length === 0) { setErrorMsg("Please select at least one class"); return; }
-        if (selectedSubjects.length === 0) { setErrorMsg("Please add at least one subject"); return; }
+        if (role === 'Subject Teacher' && selectedSubjects.length === 0 ) { setErrorMsg("Please add at least one subject"); return; }
         if (!selectedLineManager) { setErrorMsg("Please add line Manager"); return; }
 
         const teacherPayload = localData.retrieve("th_t") as IcreateUserRequest;

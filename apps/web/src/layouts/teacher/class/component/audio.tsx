@@ -71,7 +71,7 @@ const Audio = () => {
         reminderIntervalRef.current = null;
       }
     };
-  }, [classIsActive, isMicUnmuted, unmuteMic]);
+  }, []);
 
   const handleMic = () => {
     if (classEnded) {
