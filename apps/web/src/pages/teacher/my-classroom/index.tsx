@@ -109,7 +109,11 @@ const MyClassroomPage = () => {
     ? roleData.classrooms.map((c) => ({
         classroomId: c.classroomId,
         className: c.className,
-        subjects: c.subjects.map((s) => ({
+        // A HeadTeacher oversees the whole school rather than specific
+        // subjects, so their classroom entries can come back with no
+        // `subjects` array at all — the type says it's always present, but
+        // that's only true for ClassTeacher/SubjectTeacher role data.
+        subjects: (c.subjects ?? []).map((s) => ({
           subjectId: s.subjectId,
           subjectName: s.subjectName,
           subjectCategory: s.subjectCategory,

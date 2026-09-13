@@ -122,6 +122,7 @@ import AssessmentSettings from '@/pages/teacher/assessment-settings';
 import AssignAssessmentToStudent from '@/pages/teacher/assessment/assign-student';
 import ManageAssessments from '@/pages/teacher/assessment/manage';
 import PendingGrading from '@/pages/teacher/assessment/pending-grading';
+import ExamFocus from '@/pages/teacher/assessment/exam-focus';
 import AdminAnalytics from '@/pages/admin/dashboard/analytics-page';
 import TeacherAnalytics from '@/pages/teacher/dashboard/analytics-page';
 import Attendance from '@/pages/teacher/attendance';
@@ -458,6 +459,7 @@ const router = createBrowserRouter([
             { path: "assessment/assign-student", element: <AssignAssessmentToStudent /> },
             { path: "assessment/manage", element: <ManageAssessments /> },
             { path: "assessment/pending-grading", element: <PendingGrading /> },
+            { path: "assessment/exam-focus", element: <ExamFocus /> },
             { path: "approvals", element: <ApprovalsPage /> },
             { path: "approvals/recording/:groupId/:contentId", element: <GroupRecordingViewer /> },
             { path: "create-syllabus", element: <CreateSyllabus /> },
