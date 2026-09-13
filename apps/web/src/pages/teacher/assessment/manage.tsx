@@ -25,6 +25,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import AssessmentAnalyticsModal from "./assessment-analytics-modal";
 
 const ManageAssessmentsPage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const ManageAssessmentsPage = () => {
   const [loadingAssignments, setLoadingAssignments] = useState<Record<string, boolean>>({});
 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [analyticsAssessmentId, setAnalyticsAssessmentId] = useState<string | null>(null);
 
   useEffect(() => {
     void loadAssessments();
@@ -211,9 +213,17 @@ const ManageAssessmentsPage = () => {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-mono text-chestnut bg-chestnut/10 px-2 py-0.5 rounded-full">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAnalyticsAssessmentId(a.assessmentId);
+                            }}
+                            title="View question analytics"
+                            className="text-[11px] font-mono text-chestnut bg-chestnut/10 hover:bg-chestnut/20 px-2 py-0.5 rounded-full transition-colors"
+                          >
                             {a.code}
-                          </span>
+                          </button>
                           <span
                             className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                               a.status === "Active"
@@ -425,6 +435,11 @@ const ManageAssessmentsPage = () => {
           )}
         </div>
       </div>
+
+      <AssessmentAnalyticsModal
+        assessmentId={analyticsAssessmentId}
+        onClose={() => setAnalyticsAssessmentId(null)}
+      />
     </div>
   );
 };

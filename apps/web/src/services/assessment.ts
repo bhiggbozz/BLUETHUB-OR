@@ -209,6 +209,43 @@ export interface AssessmentAssignmentItem {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ANALYTICS DTOs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface QuestionAnalyticsStat {
+  questionId: string;
+  questionTitle: string;
+  questionType: number;
+  maxMarks: number;
+  subjectId: string;
+  subjectName: string;
+  topicId: string;
+  // Empty string (not null) when the question has no topic assigned.
+  topicName: string;
+  averageMarksObtained: number;
+  // % of attempts scoring EXACT full marks — partial credit doesn't count.
+  successRate: number;
+  // Students who actually answered this question; skipped/blank excluded.
+  totalAttempts: number;
+}
+
+export interface AssessmentAnalytics {
+  assessmentId: string;
+  code: string;
+  title: string;
+  totalStudents: number;
+  totalAttempts: number;
+  averageScore: number;
+  // % of attempts where IsPassed = true (the assessment's own pass mark) —
+  // not question-level, don't confuse with a per-question successRate.
+  passRate: number;
+  // Pre-sorted successRate ascending (worst-first) by the backend. Only
+  // includes questions with at least one answered attempt — a question with
+  // zero attempts is simply absent (SQL GROUP BY, not a full question list).
+  perQuestionStats: QuestionAnalyticsStat[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // GRADING DTOs
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -302,6 +339,9 @@ export const assessmentService = {
 
   getAssignments: (assessmentId: string) =>
     API.get<TResponse<AssessmentAssignmentItem[]>>(`api/Assessment/${assessmentId}/assignments`, { headers }),
+
+  getAnalytics: (assessmentId: string) =>
+    API.get<TResponse<AssessmentAnalytics>>(`api/Assessment/${assessmentId}/analytics`, { headers }),
 
   getPendingGradings: () =>
     API.get<TResponse<PendingGradeItem[]>>("api/Assessment/grading/pending", { headers }),

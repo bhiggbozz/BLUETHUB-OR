@@ -21,12 +21,18 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import bluethub from "@/assets/png/bluethub.png";
 import type { schoolInfo } from "@/services";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import toast from "react-hot-toast";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface NavChild {
     name: string;
     path: string;
     disabled?: boolean;
+    // Needs a live backend connection — everything except the already-cached
+    // recorded-lesson flow. Gated (not hidden) while offline: still visible,
+    // but tapping it shows a toast instead of navigating.
+    requiresOnline?: boolean;
 }
 
 interface NavLinkItem {
@@ -35,6 +41,7 @@ interface NavLinkItem {
     path?: string;
     children?: NavChild[];
     disabled?: boolean;
+    requiresOnline?: boolean;
 }
 
 interface NavGroup {
@@ -57,30 +64,32 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Assessment",
                 icons: moduleIcon,
                 children: [
-                    { name: "My Assessments", path: "/student/assessment" },
-                    { name: "Assessment Score", path: "/student/assessment/assessment-score" },
-                    { name: "Subject Scores", path: "/student/assessment/subject-scores" },
-                    { name: "Subtopic Scores", path: "/student/assessment/subtopic-scores" },
+                    { name: "My Assessments", path: "/student/assessment", requiresOnline: true },
+                    { name: "Assessment Score", path: "/student/assessment/assessment-score", requiresOnline: true },
+                    { name: "Subject Scores", path: "/student/assessment/subject-scores", requiresOnline: true },
+                    { name: "Subtopic Scores", path: "/student/assessment/subtopic-scores", requiresOnline: true },
                 ],
             },
             {
                 name: "My Classroom",
                 icons: moduleIcon,
                 children: [
-                    { name: "Overview", path: "/student/module" },
-                    { name: "Quiz", path: "/student/class-room/quiz" },
-                    { name: "Assessment", path: "/student/class-room/assessment" },
-                    { name: "Subject", path: "/student/class-room/subject" },
+                    { name: "Overview", path: "/student/module", requiresOnline: true },
+                    { name: "Quiz", path: "/student/class-room/quiz", requiresOnline: true },
+                    { name: "Assessment", path: "/student/class-room/assessment", requiresOnline: true },
+                    { name: "Subject", path: "/student/class-room/subject", requiresOnline: true },
                 ],
             },
-            { name: "My Course", path: "/student/my-course", icons: my_course },
-            { name: "Quizzes", path: "/student/Quizzes", icons: quizzes },
+            { name: "My Course", path: "/student/my-course", icons: my_course, requiresOnline: true },
+            { name: "Quizzes", path: "/student/Quizzes", icons: quizzes, requiresOnline: true },
             { name: "Assignments", path: "/student/Assignments", icons: assignments, disabled: true },
         ],
     },
     {
         label: "Classes",
         items: [
+            // Not gated — a previously-opened lesson is cached (Cache API +
+            // IndexedDB) and must stay watchable with no network at all.
             { name: "Recorded Class", path: "/student/recorded-class", icons: recorded_class },
             { name: "Live Classes", path: "/student/Live-Classes", icons: live_classes, disabled: true },
             { name: "Calendar", path: "/student/calendar", icons: Calendar, disabled: true },
@@ -89,10 +98,10 @@ const NAV_GROUPS: NavGroup[] = [
     {
         label: "More",
         items: [
-            { name: "Discussion Forum", path: "/student/Discussion-Forum", icons: discussion },
-            { name: "Study Groups", path: "/student/study-groups", icons: studyGroups },
+            { name: "Discussion Forum", path: "/student/Discussion-Forum", icons: discussion, requiresOnline: true },
+            { name: "Study Groups", path: "/student/study-groups", icons: studyGroups, requiresOnline: true },
             { name: "Grades & Progress", path: "/student/Grades-Progress", icons: grades, disabled: true },
-            { name: "Premium", path: "/student/Premium", icons: premium, disabled: false },
+            { name: "Premium", path: "/student/Premium", icons: premium, disabled: false, requiresOnline: true },
             { name: "Bluethub AI", path: "/student/Bluethub-Ai", icons: bluethub_ai, disabled: true },
         ],
     },
@@ -158,14 +167,17 @@ function PlainNavLink({
     onNavigate,
     isLogout,
     onLogout,
+    isOnline,
 }: {
     link: NavLinkItem;
     isCollapsed: boolean;
     onNavigate?: () => void;
     isLogout?: boolean;
     onLogout?: () => void;
+    isOnline: boolean;
 }) {
     const Icon = link.icons;
+    const blocked = !!link.requiresOnline && !isOnline;
 
     if (link.disabled) {
         return (
@@ -192,7 +204,18 @@ function PlainNavLink({
         <NavLink
             to={link.path!}
             end={link.path === "/student"}
-            onClick={isLogout ? onLogout : onNavigate}
+            onClick={(e) => {
+                if (isLogout) {
+                    onLogout?.();
+                    return;
+                }
+                if (blocked) {
+                    e.preventDefault();
+                    toast.error("This needs an internet connection");
+                    return;
+                }
+                onNavigate?.();
+            }}
             className={({ isActive }) =>
                 [
                     "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 cursor-pointer group",
@@ -241,6 +264,7 @@ function DropdownNavItem({
     isActive,
     onToggle,
     onNavigate,
+    isOnline,
 }: {
     link: NavLinkItem;
     isCollapsed: boolean;
@@ -248,6 +272,7 @@ function DropdownNavItem({
     isActive: boolean;
     onToggle: () => void;
     onNavigate?: () => void;
+    isOnline: boolean;
 }) {
     const Icon = link.icons;
 
@@ -298,12 +323,20 @@ function DropdownNavItem({
                             </div>
                         );
                     }
+                    const childBlocked = !!child.requiresOnline && !isOnline;
                     return (
                         <NavLink
                             key={child.name}
                             to={child.path}
                             end
-                            onClick={onNavigate}
+                            onClick={(e) => {
+                                if (childBlocked) {
+                                    e.preventDefault();
+                                    toast.error("This needs an internet connection");
+                                    return;
+                                }
+                                onNavigate?.();
+                            }}
                             className={({ isActive }) =>
                                 [
                                     "block text-xs py-1.5 px-3 rounded-md font-medium transition-all duration-150",
@@ -332,6 +365,7 @@ interface StudentNavContentProps {
 
 const StudentNavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }: StudentNavContentProps) => {
     const location = useLocation();
+    const isOnline = useOnlineStatus();
 
     // Whichever dropdown contains the current route — so landing on a deep
     // link (bookmark, refresh, back button) shows the section you're already in.
@@ -377,7 +411,7 @@ const StudentNavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
                 <SectionLabel label="Main" isCollapsed={isCollapsed} />
                 <div className="space-y-0.5">
                     {MAIN_LINKS.map((link) => (
-                        <PlainNavLink key={link.name} link={link} isCollapsed={isCollapsed} onNavigate={onNavigate} />
+                        <PlainNavLink key={link.name} link={link} isCollapsed={isCollapsed} onNavigate={onNavigate} isOnline={isOnline} />
                     ))}
                 </div>
             </section>
@@ -399,11 +433,12 @@ const StudentNavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
                                         isActive={activeItemKey === key}
                                         onToggle={() => toggleMenu(key)}
                                         onNavigate={onNavigate}
+                                        isOnline={isOnline}
                                     />
                                 );
                             }
                             return (
-                                <PlainNavLink key={item.name} link={item} isCollapsed={isCollapsed} onNavigate={onNavigate} />
+                                <PlainNavLink key={item.name} link={item} isCollapsed={isCollapsed} onNavigate={onNavigate} isOnline={isOnline} />
                             );
                         })}
                     </div>
@@ -415,7 +450,7 @@ const StudentNavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
                 <SectionLabel label="Account" isCollapsed={isCollapsed} />
                 <div className="space-y-0.5">
                     {ACCOUNT_LINKS.map((link) => (
-                        <PlainNavLink key={link.name} link={link} isCollapsed={isCollapsed} onNavigate={onNavigate} />
+                        <PlainNavLink key={link.name} link={link} isCollapsed={isCollapsed} onNavigate={onNavigate} isOnline={isOnline} />
                     ))}
                     <button
                         type="button"

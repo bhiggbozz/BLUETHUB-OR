@@ -4,6 +4,14 @@ import { token } from "@/utils";
 import { getParsedToken } from "@/utils/decode";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
+import {
+  isNetworkFailure,
+  isWithinOfflineGrace,
+  markOnlineContact,
+  saveCachedUser,
+  getCachedUser,
+  clearOfflineSession,
+} from "@/utils/offline-session";
 
 
 
@@ -100,8 +108,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const response = await authService.getUserById(parsed.id);
-    setUser(response.data.data);
+    try {
+      const response = await authService.getUserById(parsed.id);
+      setUser(response.data.data);
+      saveCachedUser(response.data.data);
+      // Deliberately NOT markOnlineContact() here — this just revalidates an
+      // existing token on app boot / periodic refresh, it isn't the student
+      // presenting credentials. The 3-day clock only resets on an explicit
+      // login() call below.
+    } catch (error) {
+      // Being offline (or a transient network error) shouldn't log the
+      // student out — fall back to the last confirmed user snapshot as long
+      // as we're still within the 3-day offline grace window. A real
+      // rejection from the backend (bad/expired token) still throws through
+      // to the caller, which logs out as before.
+      if (isNetworkFailure(error) && isWithinOfflineGrace()) {
+        const cached = getCachedUser<IUser>();
+        if (cached) {
+          setUser(cached);
+          return;
+        }
+      }
+      throw error;
+    }
   };
 
   useEffect(() => {
@@ -126,6 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        clearOfflineSession();
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -141,6 +171,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ...userData,
       roleName: userData.roleName ?? userData.roleName,
     });
+    saveCachedUser(userData);
+    // This only runs after a real online authentication just succeeded
+    // (the login screen already called the login API with live credentials)
+    // — this is the one place the 3-day offline clock is allowed to reset.
+    markOnlineContact();
 
     void hydrateUserFromToken().catch((error) => {
       console.error('Error hydrating user after login:', error);
@@ -152,6 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Try to call logout API, but don't fail if it errors (offline support)
     try {
       token.clearAll();
+      clearOfflineSession();
       <Navigate to="/auth" />;
     } catch (error) {
       // Network error or token already invalid - still proceed with local logout
@@ -159,6 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     finally {
       token.clearAll();
+      clearOfflineSession();
       setUser(null);
       setIsLoggingOut(false);
     }
