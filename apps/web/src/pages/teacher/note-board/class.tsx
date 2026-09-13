@@ -922,8 +922,8 @@ const Class = () => {
                                         strokeWidth={s.type === "eraser" ? 30 : 2}
                                         lineCap="round"
                                         lineJoin="round"
-                                        tension={0.5}
-                                        opacity={0.9}
+                                        opacity={1}
+                                        // tension={0.5}
                                         draggable={isDraggable}
                                         onClick={onClick}
                                         globalCompositeOperation={
@@ -941,7 +941,7 @@ const Class = () => {
                                         lineCap="round"
                                         lineJoin="round"
                                         opacity={1}
-                                        tension={0.5}
+                                        // tension={0.5}
                                         globalCompositeOperation={
                                             actions === ACTIONS.ERASER ? "destination-out" : "source-over"
                                         }
