@@ -30,7 +30,6 @@ interface ActiveLesson {
 const Topic = () => {
   const dispatch = useDispatch();
   const [lessonData, setLessonData] = useState<ActiveLesson | null>(null);
-  console.log("lessonData:", lessonData);
 
   const pickText = (...values: Array<string | undefined | null>) => {
     for (const value of values) {

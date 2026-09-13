@@ -592,7 +592,7 @@ const TeacherAttendance = () => {
   }, [reloadData, runSync]);
 
   // ── Online / offline ──────────────────────────────────────────────────────
-  // Records are pushed only when the teacher presses “Push to backend”. The one
+  // Records are pushed only when the teacher presses “Submit”. The one
   // exception: scans captured offline are pushed automatically the moment the
   // network returns, so offline data is never stranded.
   useEffect(() => {
@@ -942,8 +942,8 @@ const TeacherAttendance = () => {
                 {syncing
                   ? "Pushing…"
                   : stats.queued > 0
-                    ? `Push to backend (${stats.queued})`
-                    : "Push to backend"}
+                    ? `Submit (${stats.queued})`
+                    : "Submit"}
               </button>
               {stats.failed > 0 && (
                 <button
@@ -961,7 +961,7 @@ const TeacherAttendance = () => {
 
             <p className="mt-3 text-xs text-slate-500">
               Scanned students are saved on this device. Review the names below, then press{" "}
-              <span className="font-semibold text-emerald-700">“Push to backend”</span> to send them
+              <span className="font-semibold text-emerald-700">“Submit”</span> to send them
               to the server.
             </p>
 
@@ -1261,7 +1261,7 @@ const TeacherAttendance = () => {
               </div>
               <p className="mt-1 text-xs text-amber-700/90">
                 {stuckPending.length} record{stuckPending.length === 1 ? "" : "s"} could not reach
-                the server yet. {stuckPending[0].lastError} Press “Push to backend” above to retry
+                the server yet. {stuckPending[0].lastError} Press “Submit” above to retry
                 — they are kept safely on this device.
               </p>
             </section>

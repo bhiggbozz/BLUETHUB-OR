@@ -194,9 +194,13 @@ export interface IEditUserRequest {
   firstName: string;
   lastName: string;
   emailAddress: string;
-  /** Omit unless the caller actually intends to change the password — the
-   * backend applies this unconditionally whenever it's non-empty. */
+  /** Omit unless the caller actually intends to change the password.
+   * changePassword must also be true — the backend now requires both,
+   * specifically so a hashPassword value populated by accident (as opposed
+   * to deliberately, with intent) can no longer silently reset an account's
+   * password. */
   hashPassword?: string;
+  changePassword?: boolean;
   isActive: boolean;
   hasAccess: boolean;
   roleId: number;

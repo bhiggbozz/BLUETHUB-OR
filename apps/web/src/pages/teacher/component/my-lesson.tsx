@@ -400,8 +400,8 @@ const MyLesson = () => {
             ) : (
               <>
                 {/* ── Desktop/tablet table ── */}
-                <div className="hidden sm:block border border-[#E8E8E3] rounded-2xl overflow-hidden">
-                  <div className="overflow-x-auto">
+                <div className="hidden sm:block border border-[#E8E8E3] rounded-2xl overflow-hidden ">
+                  <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <Table>
                       {/* ── Header ── */}
                       <TableHeader>
@@ -443,11 +443,13 @@ const MyLesson = () => {
                             return (
                               <TableRow
                                 key={lesson.id}
-                                className={`hover:bg-gray-50/60 transition-colors border-l-[3px] ${style.border}`}
+                                className={`hover:bg-gray-50/60 transition-colors border-l-[3px]  ${style.border}`}
                               >
                                 {/* ── Lesson title ── */}
-                                <TableCell className="px-5 py-4 align-middle">
-                                  <p className="text-[#0F0F0E] font-semibold text-[13.5px] leading-snug line-clamp-1">
+                                {/* ── Lesson title ── */}
+                                {/* ── Lesson title ── */}
+                                <TableCell className="px-5 py-4 align-top w-[45%] max-w-0">
+                                  <p className="text-[#0F0F0E] font-semibold text-[13.5px] leading-snug whitespace-normal break-words">
                                     {buildLessonTitle(lesson)}
                                   </p>
                                   {lesson.subjectName && (
@@ -456,7 +458,7 @@ const MyLesson = () => {
                                     </span>
                                   )}
                                   {lesson.aim && (
-                                    <p className="text-[#A8A8A4] text-[11.5px] mt-1.5 leading-relaxed line-clamp-1 max-w-lg">
+                                    <p className="text-[#A8A8A4] text-[11.5px] mt-1.5 leading-relaxed line-clamp-2 whitespace-normal break-words">
                                       {lesson.aim}
                                     </p>
                                   )}

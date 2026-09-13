@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import {
   AlertCircle,
   CheckCircle2,
   Loader2,
   Mail,
+  Menu,
   User,
   UserPlus,
   UserX,
@@ -25,6 +26,7 @@ function extractMsg(err: unknown, fallback: string): string {
 }
 
 const CreateParentPage = () => {
+  const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
   // ── Form ─────────────────────────────────────────────────────────────────
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -125,9 +127,14 @@ const CreateParentPage = () => {
   return (
     <div className="font-poppins min-h-screen">
       <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg">
-          <h2 className="font-semibold text-base text-white leading-none">Register Parent</h2>
-          <p className="text-white/60 text-[11px] mt-1">Create a parent account and link it to their children</p>
+        <div className="flex gap-2 items-center px-5 h-20 bg-chestnut">
+          <Menu className="lg:hidden text-white" onClick={openMobileNav} />
+          <div className="">
+            <h2 className="font-semibold text-base text-white leading-none">Attach Student to Parent</h2>
+            <p className="text-white/60 text-[11px] mt-1">
+              Link students to a parent account that already exists — this does not create a parent.
+            </p>
+          </div>
         </div>
 
         <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
@@ -247,9 +254,8 @@ const CreateParentPage = () => {
 
             {manageMsg && (
               <div
-                className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs ${
-                  manageMsg.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"
-                }`}
+                className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs ${manageMsg.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"
+                  }`}
               >
                 {manageMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />}
                 {manageMsg.text}

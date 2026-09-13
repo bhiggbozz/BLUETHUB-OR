@@ -446,7 +446,11 @@ const HeadTeacherDashboard = () => {
                     {approvals.map((a) => {
                       const display = getApprovalDisplay(a as any);
                       return (
-                      <div key={a.id} className="p-3 sm:p-4">
+                      <div
+                        key={a.id}
+                        onClick={() => navigate("/teacher/approvals", { state: { openApprovalId: a.id } })}
+                        className="p-3 sm:p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
                         <div className="flex items-start gap-2.5">
                           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                             <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
@@ -477,14 +481,14 @@ const HeadTeacherDashboard = () => {
                               <div className="flex items-center gap-2 mt-2 sm:mt-3">
                                 <button
                                   type="button"
-                                  onClick={() => handleApproval(a.id, true)}
+                                  onClick={(e) => { e.stopPropagation(); handleApproval(a.id, true); }}
                                   className="flex-1 text-[10px] sm:text-xs font-semibold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-lg py-1.5 transition-colors"
                                 >
                                   Approve
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleApproval(a.id, false)}
+                                  onClick={(e) => { e.stopPropagation(); handleApproval(a.id, false); }}
                                   className="flex-1 text-[10px] sm:text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-200 rounded-lg py-1.5 transition-colors"
                                 >
                                   Reject

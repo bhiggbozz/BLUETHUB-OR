@@ -29,9 +29,9 @@ const AdminDashboard = () => {
   const initials = getInitials(user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "WA"); 
 
   return (
-    <div className="font-poppins w-full lg:py-2 lg:px-4">
+    <div className="font-poppins w-full lg:py-1 lg:px-2">
       <MobileNav isOpen={isOpen} setIsOpen={setIsOpen}/>
-      <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden">
+      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
 
         {/* ── Top Nav ── */}
         <div className="flex items-center justify-between px-4 h-12 bg-chestnut">

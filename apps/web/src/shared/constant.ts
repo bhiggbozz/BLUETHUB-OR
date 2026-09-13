@@ -33,6 +33,7 @@ export const TACADEMIC_GROUPS = [
         icons: classIconIcon,
         name: "My Classroom",
         children: [
+          { name: "Students", path: "/teacher/module" },
           { name: "Quiz", path: "/teacher/module/quiz" },
           { name: "Topic", path: "/teacher/module/quiz?view=topic", roles: ["ClassTeacher", "HeadTeacher"] },
           { name: "Per Student", path: "/teacher/module/quiz?view=student", roles: ["ClassTeacher", "HeadTeacher"] },
@@ -113,6 +114,7 @@ export const TACADEMIC_GROUPS = [
           { name: "Manage Assessments", path: "/teacher/assessment/manage" },
           { name: "Assign to Students", path: "/teacher/assessment/assign-student" },
           { name: "Assessment Grading", path: "/teacher/assessment/pending-grading" },
+          { name: "Exam Focus", path: "/teacher/assessment/exam-focus" },
         ],
       },
     ],

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import axios from 'axios';
+import { isNetworkFailure, isWithinOfflineGrace } from '@/utils/offline-session';
 
 const ACTIVITY_TIMESTAMP_KEY = 'lastActivityTime';
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
@@ -23,9 +24,11 @@ const logOutAndRedirect = () => {
   }
 };
 
-const attemptTokenRefresh = async (): Promise<boolean> => {
+type RefreshOutcome = 'success' | 'network-error' | 'rejected';
+
+const attemptTokenRefresh = async (): Promise<RefreshOutcome> => {
   const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return false;
+  if (!refreshToken) return 'rejected';
 
   try {
     const { data } = await axios.post(
@@ -40,9 +43,15 @@ const attemptTokenRefresh = async (): Promise<boolean> => {
     localStorage.setItem('accessTokenExpiresAt', String(expiresAt));
 
     axios.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-    return true;
-  } catch {
-    return false;
+    // Deliberately NOT markOnlineContact() here — a background refresh
+    // succeeding mid-session isn't the student logging in, so it shouldn't
+    // extend the 3-day offline-login clock either.
+    return 'success';
+  } catch (error) {
+    // No response at all (or navigator says we're offline) means this never
+    // reached the backend — a connectivity problem, not proof the refresh
+    // token is invalid. Don't treat it the same as a real rejection.
+    return isNetworkFailure(error) ? 'network-error' : 'rejected';
   }
 };
 
@@ -63,10 +72,23 @@ export const useTokenRefresh = () => {
         return;
       }
 
-      const refreshed = await attemptTokenRefresh();
-      if (!refreshed) {
-        logOutAndRedirect();
+      const outcome = await attemptTokenRefresh();
+      if (outcome === 'success') return;
+
+      if (outcome === 'network-error') {
+        // Offline (or a transient connectivity blip) — as long as we've had
+        // confirmed online contact within the last 3 days, stay logged in
+        // and just try again on the next interval instead of logging out.
+        if (!isWithinOfflineGrace()) {
+          logOutAndRedirect();
+        }
+        return;
       }
+
+      // 'rejected' — the backend actually said no (refresh token invalid or
+      // revoked). That's a real invalidation, not a connectivity issue, so
+      // log out regardless of the offline grace period.
+      logOutAndRedirect();
     };
 
     const handleActivity = () => {

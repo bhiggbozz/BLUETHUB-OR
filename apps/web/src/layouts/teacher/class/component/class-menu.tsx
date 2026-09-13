@@ -1,5 +1,5 @@
 import Media from "@/pages/teacher/note-board/class-menu/media";
-import Paint from "@/pages/teacher/note-board/class-menu/paint";
+// import Paint from "@/pages/teacher/note-board/class-menu/paint";
 import Pen from "@/pages/teacher/note-board/class-menu/pen";
 import Select from "@/pages/teacher/note-board/class-menu/select";
 import Shapes from "@/pages/teacher/note-board/class-menu/shapes";
@@ -64,7 +64,7 @@ const ClassMenu = () => {
             <Pen />
             <Media />
             <Shapes />
-            <Paint />
+            {/* <Paint /> */}
           </div>
         </div>
       </div>

@@ -919,11 +919,11 @@ const Class = () => {
                                         key={s.id}
                                         points={s.points}
                                         stroke={s.color}
-                                        strokeWidth={s.type === "eraser" ? 30 : 5}
+                                        strokeWidth={s.type === "eraser" ? 30 : 2}
                                         lineCap="round"
                                         lineJoin="round"
-                                        tension={0.5}
-                                        opacity={0.9}
+                                        opacity={1}
+                                        // tension={0.5}
                                         draggable={isDraggable}
                                         onClick={onClick}
                                         globalCompositeOperation={
@@ -937,11 +937,11 @@ const Class = () => {
                                     <Line
                                         points={currentStroke}
                                         stroke={actions === ACTIONS.ERASER ? "#fff" : selectedFillColor || "#df4b26"}
-                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 5}
+                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 2}
                                         lineCap="round"
                                         lineJoin="round"
                                         opacity={1}
-                                        tension={0.5}
+                                        // tension={0.5}
                                         globalCompositeOperation={
                                             actions === ACTIONS.ERASER ? "destination-out" : "source-over"
                                         }

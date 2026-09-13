@@ -46,6 +46,7 @@ import StudentIndex from '@/pages/student/component/main';
 import StudyGroupsIndex from '@/pages/student/study-groups';
 import StudyGroupDetailPage from '@/pages/student/study-groups/group-detail';
 import SubmitGroupContentPage from '@/pages/student/study-groups/submit-content';
+import StudentGroupRecordingViewer from '@/pages/admin/approvals/group-recording-viewer';
 import StudentSettings from '@/shared/setting';
 import ProfileLayout from '@/pages/student/profile/layout';
 import Profile from '@/pages/student/profile/profile';
@@ -121,6 +122,7 @@ import AssessmentSettings from '@/pages/teacher/assessment-settings';
 import AssignAssessmentToStudent from '@/pages/teacher/assessment/assign-student';
 import ManageAssessments from '@/pages/teacher/assessment/manage';
 import PendingGrading from '@/pages/teacher/assessment/pending-grading';
+import ExamFocus from '@/pages/teacher/assessment/exam-focus';
 import AdminAnalytics from '@/pages/admin/dashboard/analytics-page';
 import TeacherAnalytics from '@/pages/teacher/dashboard/analytics-page';
 import Attendance from '@/pages/teacher/attendance';
@@ -352,7 +354,7 @@ const router = createBrowserRouter([
                 element: <ApprovalsPage />
             },
             {
-                path: 'approvals/recording/:groupId/:studentId',
+                path: 'approvals/recording/:groupId/:contentId',
                 element: <GroupRecordingViewer />
             },
             {
@@ -457,8 +459,9 @@ const router = createBrowserRouter([
             { path: "assessment/assign-student", element: <AssignAssessmentToStudent /> },
             { path: "assessment/manage", element: <ManageAssessments /> },
             { path: "assessment/pending-grading", element: <PendingGrading /> },
+            { path: "assessment/exam-focus", element: <ExamFocus /> },
             { path: "approvals", element: <ApprovalsPage /> },
-            { path: "approvals/recording/:groupId/:studentId", element: <GroupRecordingViewer /> },
+            { path: "approvals/recording/:groupId/:contentId", element: <GroupRecordingViewer /> },
             { path: "create-syllabus", element: <CreateSyllabus /> },
             { path: "analytics", element: <TeacherAnalytics /> },
             { path: "attendance", element: <Attendance /> },
@@ -564,6 +567,7 @@ const router = createBrowserRouter([
                     { index: true, element: <StudyGroupsIndex /> },
                     { path: ':groupId', element: <StudyGroupDetailPage /> },
                     { path: ':groupId/content/new', element: <SubmitGroupContentPage /> },
+                    { path: ':groupId/recording/:contentId', element: <StudentGroupRecordingViewer /> },
                 ]
             }
 

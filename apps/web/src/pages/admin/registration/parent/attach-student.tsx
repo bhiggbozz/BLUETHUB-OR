@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
-import { AlertCircle, CheckCircle2, Link2, Loader2, Search, UserCircle2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Link2, Loader2, Menu, Search, UserCircle2, X } from "lucide-react";
 import { parentService, type AttachStudentsData, type ParentSearchResult } from "@/services/parent";
 import StudentMultiSelect from "@/component/student-multi-select";
 
@@ -21,6 +21,7 @@ interface SelectedParent {
 
 const AttachStudentPage = () => {
   const [searchParams] = useSearchParams();
+  const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
 
   // ── Parent picker — type-ahead against GET /api/User/parents/search ──────
   const deepLinkedId = searchParams.get("parentId");
@@ -121,11 +122,15 @@ const AttachStudentPage = () => {
   return (
     <div className="font-poppins min-h-screen">
       <div className="backdrop-blur-sm lg:rounded-2xl border border-white/20 overflow-hidden bg-white/70">
-        <div className="bg-gradient-to-r from-chestnut to-chestnut/90 px-4 sm:px-6 py-4 sm:py-5 lg:rounded-t-lg">
-          <h2 className="font-semibold text-base text-white leading-none">Attach Student to Parent</h2>
-          <p className="text-white/60 text-[11px] mt-1">
-            Link students to a parent account that already exists — this does not create a parent.
-          </p>
+
+        <div className="flex gap-2 items-center px-5 h-20 bg-chestnut">
+          <Menu className="lg:hidden text-white" onClick={openMobileNav} />
+          <div className="">
+            <h2 className="font-semibold text-base text-white leading-none">Attach Student to Parent</h2>
+            <p className="text-white/60 text-[11px] mt-1 ">
+              Link students to a parent account that already exists — this does not create a parent.
+            </p>
+          </div>
         </div>
 
         <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">

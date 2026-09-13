@@ -1,5 +1,6 @@
 ;
 import StudentSideBar, { MobileStudentNav } from "@/pages/student/component/side-bar";
+import OfflineBanner from "@/component/offline-banner";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 
@@ -13,8 +14,11 @@ const StudentsLayout = () => {
       <div>
         <MobileStudentNav isOpen={mobileNavOpen} setIsOpen={setMobileNavOpen} />
       </div>
-      <div className="flex-1 h-screen overflow-y-auto px-2 py-2 md:px-3 md:py-3 lg:px-3">
-        <Outlet context={{ openMobileNav: () => setMobileNavOpen(true) }} />
+      <div className="flex-1 h-screen overflow-y-auto flex flex-col">
+        <OfflineBanner />
+        <div className="flex-1 px-2 py-2 md:px-3 md:py-3 lg:px-3">
+          <Outlet context={{ openMobileNav: () => setMobileNavOpen(true) }} />
+        </div>
       </div>
     </div>
   );

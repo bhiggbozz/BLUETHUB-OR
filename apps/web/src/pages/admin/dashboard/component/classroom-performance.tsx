@@ -37,7 +37,7 @@ export function ClassroomPerformance() {
   const display = expanded ? classrooms : classrooms.slice(0, 5);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
+    <div className="bg-white rounded-md border border-gray-100 p-5">
       <div className="flex items-center gap-2 mb-4">
         <Building2 className="w-4 h-4 text-slate-500" />
         <h3 className="text-sm font-semibold text-gray-900">Classroom Performance</h3>
