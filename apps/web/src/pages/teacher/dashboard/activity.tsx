@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -11,7 +11,8 @@ import {
   BarChart2,
   TrendingUp,
   ClipboardCheck,
-  
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 // import { teacherService, type TeacherDashboardStats } from "@/services/teacher";
 import { performanceService, type ClassTeacherNavbarDto, type SubjectTeacherNavbarDto } from "@/services/performance";
@@ -35,6 +36,10 @@ const Activity = () => {
 
   const [stats,   setStats]   = useState<TeacherNavbarDto | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -109,6 +114,31 @@ const Activity = () => {
     },
   ];
 
+  const updateScrollButtons = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateScrollButtons(); // check immediately in case content already overflows
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateScrollButtons, { passive: true });
+    window.addEventListener("resize", updateScrollButtons);
+    return () => {
+      el.removeEventListener("scroll", updateScrollButtons);
+      window.removeEventListener("resize", updateScrollButtons);
+    };
+  }, [loading, cardData.length]); // re-check once loading finishes and cards are in the DOM
+
+  const scrollByAmount = (dir: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -220 : 220, behavior: "smooth" });
+  };
+
   if (loading) {
     return (
       <div className="w-full space-y-2">
@@ -130,24 +160,51 @@ const Activity = () => {
 
   return (
     <div className="w-full space-y-2">
-      <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none snap-x snap-mandatory scroll-smooth py-1 px-0">
-        {cardData.map((card) => (
-          <div
-            key={card.label}
-            className="bg-white rounded-[11px] border border-[#D9D9D9] px-4 py-3 md:min-w-[190px] md:max-w-[190px] snap-start shrink-0 transition hover:shadow-md"
+      <div className="relative">
+        {canScrollLeft && (
+          <button
+            type="button"
+            onClick={() => scrollByAmount("left")}
+            aria-label="Scroll left"
+            className="absolute left-0.5 top-1/2 -translate-y-1/2 z-10 size-7 rounded-full bg-white border border-[#D9D9D9] shadow-md flex items-center justify-center hover:bg-gray-50 transition"
           >
-            <div className="h-8 w-8 bg-[#EEF1FB] rounded-[8px] flex items-center justify-center">
-              {card.icon}
+            <ChevronLeft className="size-4 text-[#3A3A3A]" />
+          </button>
+        )}
+
+        <div
+          ref={scrollRef}
+          className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none snap-x snap-mandatory scroll-smooth py-1 px-0"
+        >
+          {cardData.map((card) => (
+            <div
+              key={card.label}
+              className="bg-white rounded-[11px] border border-[#D9D9D9] px-4 py-3 md:min-w-[190px] md:max-w-[190px] snap-start shrink-0 transition hover:shadow-md"
+            >
+              <div className="h-8 w-8 bg-[#EEF1FB] rounded-[8px] flex items-center justify-center">
+                {card.icon}
+              </div>
+              <h4 className="font-semibold text-2xl leading-tight text-[#0F0F0E] pt-2">
+                {card.count}
+              </h4>
+              <h3 className="font-normal text-[11px] text-[#3A3A3A80] capitalize pt-0.5">
+                {card.label}
+              </h3>
+              <p className="text-chestnut font-normal text-xs pt-0.5">{card.change}</p>
             </div>
-            <h4 className="font-semibold text-2xl leading-tight text-[#0F0F0E] pt-2">
-              {card.count}
-            </h4>
-            <h3 className="font-normal text-[11px] text-[#3A3A3A80] capitalize pt-0.5">
-              {card.label}
-            </h3>
-            <p className="text-chestnut font-normal text-xs pt-0.5">{card.change}</p>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {canScrollRight && (
+          <button
+            type="button"
+            onClick={() => scrollByAmount("right")}
+            aria-label="Scroll right"
+            className="absolute right-0.5 top-1/2 -translate-y-1/2 z-10 size-7 rounded-full bg-white border border-[#D9D9D9] shadow-md flex items-center justify-center hover:bg-gray-50 transition"
+          >
+            <ChevronRight className="size-4 text-[#3A3A3A]" />
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">

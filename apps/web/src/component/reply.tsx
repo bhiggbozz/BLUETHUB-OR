@@ -1733,7 +1733,7 @@ export default function Replay({ sessionId, onFinished }: ReplayProps = {}) {
                       key={stroke.id}
                       points={stroke.points}
                       stroke={stroke.type === 'eraser' ? 'white' : stroke.color}
-                      strokeWidth={stroke.type === 'eraser' ? 20 : 5}
+                      strokeWidth={stroke.type === 'eraser' ? 20 : 4}
                       lineCap="round"
                       lineJoin="round"
                       tension={0.4}

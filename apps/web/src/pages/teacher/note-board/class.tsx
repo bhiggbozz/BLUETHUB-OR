@@ -9,7 +9,7 @@ import {
     RegularPolygon,
 } from "react-konva";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getBezierPoints, gzipCompress, gzipDecompress } from "@/utils/gzip";
+import { gzipCompress, gzipDecompress } from "@/utils/gzip";
 import { addStrokes, getClassBySessionAndBoard, getSession } from "@/utils/db";
 import type { RootState } from "@/store";
 import { resetClassRuntime, setEndClass, setSendQueueRefList, setSessionIdRef, setPauseTime } from "@/store/class-action-slice";
@@ -453,46 +453,47 @@ const Class = () => {
     }, [sessionIdRef, currentBoard, dispatch, timerElapsedSeconds, isRecording, sendShape]);
 
     const penDownEvent = useCallback(async (p: Position | null, type: "stroke" | "eraser" = "stroke") => {
-        const updatedStroke = p ? [...currentStroke, p.x, p.y] : currentStroke;
+    const updatedStroke = p ? [...currentStroke, p.x, p.y] : currentStroke;
 
-        if (updatedStroke.length < 4) {
-            if (p) setCurrentStroke(updatedStroke);
-            return;
-        }
+    if (updatedStroke.length < 4) {
+        if (p) setCurrentStroke(updatedStroke);
+        return;
+    }
 
-        // ⚠️ Capture ALL ref values BEFORE the first await.
-        // gzipCompress is async — another mousedown can fire during that gap and
-        // overwrite strokeTimesRef fields, causing every rapid stroke to share
-        // the same timestamp and appear simultaneously in replay.
-        //
-        // Timestamp = wall clock minus total paused time
-        // This keeps strokes aligned with audio after pause/resume
-        const totalPausedMs = parseInt(localStorage.getItem('totalPausedMs') || '0', 10);
-        const startedAtWallMs = strokeTimesRef.current.startWallMs || Date.now();
-        const timestamp = Math.max(0, startedAtWallMs - totalPausedMs);
-        const wallDuration = Math.max(0, strokeTimesRef.current.endWallMs - strokeTimesRef.current.startWallMs);
-        const timerDuration = Math.max(0, strokeTimesRef.current.endElapsedMs - strokeTimesRef.current.startElapsedMs);
-        const duration = Math.max(50, wallDuration || timerDuration);
-        const startTime = strokeTimesRef.current.start;
-        const endTime = strokeTimesRef.current.end;
-        // Always use sessionIdRef if available (needed for both recording and draft continuation)
-        const strokeId = sessionIdRef || null;
+    // ⚠️ Capture ALL ref values BEFORE the first await...
+    const totalPausedMs = parseInt(localStorage.getItem('totalPausedMs') || '0', 10);
+    const startedAtWallMs = strokeTimesRef.current.startWallMs || Date.now();
+    const timestamp = Math.max(0, startedAtWallMs - totalPausedMs);
+    const wallDuration = Math.max(0, strokeTimesRef.current.endWallMs - strokeTimesRef.current.startWallMs);
+    const timerDuration = Math.max(0, strokeTimesRef.current.endElapsedMs - strokeTimesRef.current.startElapsedMs);
+    const duration = Math.max(50, wallDuration || timerDuration);
+    const startTime = strokeTimesRef.current.start;
+    const endTime = strokeTimesRef.current.end;
+    const strokeId = sessionIdRef || null;
 
-        const smoothed = getBezierPoints(updatedStroke);
-        const compressed = await gzipCompress(JSON.stringify(smoothed));
-        const base64Stroke = btoa(String.fromCharCode(...compressed));
+    // ✅ FIX: store the same raw point representation used for the live
+    // preview (currentStroke). getBezierPoints() emits alternating
+    // (controlPoint, curveMidpoint) pairs meant for ctx.quadraticCurveTo —
+    // feeding that into Konva's <Line tension={0.4}> as flat points made it
+    // spline through the off-path control points too, producing loop-back
+    // artifacts on replay/reload. Keeping points raw guarantees the saved
+    // stroke renders identically to what was drawn live.
+    const smoothed = updatedStroke;
+    const compressed = await gzipCompress(JSON.stringify(smoothed));
+    const base64Stroke = btoa(String.fromCharCode(...compressed));
 
-        const newStroke = {
-            type,
-            id: crypto.randomUUID(),
-            points: smoothed,
-            color: type === "eraser" ? "#000" : selectedFillColor || "#df4b26",
-            width: type === "eraser" ? 30 : 2,
-            timestamp,
-            duration,
-            startTime,
-            endTime,
-        };
+    const newStroke = {
+        type,
+        id: crypto.randomUUID(),
+        points: smoothed,
+        color: type === "eraser" ? "#000" : selectedFillColor || "#df4b26",
+        width: type === "eraser" ? 30 : 2,
+        timestamp,
+        duration,
+        startTime,
+        endTime,
+    };
+
 
         const compressedStroke = {
             id: newStroke.id,
@@ -919,11 +920,11 @@ const Class = () => {
                                         key={s.id}
                                         points={s.points}
                                         stroke={s.color}
-                                        strokeWidth={s.type === "eraser" ? 30 : 2}
+                                        strokeWidth={s.type === "eraser" ? 30 : 4}
                                         lineCap="round"
                                         lineJoin="round"
-                                        opacity={1}
-                                        // tension={0.5}
+                                        // opacity={1}
+                                        tension={0.4}
                                         draggable={isDraggable}
                                         onClick={onClick}
                                         globalCompositeOperation={
@@ -937,11 +938,11 @@ const Class = () => {
                                     <Line
                                         points={currentStroke}
                                         stroke={actions === ACTIONS.ERASER ? "#fff" : selectedFillColor || "#df4b26"}
-                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 2}
+                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 4}
                                         lineCap="round"
                                         lineJoin="round"
-                                        opacity={1}
-                                        // tension={0.5}
+                                        // opacity={1}
+                                        tension={0.4}
                                         globalCompositeOperation={
                                             actions === ACTIONS.ERASER ? "destination-out" : "source-over"
                                         }

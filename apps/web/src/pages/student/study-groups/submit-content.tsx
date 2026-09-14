@@ -563,7 +563,7 @@ const SubmitContentPage = () => {
                 onClick={() => setShowBoardTool(true)}
                 disabled={!subjectId}
                 title={!subjectId ? "Select a subject first" : undefined}
-                className="flex items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-student-chestnut/40 hover:bg-student-chestnut/5 hover:text-student-chestnut transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-500"
+                className="flex px-2 items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-student-chestnut/40 hover:bg-student-chestnut/5 hover:text-student-chestnut transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-500"
               >
                 <PencilRuler className="w-4 h-4" />
                 Write on a board (no recording)

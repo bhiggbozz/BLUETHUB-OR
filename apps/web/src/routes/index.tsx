@@ -106,7 +106,7 @@ import CreateSyllabus from '@/pages/teacher/Syllabus/create-syllabus';
 import ApprovalsPage from '@/pages/admin/approvals';
 import GroupRecordingViewer from '@/pages/admin/approvals/group-recording-viewer';
 import TeacherProtectedRoute from '@/component/protected-routes/teacher-routes';
-import IdbViewer from '@/pages/dev/idb-viewer';
+// import IdbViewer from '@/pages/dev/idb-viewer';
 import DraftLessons from '@/pages/teacher/drafts';
 import PendingUploads from '@/pages/teacher/pending-uploads';
 import ModulePage from '@/pages/module';
@@ -220,22 +220,22 @@ const router = createBrowserRouter([
     },
 
     // ── Dev routes (no auth) ─────────────────────────────────────────────────
-    {
-        path: "/dev/lesson-approval",
-        element: <LessonApproval />,
-    },
-    {
-        path: "/dev/submit-lesson",
-        element: <SubmitLesson />,
-    },
-    {
-        path: "/dev/start-class",
-        element: <StartClass />,
-    },
-    {
-        path: "/dev/idb",
-        element: <IdbViewer />,
-    },
+    // {
+    //     path: "/dev/lesson-approval",
+    //     element: <LessonApproval />,
+    // },
+    // {
+    //     path: "/dev/submit-lesson",
+    //     element: <SubmitLesson />,
+    // },
+    // {
+    //     path: "/dev/start-class",
+    //     element: <StartClass />,
+    // },
+    // {
+    //     path: "/dev/idb",
+    //     element: <IdbViewer />,
+    // },
 
     //  admin route
     {
@@ -405,16 +405,19 @@ const router = createBrowserRouter([
     //  teacher route
     {
         path: '/teacher',
-        element: <ErrorBoundary fallbackMessage="Teacher page error" >
-            <TeacherLayout />
-        </ErrorBoundary>,
+        element:
+            <ErrorBoundary fallbackMessage="Teacher page error" >
+                <TeacherProtectedRoute>
+                    <TeacherLayout />
+                </TeacherProtectedRoute>
+            </ErrorBoundary>,
         children: [
             {
                 index: true,
                 element:
-                    <TeacherProtectedRoute>
-                        <TeacherDashboard />
-                    </TeacherProtectedRoute>
+
+                    <TeacherDashboard />
+
             },
             { path: "module", element: <MyClassroomPage /> },
             { path: "module/quiz", element: <ModuleQuiz /> },
