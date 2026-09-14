@@ -13,7 +13,9 @@ import {
   Sparkles,
   X,
   CheckCircle2,
-  BookOpen, FileText
+  BookOpen, FileText,
+  Eye,
+  Users,
 } from "lucide-react";
 import {
   Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, DropdownMenu,
@@ -21,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@bluethub/ui-kit";
-import { lessonService, type LessonItem, type LessonSummary, type LessonForClassDto, type LessonMediaDto } from "@/services/lesson";
+import { lessonService, type LessonItem, type LessonSummary, type LessonForClassDto, type LessonMediaDto, type LessonWatchStatus } from "@/services/lesson";
 import { imageGenerationService, type GeneratedLessonImage } from "@/services/image-generation";
 import { useAuthContext } from "@/contexts/auth-context";
 import { ReviewModal, type RLesson } from "./review-modal";
@@ -127,6 +129,10 @@ const MyLesson = () => {
   const { user } = useAuthContext();
   const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
   const teacherName = user ? `${user.firstName} ${user.lastName}`.trim() : "Teacher";
+  // The watch-status endpoint is gated server-side to Administrator,
+  // SuperAdministrator and HeadTeacher — ClassTeacher/SubjectTeacher would
+  // just get rejected, so don't even show the option to them.
+  const canViewWatchStatus = user?.roleName === "HeadTeacher";
 
   // ── Filter + pagination state ──
   const [activeFilter, setActiveFilter] = useState<FilterValue>("");
@@ -153,6 +159,27 @@ const MyLesson = () => {
   const [aiImages, setAiImages] = useState<GeneratedLessonImage[]>([]);
   const [aiImagesLoading, setAiImagesLoading] = useState(false);
   const [aiImagesError, setAiImagesError] = useState<string | null>(null);
+
+  // ── Watch Status Modal ──
+  const [watchStatusLesson, setWatchStatusLesson] = useState<LessonItem | null>(null);
+  const [watchStatus, setWatchStatus] = useState<LessonWatchStatus | null>(null);
+  const [watchStatusLoading, setWatchStatusLoading] = useState(false);
+  const [watchStatusError, setWatchStatusError] = useState<string | null>(null);
+
+  const openWatchStatus = async (lesson: LessonItem) => {
+    setWatchStatusLesson(lesson);
+    setWatchStatus(null);
+    setWatchStatusError(null);
+    setWatchStatusLoading(true);
+    try {
+      const res = await lessonService.getWatchStatus(lesson.id);
+      setWatchStatus(res.data?.data ?? null);
+    } catch (err: any) {
+      setWatchStatusError(err?.response?.data?.responseMessage ?? "Could not load watch status");
+    } finally {
+      setWatchStatusLoading(false);
+    }
+  };
 
   const openAiImages = async (lesson: LessonItem) => {
     setAiImagesLesson(lesson);
@@ -517,6 +544,17 @@ const MyLesson = () => {
                                         View Images
                                       </DropdownMenuItem>
 
+                                      {/* Watch Status — HeadTeacher only */}
+                                      {canViewWatchStatus && (
+                                        <DropdownMenuItem
+                                          onClick={() => openWatchStatus(lesson)}
+                                          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[12.5px] font-medium cursor-pointer text-blue-600 hover:bg-blue-50 focus:bg-blue-50"
+                                        >
+                                          <Eye size={13} className="shrink-0" />
+                                          Watch Status
+                                        </DropdownMenuItem>
+                                      )}
+
                                       {/* Divider */}
                                       <div className="h-px bg-[#F0F0EC] my-1 mx-1" />
 
@@ -601,6 +639,16 @@ const MyLesson = () => {
                                 <Sparkles size={10} />
                                 Images
                               </button>
+                              {canViewWatchStatus && (
+                                <button
+                                  onClick={() => openWatchStatus(lesson)}
+                                  className="flex items-center gap-1 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-blue-600"
+                                  title="See who has watched this lesson"
+                                >
+                                  <Eye size={10} />
+                                  Watch
+                                </button>
+                              )}
                               <button
                                 onClick={() => setReviewLesson(toRLesson(lesson, teacherName))}
                                 className="border border-[#E8E8E3] text-[#0F0F0E] text-xs font-medium px-3 py-1.5
@@ -752,6 +800,92 @@ const MyLesson = () => {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Watch Status Modal */}
+      {watchStatusLesson && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-white/20 rounded-lg shrink-0">
+                  <Eye className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-base font-semibold text-white">Watch Status</span>
+                  <p className="text-xs text-white/70 truncate">
+                    {buildLessonTitle(watchStatusLesson)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWatchStatusLesson(null)}
+                className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4">
+              {watchStatusLoading ? (
+                <div className="flex items-center justify-center py-10 gap-3 text-blue-600">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Loading watch status…</span>
+                </div>
+              ) : watchStatusError ? (
+                <div className="text-center py-10 space-y-2">
+                  <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
+                  <p className="text-sm text-gray-500">{watchStatusError}</p>
+                </div>
+              ) : watchStatus ? (
+                <>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center">
+                      <Users className="w-4 h-4 text-slate-400 mx-auto mb-1" />
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Students</p>
+                      <p className="text-lg font-bold text-slate-800">{watchStatus.totalStudents}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Watched</p>
+                      <p className="text-lg font-bold text-emerald-600">{watchStatus.watchedCount}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center">
+                      <Eye className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Rate</p>
+                      <p className="text-lg font-bold text-blue-600">{watchStatus.watchedRate.toFixed(0)}%</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-400">{watchStatus.classroomName}</p>
+
+                  {watchStatus.students.length === 0 ? (
+                    <p className="text-center text-xs text-gray-400 py-6">No students found for this classroom.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
+                      {watchStatus.students.map((s) => (
+                        <div key={s.studentId} className="flex items-center justify-between px-3.5 py-2.5 bg-white">
+                          <p className="text-sm text-slate-700 truncate">{s.studentName}</p>
+                          {s.hasWatched ? (
+                            <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {s.watchedAt ? formatDate(s.watchedAt) : "Watched"}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-[11px] font-medium text-slate-300">Not watched</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
           </div>
         </div>

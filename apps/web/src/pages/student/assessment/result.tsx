@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { AxiosError } from "axios";
 import { assessmentService, type AttemptResult } from "@/services/assessment";
 import {
   Loader2,
@@ -18,17 +19,24 @@ const AssessmentResultPage = () => {
   const navigate = useNavigate();
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     if (!attemptId) return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setErrorMsg("");
       try {
         const res = await assessmentService.getResult(attemptId);
         if (!cancelled) setResult(res.data?.data ?? null);
-      } catch {
-        // silently fail
+      } catch (error) {
+        if (cancelled) return;
+        const body = error instanceof AxiosError ? error.response?.data : null;
+        const message = body?.responseMessage as string | undefined;
+        console.error("Failed to load assessment result:", error);
+        setErrorMsg(message || "Couldn't load this result. Please try again.");
+        setResult(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -47,9 +55,9 @@ const AssessmentResultPage = () => {
 
   if (!result) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-slate-500">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-slate-500 px-6 text-center">
         <XCircle className="h-10 w-10" />
-        <p className="text-sm">Result not found.</p>
+        <p className="text-sm font-medium">{errorMsg || "Result not found."}</p>
         <button onClick={() => navigate("/student/assessment")} className="text-[#4255db] text-sm font-semibold">
           Go back
         </button>

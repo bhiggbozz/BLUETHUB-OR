@@ -271,10 +271,35 @@ export interface LessonForClassResponse {
   mediaCount: number;
 }
 
+export interface LessonWatchStatusStudent {
+  studentId: string;
+  studentName: string;
+  hasWatched: boolean;
+  watchedAt: string | null;
+}
+
+export interface LessonWatchStatus {
+  lessonId: string;
+  aim: string;
+  classroomId: string;
+  classroomName: string;
+  totalStudents: number;
+  watchedCount: number;
+  watchedRate: number;
+  students: LessonWatchStatusStudent[];
+}
+
 export const lessonService = {
   // ── Lesson for Class ───────────────────────────────────────────────────────
   getLessonForClass: (lessonId: string) =>
     API.get<TResponse<LessonForClassResponse>>(`api/lessons/${lessonId}/class`, {
+      headers: { "X-Tenant-ID": X_Tenant_ID },
+    }),
+
+  // GET api/lessons/{lessonId}/watch-status — Administrator, SuperAdministrator,
+  // HeadTeacher only. Who in the classroom has actually watched this lesson.
+  getWatchStatus: (lessonId: string) =>
+    API.get<TResponse<LessonWatchStatus>>(`api/lessons/${lessonId}/watch-status`, {
       headers: { "X-Tenant-ID": X_Tenant_ID },
     }),
 
