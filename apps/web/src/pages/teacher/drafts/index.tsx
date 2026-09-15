@@ -168,7 +168,7 @@ export default function DraftLessons() {
   };
 
   const handleContinue = (session: DraftSession) => {
-    console.log('[Drafts] Continuing session:', session.id, 'duration:', session.recording.totalDurationMs);
+    //console.log('[Drafts] Continuing session:', session.id, 'duration:', session.recording.totalDurationMs);
     localStorage.setItem("continueSessionId", session.id);
     localStorage.setItem("continueLessonId", session.lessonId);
     navigate("/teacher/board");

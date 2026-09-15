@@ -485,14 +485,14 @@ const SubmitLesson = () => {
   const isAdminRole = user?.roleName === "Administrator" || user?.roleName === "SuperAdministrator" || user?.roleName === "HeadTeacher";
   const DEBUG_SUBMIT_LESSON = true;
 
-  const debugLog = useCallback((label: string, payload?: unknown) => {
+  const debugLog = useCallback((_: string, payload?: unknown) => {
     if (!DEBUG_SUBMIT_LESSON) return;
-    const ts = new Date().toISOString();
+    // const ts = new Date().toISOString();
     if (payload !== undefined) {
-      console.log(`[SubmitLesson][${ts}] ${label}`, payload);
+      //console.log(`[SubmitLesson][${ts}] ${label}`, payload);
       return;
     }
-    console.log(`[SubmitLesson][${ts}] ${label}`);
+    //console.log(`[SubmitLesson][${ts}] ${label}`);
   }, [DEBUG_SUBMIT_LESSON]);
 
   // ── Data State ──

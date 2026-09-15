@@ -23,9 +23,9 @@ if (!tenantId) {
           installingWorker.onstatechange = () => {
             if (installingWorker.state === "installed") {
               if (navigator.serviceWorker.controller) {
-                console.log("New content is available; please refresh.")
+                // console.log("New content is available; please refresh.")
               } else {
-                console.log("Content cached for offline use.")
+                // console.log("Content cached for offline use.")
               }
             }
           }

@@ -47,7 +47,7 @@ function TeacherOTP() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         setIsLoading(false);
         setOpenVerify(true);
-        console.log("OTP:", otpValue);
+        //console.log("OTP:", otpValue);
     };
 
     const handleResend = async () => {

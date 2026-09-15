@@ -3,8 +3,8 @@ import AdminAppbar from "./app-bar";
 import Charts from "./charts";
 import SchoolProgress from "./school-progress";
 import { SchoolAtAGlance } from "./component/school-at-a-glance";
-import { RecentActivity } from "./component/recent-activity";
-import { PendingLessonApprovals } from "./component/pending-lesson-approvals";
+// import { RecentActivity } from "./component/recent-activity";
+// import { PendingLessonApprovals } from "./component/pending-lesson-approvals";
 import { TeacherActivity } from "./component/teacher-activity";
 import { ClassroomPerformance } from "./component/classroom-performance";
 import { MobileNav } from "../side-bar";
@@ -59,14 +59,14 @@ const AdminDashboard = () => {
           <ClassroomPerformance />
 
           {/* ── Bottom section: stacked on mobile, side-by-side on md+ ── */}
-          <div className="flex flex-col gap-3 lg:flex-row">
-            <div className="w-full lg:flex-1 min-w-0">
+          <div>
+            {/* <div className="w-full lg:flex-1 min-w-0">
               <PendingLessonApprovals />
-            </div>
-            <div className="flex flex-col gap-4 w-full lg:w-[38%] lg:shrink-0">
+            </div> */}
+            {/* <div className="flex flex-col gap-4 w-full lg:w-[38%] lg:shrink-0"> */}
               <SchoolAtAGlance />
-              <RecentActivity />
-            </div>
+              {/* <RecentActivity /> */}
+            {/* </div> */}
           </div>
         </div>
       </div>

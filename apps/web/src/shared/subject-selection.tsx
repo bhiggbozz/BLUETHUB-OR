@@ -68,7 +68,7 @@ const SubjectSelection = ({ selectClass }: SubjectSelectionProps) => {
   };
 
   const handleCancel = () => {
-    console.log("cancelling...");
+    //console.log("cancelling...");
   };
 
   return (

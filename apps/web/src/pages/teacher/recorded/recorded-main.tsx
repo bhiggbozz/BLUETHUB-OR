@@ -332,11 +332,11 @@ const RecordedMain = () => {
                                     <div className="grid grid-cols-1 gap-6 transition-all duration-300 pb-10 border-b border-[#D9D9D9]">
                                         <div>
                                             <Label htmlFor="Sub-topic" className="text-xs font-semibold text-[#0F0F0E] mb-2">Upload Media</Label>
-                                            <MediaUpload onFilesSelected={(files) => console.log(files)} />
+                                            <MediaUpload onFilesSelected={(files) => files} />
                                         </div>
                                         <FileList
                                             files={files}
-                                            onDelete={(id) => console.log("Delete file with id", id)}
+                                            onDelete={(id) => id}
                                         />
                                     </div>
                                 </div>

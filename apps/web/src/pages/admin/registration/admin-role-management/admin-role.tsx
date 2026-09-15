@@ -144,7 +144,7 @@ const AdminRole = () => {
     try {
       setLoading(true);
       const response = await authService.getUserByRole(UserRole.Admin);
-      console.log(response.data.data.users);
+      //console.log(response.data.data.users);
       setRows(response.data.data.users);
     } catch (error) {
       const msg =

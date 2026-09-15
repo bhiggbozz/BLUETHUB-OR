@@ -414,10 +414,7 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element:
-
-                    <TeacherDashboard />
-
+                element: <TeacherDashboard />
             },
             { path: "module", element: <MyClassroomPage /> },
             { path: "module/quiz", element: <ModuleQuiz /> },

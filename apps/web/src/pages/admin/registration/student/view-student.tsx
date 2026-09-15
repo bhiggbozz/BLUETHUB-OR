@@ -273,7 +273,7 @@ const ViewStudent = () => {
                         open={editOpen}
                         onOpenChange={setEditOpen}
                         student={editingStudent}
-                        onSave={(updated) => console.log("saved", updated)}
+                        onSave={(updated) => updated}
                     />
                 )
             }

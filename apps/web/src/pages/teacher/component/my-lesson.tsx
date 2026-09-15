@@ -622,7 +622,7 @@ const MyLesson = () => {
                     <p className="text-xs text-gray-400">
                       Showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of {totalCount}
                     </p>
-                    <div className="flex items-center md:gap-1">
+                    <div className="flex items-center gap-2 md:gap-1">
                       <button
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={page === 1}

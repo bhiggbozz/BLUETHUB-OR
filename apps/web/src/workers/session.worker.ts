@@ -119,21 +119,21 @@ async function getDb(): Promise<IDBPDatabase> {
   if (_db) return _db;
   _db = await openDB(DB_NAME, DB_VERSION, {
     upgrade(database, _oldVersion) {
-      console.log('[Worker DB] Running upgrade handler...');
+      //console.log('[Worker DB] Running upgrade handler...');
 
       // Legacy stores
       if (!database.objectStoreNames.contains(STORE_CLASS)) {
-        console.log('[Worker DB] Creating store:', STORE_CLASS);
+        //console.log('[Worker DB] Creating store:', STORE_CLASS);
         database.createObjectStore(STORE_CLASS, { keyPath: 'id' });
       }
       if (!database.objectStoreNames.contains(STORE_AUDIO)) {
-        console.log('[Worker DB] Creating store:', STORE_AUDIO);
+        //console.log('[Worker DB] Creating store:', STORE_AUDIO);
         database.createObjectStore(STORE_AUDIO, { keyPath: 'id' });
       }
 
       // Sessions store - ALWAYS check and create if missing
       if (!database.objectStoreNames.contains(STORE_SESSIONS)) {
-        console.log('[Worker DB] Creating store:', STORE_SESSIONS);
+        //console.log('[Worker DB] Creating store:', STORE_SESSIONS);
         const sessionsStore = database.createObjectStore(STORE_SESSIONS, { keyPath: 'id' });
         sessionsStore.createIndex('lessonId', 'lessonId', { unique: false });
         sessionsStore.createIndex('status', 'status', { unique: false });
@@ -141,7 +141,7 @@ async function getDb(): Promise<IDBPDatabase> {
 
       // Audio chunks store - ALWAYS check and create if missing
       if (!database.objectStoreNames.contains(STORE_AUDIO_CHUNKS)) {
-        console.log('[Worker DB] Creating store:', STORE_AUDIO_CHUNKS);
+        //console.log('[Worker DB] Creating store:', STORE_AUDIO_CHUNKS);
         const audioStore = database.createObjectStore(STORE_AUDIO_CHUNKS, { keyPath: 'id' });
         audioStore.createIndex('sessionId', 'sessionId', { unique: false });
         audioStore.createIndex('lessonId', 'lessonId', { unique: false });
@@ -151,7 +151,7 @@ async function getDb(): Promise<IDBPDatabase> {
 
       // Stroke batches store - ALWAYS check and create if missing
       if (!database.objectStoreNames.contains(STORE_STROKE_BATCHES)) {
-        console.log('[Worker DB] Creating store:', STORE_STROKE_BATCHES);
+        //console.log('[Worker DB] Creating store:', STORE_STROKE_BATCHES);
         const strokesStore = database.createObjectStore(STORE_STROKE_BATCHES, { keyPath: 'id' });
         strokesStore.createIndex('sessionId', 'sessionId', { unique: false });
         strokesStore.createIndex('lessonId', 'lessonId', { unique: false });
@@ -159,7 +159,7 @@ async function getDb(): Promise<IDBPDatabase> {
         strokesStore.createIndex('sessionId_batchIndex', ['sessionId', 'batchIndex'], { unique: true });
       }
 
-      console.log('[Worker DB] Upgrade complete. Stores:', Array.from(database.objectStoreNames));
+      //console.log('[Worker DB] Upgrade complete. Stores:', Array.from(database.objectStoreNames));
     },
   });
   return _db;
@@ -387,7 +387,7 @@ self.onmessage = async (e: MessageEvent<ToWorkerMsg>) => {
 
           if (existingSession) {
             // Update existing session to recording status
-            console.log('[Worker] Continuing existing session, updating status to recording');
+            //console.log('[Worker] Continuing existing session, updating status to recording');
             existingSession.status = 'recording';
             existingSession.modifiedAt = new Date().toISOString();
             await updateLocalSession(existingSession);
@@ -534,7 +534,7 @@ self.onmessage = async (e: MessageEvent<ToWorkerMsg>) => {
           const startMs = Math.max(0, elapsedMs - durationMs);
           const endMs = elapsedMs;
 
-          console.log('[Worker] Audio chunk:', audioChunkIndex, 'elapsed:', elapsedMs, 'startMs:', startMs, 'endMs:', endMs, 'duration:', duration.toFixed(2) + 's');
+          //console.log('[Worker] Audio chunk:', audioChunkIndex, 'elapsed:', elapsedMs, 'startMs:', startMs, 'endMs:', endMs, 'duration:', duration.toFixed(2) + 's');
 
           // Calculate which 60s upload batch this 10s chunk belongs to
           // Chunks 0-5 → uploadBatch 0, chunks 6-11 → uploadBatch 1, etc.

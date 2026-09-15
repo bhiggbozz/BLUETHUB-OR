@@ -83,7 +83,7 @@ const ClassRoomInner = () => {
   const handleContinueSession = () => {
     if (!recoverySession) return;
 
-    console.log('[ClassRoom] User chose to continue session:', recoverySession.id);
+   // console.log('[ClassRoom] User chose to continue session:', recoverySession.id);
 
     // Set up for continuation via the existing flow
     localStorage.setItem('continueSessionId', recoverySession.id);
@@ -114,7 +114,7 @@ const ClassRoomInner = () => {
   const handleDiscardSession = async () => {
     if (!recoverySession) return;
 
-    console.log('[ClassRoom] User chose to discard session:', recoverySession.id);
+    //console.log('[ClassRoom] User chose to discard session:', recoverySession.id);
 
     try {
       // Clean up the interrupted session

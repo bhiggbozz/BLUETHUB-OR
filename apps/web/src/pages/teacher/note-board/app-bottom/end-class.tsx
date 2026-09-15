@@ -150,19 +150,16 @@ const EndClass = () => {
   };
 
   const handleSaveAsDraft = async () => {
-    console.log("[SaveDraft] === STARTING SAVE AS DRAFT ===");
-    console.log("[SaveDraft] Current sessionId from Redux:", sessionId);
-    console.log("[SaveDraft] Timer elapsed seconds:", timerElapsedSeconds);
 
     try {
       // Stop recording first
-      console.log("[SaveDraft] Step 1: Stopping recording...");
+      // console.log("[SaveDraft] Step 1: Stopping recording...");
       stopRecording();
       dispatch(setEndClass());
       timer.stop();
 
       // Wait for worker to finalize - give it time to complete IDB writes
-      console.log("[SaveDraft] Step 2: Waiting 2s for worker to finalize...");
+      // console.log("[SaveDraft] Step 2: Waiting 2s for worker to finalize...");
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Use lesson/session ID for tracking consistency (no UUID fallback)
@@ -177,11 +174,11 @@ const EndClass = () => {
       const totalPausedMs = parseInt(localStorage.getItem('totalPausedMs') || '0', 10);
       const durationMs = timerElapsedSeconds * 1000;
 
-      console.log("[SaveDraft] Step 3: Preparing session data");
-      console.log("[SaveDraft]   - effectiveSessionId:", effectiveSessionId);
-      console.log("[SaveDraft]   - sessionStartWallMs:", sessionStartWallMs);
-      console.log("[SaveDraft]   - totalPausedMs:", totalPausedMs);
-      console.log("[SaveDraft]   - durationMs:", durationMs);
+      // console.log("[SaveDraft] Step 3: Preparing session data");
+      // console.log("[SaveDraft]   - effectiveSessionId:", effectiveSessionId);
+      // console.log("[SaveDraft]   - sessionStartWallMs:", sessionStartWallMs);
+      // console.log("[SaveDraft]   - totalPausedMs:", totalPausedMs);
+      // console.log("[SaveDraft]   - durationMs:", durationMs);
 
       // Create session data object
       const sessionData: LocalSession = {
@@ -235,9 +232,9 @@ const EndClass = () => {
 
       // Use dedicated saveSessionAsDraft function with fresh DB connection
       // This avoids transaction conflicts with the worker's connection
-      console.log("[SaveDraft] Step 4: Calling saveSessionAsDraft...");
+      // console.log("[SaveDraft] Step 4: Calling saveSessionAsDraft...");
       await saveSessionAsDraft(effectiveSessionId, sessionData);
-      console.log("[SaveDraft] Step 5: Session saved successfully!");
+      // console.log("[SaveDraft] Step 5: Session saved successfully!");
 
       toast.success("Recording saved as draft");
 
@@ -245,19 +242,13 @@ const EndClass = () => {
       navigate(getDraftsPath());
       setModalState("closed");
     } catch (err) {
-      // Log FULL error details
-      console.error("[SaveDraft] ========== SAVE DRAFT FAILED ==========");
-      console.error("[SaveDraft] Error object:", err);
-      console.error("[SaveDraft] Error name:", err instanceof Error ? err.name : 'N/A');
-      console.error("[SaveDraft] Error message:", err instanceof Error ? err.message : String(err));
-      console.error("[SaveDraft] Error stack:", err instanceof Error ? err.stack : 'N/A');
+      // Log FULL error detail
 
       // Also try to get IndexedDB state for debugging
       try {
         const dbNames = await indexedDB.databases();
-        console.error("[SaveDraft] Available databases:", dbNames);
+        dbNames
       } catch (dbErr) {
-        console.error("[SaveDraft] Could not list databases:", dbErr);
       }
 
       const errorMsg = err instanceof Error ? err.message : String(err);

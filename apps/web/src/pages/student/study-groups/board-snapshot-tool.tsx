@@ -86,6 +86,7 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
   };
 
   const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    e.evt.preventDefault();
     const stage = e.target.getStage();
     if (!stage) return;
     const pos = getPos(stage);
@@ -101,6 +102,7 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
   }, [tool, color, width]);
 
   const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    e.evt.preventDefault();
     if (!isDrawing.current || !activeStroke) return;
     const stage = e.target.getStage();
     if (!stage) return;
@@ -109,7 +111,8 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
     setActiveStroke((prev) => (prev ? { ...prev, points: [...prev.points, ...pos] } : prev));
   }, [activeStroke]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    e.evt.preventDefault();
     if (!isDrawing.current || !activeStroke) return;
     isDrawing.current = false;
     if (activeStroke.points.length >= 4) {
@@ -178,7 +181,7 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
           sig = (r.data as any).data as CloudinarySignature;
         }
 
-        const res = await uploadToCloudinary(file, sig, () => {});
+        const res = await uploadToCloudinary(file, sig, () => { });
         const ext = res.format || "png";
         entries.push({
           file,
@@ -214,11 +217,10 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
             key={page.id}
             type="button"
             onClick={() => setActiveIndex(i)}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              i === activeIndex
+            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${i === activeIndex
                 ? "bg-student-chestnut text-white"
                 : "bg-gray-50 text-gray-500 hover:bg-gray-100"
-            }`}
+              }`}
           >
             Board {i + 1}
             {page.strokes.length === 0 && <span className="opacity-60">(empty)</span>}
@@ -245,18 +247,16 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
           <button
             type="button"
             onClick={() => setTool("pen")}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              tool === "pen" ? "bg-student-chestnut text-white" : "text-gray-500 hover:bg-gray-100"
-            }`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${tool === "pen" ? "bg-student-chestnut text-white" : "text-gray-500 hover:bg-gray-100"
+              }`}
           >
             <Pen size={13} /> Pen
           </button>
           <button
             type="button"
             onClick={() => setTool("eraser")}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              tool === "eraser" ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-100"
-            }`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${tool === "eraser" ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-100"
+              }`}
           >
             <Eraser size={13} /> Eraser
           </button>
@@ -284,9 +284,8 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
               key={w}
               type="button"
               onClick={() => setWidth(w)}
-              className={`flex items-center justify-center w-7 h-7 rounded-md border transition-all ${
-                width === w ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
-              }`}
+              className={`flex items-center justify-center w-7 h-7 rounded-md border transition-all ${width === w ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                }`}
               title={`Width ${w}px`}
             >
               <div className="rounded-full bg-gray-600" style={{ width: Math.min(w * 1.5, 16), height: Math.min(w * 1.5, 16) }} />
@@ -317,7 +316,8 @@ const BoardSnapshotTool = ({ onSaved, onCancel, startingDisplayOrder }: BoardSna
       {/* ── Canvas area — every board's Stage stays mounted (only the
           active one is visible) so Save can snapshot all of them without
           paging through and waiting on re-renders. ─────────────────── */}
-      <div ref={containerRef} className="bg-white" style={{ cursor: tool === "eraser" ? "cell" : "crosshair" }}>
+      <div ref={containerRef} className="bg-white touch-none overscroll-none"
+        style={{ cursor: tool === "eraser" ? "cell" : "crosshair", touchAction: "none" }}>
         {pages.map((page, i) => (
           <div key={page.id} style={{ display: i === activeIndex ? "block" : "none" }}>
             <Stage

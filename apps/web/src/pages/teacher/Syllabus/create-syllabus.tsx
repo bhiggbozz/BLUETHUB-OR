@@ -253,7 +253,7 @@ const CreateSyllabus = () => {
     const [subjects, setSubjects] = useState<SubjectItem[]>([]);
     const [classes, setClasses] = useState<ClassItem[]>([]);
 
-    console.log('classes', classes)
+    // console.log('classes', classes)
     const [topics, setTopics] = useState<TopicItem[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [loadingCurriculum, setLoadingCurriculum] = useState(false);
@@ -424,8 +424,8 @@ const CreateSyllabus = () => {
     };
 
 
-    console.log("Rendered with topics:", topics);
-    console.log("Rendered with selected class:", selectedClass);
+  //  console.log("Rendered with topics:", topics);
+  //  console.log("Rendered with selected class:", selectedClass);
     const totalExistingSubTopics = topics.reduce((s, t) => s + t.existingSubTopics.length, 0);
     const totalNewSubTopics = topics.reduce((s, t) => s + t.subTopics.length, 0);
     const newTopicsCount = topics.filter(t => !t.isExisting).length;

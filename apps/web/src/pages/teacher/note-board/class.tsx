@@ -56,6 +56,8 @@ const Class = () => {
     const [circles, setCircles] = useState<circle[]>([]);
     const [arrows, setArrows] = useState<arrow[]>([]);
     const [triangles, setTriangles] = useState<triangle[]>([]);
+    const activeStrokePointsRef = useRef<number[]>([]);
+    const activeLineRef = useRef<Konva.Line | null>(null);
 
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
     // Finger-writing zoom: the stage is scaled/panned on screen only.
@@ -168,7 +170,7 @@ const Class = () => {
 
             if (continueSessionId) {
                 // We're continuing from a saved draft
-                console.log('[Class] Continuing from saved session:', continueSessionId);
+                //console.log('[Class] Continuing from saved session:', continueSessionId);
 
                 try {
                     const session = await getSession(continueSessionId);
@@ -178,11 +180,11 @@ const Class = () => {
                         const savedDurationMs = session.recording.totalDurationMs || 0;
                         const savedDurationSeconds = Math.floor(savedDurationMs / 1000);
 
-                        console.log('[Class] Restoring session state:', {
-                            sessionId: continueSessionId,
-                            savedDurationMs,
-                            savedDurationSeconds,
-                        });
+                        // console.log('[Class] Restoring session state:', {
+                        //     sessionId: continueSessionId,
+                        //     savedDurationMs,
+                        //     savedDurationSeconds,
+                        // });
 
                         // Set the session ID in local state (synchronous, immediate)
                         setLoadedSessionId(continueSessionId);
@@ -203,7 +205,7 @@ const Class = () => {
                         localStorage.setItem('sessionStartSessionId', continueSessionId);
                         localStorage.setItem('totalPausedMs', String(session.recording.pausedDurationMs || 0));
 
-                        console.log('[Class] Session restored, ready to continue from', savedDurationSeconds, 'seconds');
+                        
                     }
                 } catch (err) {
                     console.error('[Class] Failed to restore session:', err);
@@ -275,7 +277,6 @@ const Class = () => {
     // Wait for initialization to complete before loading strokes
     useEffect(() => {
         if (!isInitialized) {
-            console.log('[Class] Waiting for initialization before loading strokes...');
             return;
         }
 
@@ -363,7 +364,7 @@ const Class = () => {
                     }
                 }
 
-                console.log('[Class] Setting state - strokes:', nextStrokes.length, 'rectangles:', nextRectangles.length, 'circles:', nextCircles.length);
+                // console.log('[Class] Setting state - strokes:', nextStrokes.length, 'rectangles:', nextRectangles.length, 'circles:', nextCircles.length);
                 setStrokes(nextStrokes);
                 setCurrentStroke([]);
                 setStraightLines(nextStraightLines);
@@ -452,15 +453,21 @@ const Class = () => {
         }
     }, [sessionIdRef, currentBoard, dispatch, timerElapsedSeconds, isRecording, sendShape]);
 
-    const penDownEvent = useCallback(async (p: Position | null, type: "stroke" | "eraser" = "stroke") => {
-    const updatedStroke = p ? [...currentStroke, p.x, p.y] : currentStroke;
+   // ── penDownEvent — commit to state BEFORE compression, not after ──
+const penDownEvent = useCallback(async (
+    p: Position | null,
+    type: "stroke" | "eraser" = "stroke",
+    overridePoints?: number[],
+) => {
+    const updatedStroke = overridePoints ?? (p ? [...currentStroke, p.x, p.y] : currentStroke);
 
-    if (updatedStroke.length < 4) {
+    if (overridePoints) {
+        if (updatedStroke.length < 4) return;
+    } else if (updatedStroke.length < 4) {
         if (p) setCurrentStroke(updatedStroke);
         return;
     }
 
-    // ⚠️ Capture ALL ref values BEFORE the first await...
     const totalPausedMs = parseInt(localStorage.getItem('totalPausedMs') || '0', 10);
     const startedAtWallMs = strokeTimesRef.current.startWallMs || Date.now();
     const timestamp = Math.max(0, startedAtWallMs - totalPausedMs);
@@ -471,16 +478,7 @@ const Class = () => {
     const endTime = strokeTimesRef.current.end;
     const strokeId = sessionIdRef || null;
 
-    // ✅ FIX: store the same raw point representation used for the live
-    // preview (currentStroke). getBezierPoints() emits alternating
-    // (controlPoint, curveMidpoint) pairs meant for ctx.quadraticCurveTo —
-    // feeding that into Konva's <Line tension={0.4}> as flat points made it
-    // spline through the off-path control points too, producing loop-back
-    // artifacts on replay/reload. Keeping points raw guarantees the saved
-    // stroke renders identically to what was drawn live.
     const smoothed = updatedStroke;
-    const compressed = await gzipCompress(JSON.stringify(smoothed));
-    const base64Stroke = btoa(String.fromCharCode(...compressed));
 
     const newStroke = {
         type,
@@ -494,49 +492,54 @@ const Class = () => {
         endTime,
     };
 
+    // ✅ Commit to the visible board FIRST, synchronously, in the same tick
+    // as finishDrawing clearing the active layer. This is what makes the
+    // handoff blink-free — nothing async happens between "erase active
+    // preview" and "stroke appears on static layer" anymore.
+    setStrokes((prev) => [...prev, newStroke]);
+    setCurrentStroke([]);
 
-        const compressedStroke = {
-            id: newStroke.id,
-            sessionId: strokeId,
-            data: base64Stroke,
-            color: newStroke.color,
-            width: newStroke.width,
-            type,
-            timestamp,
-            duration,
-            currentBoard,
-            startTime,
-            endTime,
-        };
+    // Everything below is now purely persistence — it can take as long as
+    // it needs to without affecting what's on screen.
+    const compressed = await gzipCompress(JSON.stringify(smoothed));
+    const base64Stroke = btoa(String.fromCharCode(...compressed));
 
-        console.log('[Class] Saving stroke - sessionId:', strokeId, 'isRecording:', isRecording, 'sessionIdRef:', sessionIdRef, 'board:', currentBoard);
+    const compressedStroke = {
+        id: newStroke.id,
+        sessionId: strokeId,
+        data: base64Stroke,
+        color: newStroke.color,
+        width: newStroke.width,
+        type,
+        timestamp,
+        duration,
+        currentBoard,
+        startTime,
+        endTime,
+    };
 
-        setStrokes((prev) => [...prev, newStroke]);
-        dispatch(setSendQueueRefList([compressedStroke]));
+    dispatch(setSendQueueRefList([compressedStroke]));
 
-        try {
-            await addStrokes([compressedStroke]);
-            // Send to session.worker for upload batching
-            if (isRecording) {
-                sendStroke({
-                    id: newStroke.id,
-                    rawPoints: smoothed,
-                    color: newStroke.color,
-                    width: newStroke.width,
-                    strokeType: type,
-                    currentBoard,
-                    startTime,
-                    endTime,
-                    timestamp,
-                    duration,
-                });
-            }
-        } catch (err) {
-            console.error("❌ Failed to save stroke to IndexedDB:", err);
+    try {
+        await addStrokes([compressedStroke]);
+        if (isRecording) {
+            sendStroke({
+                id: newStroke.id,
+                rawPoints: smoothed,
+                color: newStroke.color,
+                width: newStroke.width,
+                strokeType: type,
+                currentBoard,
+                startTime,
+                endTime,
+                timestamp,
+                duration,
+            });
         }
-
-        setCurrentStroke([]);
-    }, [currentStroke, isRecording, sessionIdRef, selectedFillColor, currentBoard, dispatch, timerElapsedSeconds, sendStroke]);
+    } catch (err) {
+        // console.error("❌ Failed to save stroke to IndexedDB:", err);
+    }
+}, [currentStroke, isRecording, sessionIdRef, selectedFillColor, currentBoard, dispatch, timerElapsedSeconds, sendStroke]);
 
     /* ── startDrawing ───────────────────────────────────────────────────────── */
     const startDrawing = useCallback((rawPos: Position) => {
@@ -552,10 +555,12 @@ const Class = () => {
 
         switch (actions) {
             case ACTIONS.PEN:
-                setCurrentStroke([pos.x, pos.y]);
+                activeStrokePointsRef.current = [pos.x, pos.y];
+                activeLineRef.current?.points(activeStrokePointsRef.current);
+                activeLineRef.current?.getLayer()?.batchDraw();
                 break;
             case ACTIONS.ERASER:
-                setCurrentStroke([pos.x, pos.y]);
+                setCurrentStroke([pos.x, pos.y]); // unchanged
                 break;
             case ACTIONS.RECTANGLE: {
                 const id = crypto.randomUUID();
@@ -625,8 +630,13 @@ const Class = () => {
 
         switch (actions) {
             case ACTIONS.PEN:
+                activeStrokePointsRef.current.push(pos.x, pos.y);
+                activeLineRef.current?.points(activeStrokePointsRef.current);
+                activeLineRef.current?.getLayer()?.batchDraw();
+                break;
+
             case ACTIONS.ERASER:
-                setCurrentStroke(prev => [...prev, pos.x, pos.y]);
+                setCurrentStroke(prev => [...prev, pos.x, pos.y]); // unchanged
                 break;
 
             case ACTIONS.RECTANGLE: {
@@ -694,11 +704,16 @@ const Class = () => {
         strokeTimesRef.current.endWallMs = Date.now();
 
         switch (actions) {
-            case ACTIONS.PEN:
-                await penDownEvent(null, "stroke");
+            case ACTIONS.PEN: {
+                const finishedPoints = activeStrokePointsRef.current;
+                activeStrokePointsRef.current = [];
+                activeLineRef.current?.points([]);
+                activeLineRef.current?.getLayer()?.batchDraw();
+                await penDownEvent(null, "stroke", finishedPoints);
                 break;
+            }
             case ACTIONS.ERASER:
-                await penDownEvent(null, "eraser");
+                await penDownEvent(null, "eraser"); // unchanged
                 break;
             case ACTIONS.RECTANGLE: {
                 const shape = rectangles.find(r => r.id === activeShapeId.current);
@@ -889,31 +904,10 @@ const Class = () => {
                             onTouchEnd={handleTouchEnd}
                         >
                             <Layer>
-                                {/* Board background */}
-                                <Rect
-                                    x={0}
-                                    y={0}
-                                    width={boardW}
-                                    height={boardH}
-                                    fill="#ffffff"
-                                    onClick={() => trRef.current && trRef.current.nodes([])}
-                                />
+                                <Rect x={0} y={0} width={boardW} height={boardH} fill="#ffffff" onClick={() => trRef.current && trRef.current.nodes([])} />
 
-                                {/* Subtle grid pattern for visual guidance */}
-                                <Line
-                                    points={[40, 0, 40, boardH]}
-                                    stroke="#E5E7EB"
-                                    strokeWidth={1}
-                                    opacity={0.5}
-                                    listening={false}
-                                />
-                                <Line
-                                    points={[boardW - 40, 0, boardW - 40, boardH]}
-                                    stroke="#E5E7EB"
-                                    strokeWidth={1}
-                                    opacity={0.5}
-                                    listening={false}
-                                />
+                                <Line points={[40, 0, 40, boardH]} stroke="#E5E7EB" strokeWidth={1} opacity={0.5} listening={false} />
+                                <Line points={[boardW - 40, 0, boardW - 40, boardH]} stroke="#E5E7EB" strokeWidth={1} opacity={0.5} listening={false} />
 
                                 {strokes.map((s) => (
                                     <Line
@@ -923,29 +917,23 @@ const Class = () => {
                                         strokeWidth={s.type === "eraser" ? 30 : 4}
                                         lineCap="round"
                                         lineJoin="round"
-                                        // opacity={1}
                                         tension={0.4}
                                         draggable={isDraggable}
                                         onClick={onClick}
-                                        globalCompositeOperation={
-                                            s.type === "eraser" ? "destination-out" : "source-over"
-                                        }
+                                        globalCompositeOperation={s.type === "eraser" ? "destination-out" : "source-over"}
                                         dragBoundFunc={boardClamp}
                                     />
                                 ))}
 
-                                {currentStroke.length > 0 && (
+                                {actions === ACTIONS.ERASER && currentStroke.length > 0 && (
                                     <Line
                                         points={currentStroke}
-                                        stroke={actions === ACTIONS.ERASER ? "#fff" : selectedFillColor || "#df4b26"}
-                                        strokeWidth={actions === ACTIONS.ERASER ? 30 : 4}
+                                        stroke="#fff"
+                                        strokeWidth={30}
                                         lineCap="round"
                                         lineJoin="round"
-                                        // opacity={1}
                                         tension={0.4}
-                                        globalCompositeOperation={
-                                            actions === ACTIONS.ERASER ? "destination-out" : "source-over"
-                                        }
+                                        globalCompositeOperation="destination-out"
                                     />
                                 )}
 
@@ -1091,6 +1079,17 @@ const Class = () => {
                                     boundBoxFunc={transformerBoundBox}
                                 />
                             </Layer>
+                            <Layer listening={false}>
+    <Line
+        ref={activeLineRef}
+        points={activeStrokePointsRef.current}
+        stroke={selectedFillColor || "#df4b26"}
+        strokeWidth={4}
+        lineCap="round"
+        lineJoin="round"
+        tension={0.4}
+    />
+</Layer>
                         </Stage>
 
                         <MediaFrame />

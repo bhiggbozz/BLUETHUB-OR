@@ -75,7 +75,6 @@ const TeacherMain = () => {
     const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
     const navigate = useNavigate();
     const [selectRole, setSelectRole] = useState<RoleOption | null>(null);
-    console.log("selectRole", selectRole?.label);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [editLoading, setEditLoading] = useState(false);

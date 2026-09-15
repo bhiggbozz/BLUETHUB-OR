@@ -1207,21 +1207,21 @@ export default function Replay({ sessionId }: ReplayProps = {}) {
           const plannedStartMs = anchorWallMs > 0
             ? Math.max(0, (batch.timestamp - batchDurationMs) - anchorWallMs)
             : 0;
-          console.log(`[Replay] batch ${batch.batchId}: decoded ${buffer.duration.toFixed(2)}s @ session ${Math.round(plannedStartMs/1000)}s`);
+          // console.log(`[Replay] batch ${batch.batchId}: decoded ${buffer.duration.toFixed(2)}s @ session ${Math.round(plannedStartMs/1000)}s`);
           return { buffer, plannedStartMs };
         } catch (e) {
-          console.warn(`[Replay] batch ${batch.batchId}: decodeAudioData failed — blob type=${batch.blob.type}, size=${batch.blob.size}`, e);
+          // console.warn(`[Replay] batch ${batch.batchId}: decodeAudioData failed — blob type=${batch.blob.type}, size=${batch.blob.size}`, e);
           decodeFailureCountRef.current++;
           return null;
         }
       }));
 
       // Summary log so it's easy to spot gaps vs failures in DevTools
-      const okCount = decoded.filter(Boolean).length;
+       decoded.filter(Boolean).length;
       const failCount = decodeFailureCountRef.current;
-      console.log(`[Replay] decode summary: ${okCount} ok, ${failCount} failed out of ${sortedAudio.length} batches`);
+      // console.log(`[Replay] decode summary: ${okCount} ok, ${failCount} failed out of ${sortedAudio.length} batches`);
       if (failCount > 0) {
-        console.warn('[Replay] Some batches failed to decode. If sizeBytes was >0 on those chunks, the Cloudinary asset may be corrupt or missing.');
+        // console.warn('[Replay] Some batches failed to decode. If sizeBytes was >0 on those chunks, the Cloudinary asset may be corrupt or missing.');
       }
 
       if (stopRef.current) {

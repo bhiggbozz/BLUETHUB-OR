@@ -477,7 +477,7 @@ const IdbViewer = () => {
                 audioCount: audio.length,
                 sampleStrokes: strokes.slice(0, 5),
               };
-              console.log("IDB Data Export:", data);
+              //console.log("IDB Data Export:", data);
               navigator.clipboard.writeText(JSON.stringify(data, null, 2));
               alert("Data copied to clipboard and logged to console!");
             }}

@@ -1,11 +1,11 @@
 import element from "@/assets/svg/element-4.svg";
 import Calendar from "@/assets/svg/calendar.svg";
-import message from "@/assets/svg/message.svg";
+// import message from "@/assets/svg/message.svg";
 // import studentIcon from "@/assets/svg/student.svg";
 // import coursesIcon from "@/assets/svg/courses.svg";
 import classIconIcon from "@/assets/svg/class.svg";
 import logoutIcon from "@/assets/svg/logout.svg";
-import settingsIcon from "@/assets/svg/settings.svg";
+// import settingsIcon from "@/assets/svg/settings.svg";
 import AssignmentIcon from "@/assets/svg/assignment.svg";
 import registrationIcon from "@/assets/svg/registration.svg";
 import libraryIcon from "@/assets/svg/library.svg";
@@ -155,10 +155,10 @@ export const navLink = [
   { name: "Analytics", path: "/admin/analytics", icons: element },
   { name: "Approvals", path: "/admin/approvals", icons: AssignmentIcon },
   { name: "Calendar", path: "/admin/calendar", icons: Calendar },
-  { name: "Message", path: "/admin/message", icons: message },
+  // { name: "Message", path: "/admin/message", icons: message },
 ];
 export const other_menu_Link = [
-  { name: "Settings", path: "/admin/settings", icons: settingsIcon },
+  // { name: "Settings", path: "/admin/settings", icons: settingsIcon },
   { name: "Log Out", path: "#", icons: logoutIcon },
 ];
 

@@ -166,7 +166,7 @@ function Login() {
         : msg;
 
       setErrorMsg(friendlyMsg);
-      console.log("[error message]", friendlyMsg)
+      //console.log("[error message]", friendlyMsg)
     } finally {
       setLoading(false);
     }

@@ -14,8 +14,9 @@ const DiscussionLayout = () => {
           open={showModal}
           onClose={() => setShowModal(false)}
           onSubmit={(form) => {
-            console.log("New forum:", form);
+            //console.log("New forum:", form);
             // call your API here
+            form
           }}
         />
       </div>

@@ -27,7 +27,7 @@ const ClassBottom = () => {
 
     const timeHanlder = async () => {
         if (!pauseTime) {
-            console.log('[ClassBottom] Pausing class');
+            //console.log('[ClassBottom] Pausing class');
             timer.pause();
             pauseRecording();
             dispatch(setPauseTime(true));
@@ -39,13 +39,13 @@ const ClassBottom = () => {
         const isContinuingFromDraft = !isRecording && timerElapsedSeconds > 0 && sessionIdRef;
 
         if (isFirstStart) {
-            console.log('[ClassBottom] Starting class for first time');
+            //console.log('[ClassBottom] Starting class for first time');
             await startRecording();
             timer.start();
             dispatch(setPauseTime(false));
             toast.success('Class started — click mic to unmute');
         } else if (isContinuingFromDraft) {
-            console.log('[ClassBottom] Continuing from saved draft, sessionId:', sessionIdRef);
+            //console.log('[ClassBottom] Continuing from saved draft, sessionId:', sessionIdRef);
             const elapsedMs = Math.round(timerElapsedSeconds * 1000);
             const pausedMs = parseInt(localStorage.getItem('totalPausedMs') || '0', 10);
             await continueSession(sessionIdRef, elapsedMs, pausedMs);
@@ -53,7 +53,7 @@ const ClassBottom = () => {
             dispatch(setPauseTime(false));
             toast.success('Recording continued — click mic to unmute');
         } else {
-            console.log('[ClassBottom] Resuming class');
+            //console.log('[ClassBottom] Resuming class');
             resumeRecording();
             timer.start();
             dispatch(setPauseTime(false));
