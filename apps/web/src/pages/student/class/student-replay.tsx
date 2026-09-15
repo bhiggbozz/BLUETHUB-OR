@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { Loader2, AlertCircle } from "lucide-react";
 import Replay from "@/component/reply";
 import { markLessonWatched } from "@/utils/watched-lessons";
+import studentService from "@/services/student";
 import { store } from "@/store";
 import boardSessionService from "@/services/board-session";
 import type { SessionManifestPayload } from "@/services/board-session";
@@ -241,15 +242,19 @@ const StudentReplay = () => {
   const lessonId = state?.lessonId ?? classId ?? "";
 
   // const handleBackToLessons = () => {
-  //   if (lessonId) markLessonWatched(lessonId);
   //   navigate("/student/recorded-class");
   // };
 
-  useEffect(() => {
-  return () => {
-    if (lessonId) markLessonWatched(lessonId);
+  // Fires only when playback actually reaches the end of the timeline (see
+  // Replay's onFinished) — not on navigating away or pausing partway through,
+  // so "watched" genuinely means "watched it through to the end."
+  const handlePlaybackFinished = () => {
+    if (!lessonId) return;
+    markLessonWatched(lessonId);
+    studentService.updateWatchProgress(lessonId, 100).catch((err) => {
+      console.error("Failed to report lesson watch completion:", err);
+    });
   };
-}, [lessonId]);
 
   const [isReady, setIsReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -703,7 +708,7 @@ const StudentReplay = () => {
         Back to Lessons
       </button> */}
       <Provider store={store}>
-        <Replay sessionId={sessionId} />
+        <Replay sessionId={sessionId} onFinished={handlePlaybackFinished} />
       </Provider>
     </div>
   );

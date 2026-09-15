@@ -189,9 +189,14 @@ const buildMediaEventsFromManifest = (raw: string | null): Array<{
 
 interface ReplayProps {
   sessionId?: string;
+  // Fired once the timeline actually reaches its end during play() — NOT on
+  // a manual stop/pause/navigate-away (those set stopRef.current, which this
+  // deliberately excludes). This is the one reliable "the student watched it
+  // through to the end" signal in the whole replay pipeline.
+  onFinished?: () => void;
 }
 
-export default function Replay({ sessionId }: ReplayProps = {}) {
+export default function Replay({ sessionId, onFinished }: ReplayProps = {}) {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -1436,7 +1441,10 @@ export default function Replay({ sessionId }: ReplayProps = {}) {
       stopRaf();
     }
 
-    if (!stopRef.current) setIsPlaying(false);
+    if (!stopRef.current) {
+      setIsPlaying(false);
+      onFinished?.();
+    }
   };
 
   // ── Stop ──────────────────────────────────────────────────────────────────
