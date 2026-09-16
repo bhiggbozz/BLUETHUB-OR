@@ -22,7 +22,7 @@ export function Features() {
           </ScrollReveal>
           <ScrollReveal delay={0.1}>
             <p className="max-w-[560px] text-base leading-[1.75] text-muted">
-              Every feature on Bluetthub is designed around how African schools actually
+              Every feature on Bluethub is designed around how African schools actually
               operate — including unstable internet, large classrooms, and parent
               involvement.
             </p>

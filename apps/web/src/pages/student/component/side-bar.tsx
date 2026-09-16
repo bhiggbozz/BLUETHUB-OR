@@ -2,17 +2,17 @@ import FamiconsChevron from "@/assets/svg/famicons_chevron.svg?react";
 import element from "@/assets/svg/sdashboard.svg?react";
 import moduleIcon from "@/assets/svg/class.svg?react";
 import my_course from "@/assets/svg/scourses.svg?react";
-import assignments from "@/assets/svg/assignment.svg?react";
+// import assignments from "@/assets/svg/assignment.svg?react";
 import quizzes from "@/assets/svg/quizzes.svg?react";
 import discussion from "@/assets/svg/Discussion_forum.svg?react";
 import studyGroups from "@/assets/svg/people.svg?react";
-import live_classes from "@/assets/svg/live_classes.svg?react";
-import Calendar from "@/assets/svg/calendar.svg?react";
+// import live_classes from "@/assets/svg/live_classes.svg?react";
+// import Calendar from "@/assets/svg/calendar.svg?react";
 import recorded_class from "@/assets/svg/monitor_play.svg?react";
 import premium from "@/assets/svg/premium.svg?react";
-import grades from "@/assets/svg/grades.svg?react";
-import bluethub_ai from "@/assets/svg/bluethub_ai.svg?react";
-import settings from "@/assets/svg/settings (1).svg?react";
+// import grades from "@/assets/svg/grades.svg?react";
+// import bluethub_ai from "@/assets/svg/bluethub_ai.svg?react";
+// import settings from "@/assets/svg/settings (1).svg?react";
 import B_2 from "@/assets/svg/B_2.svg?react";
 import LogOutIcon from "@/assets/svg/log-out-04.svg?react";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -82,7 +82,7 @@ const NAV_GROUPS: NavGroup[] = [
             },
             { name: "My Course", path: "/student/my-course", icons: my_course, requiresOnline: true },
             { name: "Quizzes", path: "/student/Quizzes", icons: quizzes, requiresOnline: true },
-            { name: "Assignments", path: "/student/Assignments", icons: assignments, disabled: true },
+            // { name: "Assignments", path: "/student/Assignments", icons: assignments, disabled: true },
         ],
     },
     {
@@ -91,8 +91,8 @@ const NAV_GROUPS: NavGroup[] = [
             // Not gated — a previously-opened lesson is cached (Cache API +
             // IndexedDB) and must stay watchable with no network at all.
             { name: "Recorded Class", path: "/student/recorded-class", icons: recorded_class },
-            { name: "Live Classes", path: "/student/Live-Classes", icons: live_classes, disabled: true },
-            { name: "Calendar", path: "/student/calendar", icons: Calendar, disabled: true },
+            // { name: "Live Classes", path: "/student/Live-Classes", icons: live_classes, disabled: true },
+            // { name: "Calendar", path: "/student/calendar", icons: Calendar, disabled: true },
         ],
     },
     {
@@ -100,15 +100,15 @@ const NAV_GROUPS: NavGroup[] = [
         items: [
             { name: "Discussion Forum", path: "/student/Discussion-Forum", icons: discussion, requiresOnline: true },
             { name: "Study Groups", path: "/student/study-groups", icons: studyGroups, requiresOnline: true },
-            { name: "Grades & Progress", path: "/student/Grades-Progress", icons: grades, disabled: true },
+            // { name: "Grades & Progress", path: "/student/Grades-Progress", icons: grades, disabled: true },
             { name: "Premium", path: "/student/Premium", icons: premium, disabled: false, requiresOnline: true },
-            { name: "Bluethub AI", path: "/student/Bluethub-Ai", icons: bluethub_ai, disabled: true },
+            // { name: "Bluethub AI", path: "/student/Bluethub-Ai", icons: bluethub_ai, disabled: true },
         ],
     },
 ];
 
 const ACCOUNT_LINKS: NavLinkItem[] = [
-    { name: "Settings", path: "/student/Settings", icons: settings, disabled: true },
+    // { name: "Settings", path: "/student/Settings", icons: settings, disabled: true },
 ];
 
 // ── Bluethub wordmark SVG ──────────────────────────────────────────────────────
@@ -479,11 +479,18 @@ const StudentSideBar = () => {
     const [isCollapsed, setIsCollapsedState] = useState(false);
     const navigate = useNavigate();
     const { logout } = useAuthContext();
-    const school = localData.retrieve("schoolInfo") as schoolInfo;
+    const [school, setSchool] = useState<schoolInfo | null>()
 
     useEffect(() => {
         const saved = localData.retrieve<boolean>("navVNextT");
         if (saved !== null) setIsCollapsedState(saved);
+
+
+
+        const sch = localData.retrieve("schoolInfo") as schoolInfo
+        if (sch) {
+            setSchool(sch)
+        }
     }, []);
 
     const setIsCollapsed = (v: boolean) => {
@@ -523,14 +530,14 @@ const StudentSideBar = () => {
                 ) : (
                     <>
                         {/* <BluethubLogo /> */}
-                        <img src={school.logoUrl || bluethub} alt={school.schoolName ||'bluetsch'} className="h-7  rounded-full shrink-0" />
+                        <img src={school?.logoUrl || bluethub} alt={school?.schoolName || 'bluetsch'} className="h-7  rounded-full shrink-0" />
                         <button
                             type="button"
                             onClick={() => setIsCollapsed(true)}
                             className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                             aria-label="Collapse sidebar"
                         >
-                            <FamiconsChevron  className="size-5"/>
+                            <FamiconsChevron className="size-5" />
                         </button>
                     </>
                 )}

@@ -7,7 +7,7 @@ export function Logo() {
         </svg>
       </div>
       <span className="text-xl font-extrabold tracking-tight text-navy-900 dark:text-surface-50">
-        Bluetth<span className="text-blue-600 dark:text-blue-400">ub</span>
+        Blueth<span className="text-blue-600 dark:text-blue-400">ub</span>
       </span>
     </a>
   );

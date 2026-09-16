@@ -32,7 +32,7 @@ export function HeroContent() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.35 }}
       >
-        Bluetthub connects schools, teachers, students and parents on one powerful
+        Bluethub connects schools, teachers, students and parents on one powerful
         platform — with offline-first tools, intelligent question banks, and real-time
         progress monitoring.
       </motion.p>
