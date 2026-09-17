@@ -6,6 +6,10 @@ import type { StudentPublishedLesson } from "@/services/student";
 import enginerring from "@/assets/png/engineering.png";
 import { useEffect, useMemo, useState } from "react";
 import quizService from "@/services/quiz";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface VideoLessonCardProps {
     lesson: StudentPublishedLesson;
@@ -211,8 +215,18 @@ const VideoLessonCard = ({ lesson }: VideoLessonCardProps) => {
 
                     <h3 className="text-base font-semibold text-slate-900">{lesson.topicName}</h3>
                     <p className="text-sm leading-6 text-slate-600">
-                        {lesson.description || lesson.aim || "No description available."}
+                        {}
+                        <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {(lesson.description || lesson.aim || "No description available.")
+                          .replace(/\\\(/g, "$")
+                          .replace(/\\\)/g, "$")}
+                      </ReactMarkdown>
                     </p>
+
+
                 </div>
             </div>
 

@@ -20,7 +20,7 @@ export function Footer() {
                   </svg>
                 </div>
                 <span className="text-lg font-extrabold text-white">
-                  Bluetth<span className="text-blue-400">ub</span>
+                  Blueth<span className="text-blue-400">ub</span>
                 </span>
               </a>
             </div>
@@ -54,7 +54,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="flex flex-col items-center gap-3 border-t border-white/[0.08] pt-6 sm:flex-row sm:justify-between">
-          <span className="text-xs">© 2026 Bluetthub. All rights reserved.</span>
+          <span className="text-xs">© 2026 Bluethub. All rights reserved.</span>
           <div className="flex gap-5">
             <a href="#" className="text-xs text-white/30 no-underline transition-colors hover:text-white/80">
               Privacy Policy

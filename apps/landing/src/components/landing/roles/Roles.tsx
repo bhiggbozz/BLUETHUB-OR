@@ -14,7 +14,7 @@ export function Roles() {
           <SectionHeading
             label="Who it's for"
             title="One platform, every role"
-            subtitle="Bluetthub is designed so each user gets exactly the experience they need — whether checking grades or uploading content."
+            subtitle="Bluethub is designed so each user gets exactly the experience they need — whether checking grades or uploading content."
           />
         </ScrollReveal>
 

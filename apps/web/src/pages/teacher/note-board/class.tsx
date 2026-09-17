@@ -923,7 +923,7 @@ const penDownEvent = useCallback(async (
                                         key={s.id}
                                         points={s.points}
                                         stroke={s.color}
-                                        strokeWidth={s.type === "eraser" ? 30 : 4}
+                                        strokeWidth={s.type === "eraser" ? 30 : 1}
                                         lineCap="round"
                                         lineJoin="round"
                                         tension={0.4}
@@ -1093,7 +1093,7 @@ const penDownEvent = useCallback(async (
         ref={activeLineRef}
         points={activeStrokePointsRef.current}
         stroke={selectedFillColor || "#df4b26"}
-        strokeWidth={4}
+        strokeWidth={1}
         lineCap="round"
         lineJoin="round"
         tension={0.4}
