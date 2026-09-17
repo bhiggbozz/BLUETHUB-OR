@@ -31,8 +31,6 @@ export default function PdfScrollViewer({
   const resizeRef = useRef<ResizeObserver | null>(null);
   const lastPageRef = useRef(1);
   const isApplyingControlledScrollRef = useRef(false);
-  console.log('fileUrl', fileUrl)
-  console.log('i am here doing nothing')
 
   const [numPages, setNumPages] = useState(0);
   const [renderedPages, setRenderedPages] = useState(0);

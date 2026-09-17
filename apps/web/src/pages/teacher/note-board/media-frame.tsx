@@ -217,9 +217,6 @@ const MediaFrame = () => {
     );
   }
 
-  console.log('mediaUrl', mediaUrl)
-  console.log('i am here doing nothing')
-
   return (
     <div className={`pointer-events-none absolute inset-0 z-40 flex justify-center p-2 sm:p-4 ${isPdf ? 'items-start' : 'items-center'}`}>
       <div className={`pointer-events-auto bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col ${frameSize}`}>
