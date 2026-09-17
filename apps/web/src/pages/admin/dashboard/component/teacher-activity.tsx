@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { performanceService, type TeacherActivityDto } from "@/services/performance";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 
-const trustBadge = (level: string) => {
-  switch (level.toLowerCase()) {
-    case "excellent": return "bg-green-100 text-green-700";
-    case "good": return "bg-blue-100 text-blue-700";
-    case "average": return "bg-amber-100 text-amber-700";
-    case "poor": return "bg-red-100 text-red-700";
-    default: return "bg-slate-100 text-slate-600";
-  }
-};
+// const trustBadge = (level: string) => {
+//   switch (level.toLowerCase()) {
+//     case "excellent": return "bg-green-100 text-green-700";
+//     case "good": return "bg-blue-100 text-blue-700";
+//     case "average": return "bg-amber-100 text-amber-700";
+//     case "poor": return "bg-red-100 text-red-700";
+//     default: return "bg-slate-100 text-slate-600";
+//   }
+// };
 
 export function TeacherActivity() {
   const [teachers, setTeachers] = useState<TeacherActivityDto[]>([]);
@@ -65,7 +65,7 @@ export function TeacherActivity() {
               <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Draft</th>
               <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Pending</th>
               <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Rejected</th>
-              <th className="pb-2.5 font-semibold whitespace-nowrap text-center">Trust</th>
+              {/* <th className="pb-2.5 font-semibold whitespace-nowrap text-center">Trust</th> */}
             </tr>
           </thead>
           <tbody className="text-slate-700">
@@ -92,11 +92,11 @@ export function TeacherActivity() {
                     <span className="text-slate-400">{t.rejectedLessons}</span>
                   )}
                 </td>
-                <td className="py-3 text-center">
+                {/* <td className="py-3 text-center">
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${trustBadge(t.trustLevel)}`}>
                     {t.trustScore.toFixed(0)}% · {t.trustLevel}
                   </span>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>

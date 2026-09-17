@@ -8,6 +8,7 @@ import {
   type LocalAudioChunk, type LocalStrokeBatch, type ReplayDownloadCache,
   type SyncStatus, type SessionStatus,
   type LocalAttendanceSession, type AttendanceScanRecord,
+  STORE_OFFLINE_LEARNERS,
 } from './constant';
 
 // ── DB singleton ──────────────────────────────────────────────────────────────
@@ -61,6 +62,11 @@ async function getDb(): Promise<IDBPDatabase> {
         s.createIndex('syncStatus', 'syncStatus', { unique: false });
         s.createIndex('dedupeKey', 'dedupeKey', { unique: true });
         s.createIndex('dateKey', 'dateKey', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(STORE_OFFLINE_LEARNERS)) {
+        const s = db.createObjectStore(STORE_OFFLINE_LEARNERS, { keyPath: 'id' });
+        s.createIndex('username', 'username', { unique: true });
+        s.createIndex('hashPassword', 'hashPassword', { unique: true });
       }
     },
   });
@@ -460,3 +466,76 @@ export function isStorageFullError(err: unknown): boolean {
   );
 }
 
+
+
+
+
+// ---------- CREATE ----------
+export async function addOfflineLearner(learner: {
+  id: string;
+  username: string;
+  hashPassword: string;
+  [key: string]: any;
+}) {
+  const db = await getDb();
+  try {
+    await db.add(STORE_OFFLINE_LEARNERS, learner);
+    return { success: true };
+  } catch (err: any) {
+    // Fires if id, username, or hashPassword unique constraint is violated
+    if (err.name === 'ConstraintError') {
+      return { success: false, error: 'Learner with this id, username, or password hash already exists' };
+    }
+    throw err;
+  }
+}
+
+// ---------- READ ----------
+export async function getOfflineLearnerById(id: string) {
+  const db = await getDb();
+  return db.get(STORE_OFFLINE_LEARNERS, id);
+}
+
+export async function getOfflineLearnerByUsername(username: string) {
+  const db = await getDb();
+  return db.getFromIndex(STORE_OFFLINE_LEARNERS, 'username', username);
+}
+
+export async function getAllOfflineLearners() {
+  const db = await getDb();
+  return db.getAll(STORE_OFFLINE_LEARNERS);
+}
+
+// ---------- UPDATE ----------
+export async function updateOfflineLearner(
+  id: string,
+  updates: Partial<{ username: string; hashPassword: string; [key: string]: any }>
+) {
+  const db = await getDb();
+  const tx = db.transaction(STORE_OFFLINE_LEARNERS, 'readwrite');
+  const store = tx.objectStore(STORE_OFFLINE_LEARNERS);
+
+  const existing = await store.get(id);
+  if (!existing) {
+    await tx.done.catch(() => {});
+    return { success: false, error: 'Learner not found' };
+  }
+
+  const merged = { ...existing, ...updates, id }; // keep original id
+  await store.put(merged);
+  await tx.done;
+  return { success: true, data: merged };
+}
+
+// ---------- DELETE ----------
+export async function deleteOfflineLearner(id: string) {
+  const db = await getDb();
+  await db.delete(STORE_OFFLINE_LEARNERS, id);
+  return { success: true };
+}
+
+export async function clearOfflineLearners() {
+  const db = await getDb();
+  await db.clear(STORE_OFFLINE_LEARNERS);
+  return { success: true };
+}

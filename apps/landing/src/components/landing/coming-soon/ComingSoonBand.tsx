@@ -13,7 +13,7 @@ export function ComingSoonBand() {
           🌱 Coming soon
         </span>
         <span className="text-center text-sm text-white/80 sm:text-left">
-          More powerful modules are on the way for Bluetthub
+          More powerful modules are on the way for Bluethub
         </span>
         <div className="flex flex-wrap justify-center gap-2.5 sm:ml-auto">
           {BAND_PILLS.map((pill) => (

@@ -1,5 +1,6 @@
 import { getTenantFromUrl } from "@/utils/subdomain";
 import { API, type TResponse } from ".";
+import type { MyCourseCurriculumDto } from "@/pages/student/courses/component/subject-list";
 
 const headers = { "X-Tenant-ID": getTenantFromUrl() };
 
@@ -412,6 +413,12 @@ export const performanceService = {
   getStudentSummary: () =>
     API.get<TResponse<StudentSummaryDto>>(
       "api/performance/student-summary",
+      { headers }
+    ),
+
+    getMyCourseCurriculum: (subjectId: string, classroomId: string) =>
+    API.get<TResponse<MyCourseCurriculumDto>>(
+      `/api/School/subjects/${subjectId}/curriculum?classroomId=${classroomId}`,
       { headers }
     ),
 

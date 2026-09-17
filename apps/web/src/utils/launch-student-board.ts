@@ -2,13 +2,16 @@ import type { NavigateFunction } from "react-router-dom";
 import type { LessonForClassDto } from "@/services/lesson";
 import { boardSessionService } from "@/services/board-session";
 
-// The teacher whiteboard (ClassRoom/Class, layouts/teacher/class + pages/teacher/note-board)
-// has no backend "create session" call — a board session is just whatever
-// lessonId ends up in sessionStorage.activeLesson, implicitly created by the
-// first stroke/audio batch POST. So reusing it for a student just means
-// writing the same sessionStorage shape with the group content's id as the
-// lessonId, plus a few overrides (see end-class.tsx / class-room.tsx) that
-// tell the shared component where "exit" should go instead of /teacher.
+// The board's canvas/toolbar/recording engine has no backend "create
+// session" call — a board session is just whatever lessonId ends up in
+// sessionStorage.activeLesson, implicitly created by the first stroke/audio
+// batch POST. The student route (layouts/student/board/student-class-room.tsx)
+// is its own dedicated component — not the teacher's ClassRoom — but still
+// shares that same canvas/recording engine, so this writes the same
+// sessionStorage shape (with the group content's id as the lessonId) that
+// engine expects, plus boardGroupId/boardContentId so the student's upload
+// hooks know which group-content endpoint to target, and boardExitPath so
+// StudentEndClass knows where to navigate back to.
 export interface StudentBoardContent {
   contentId: string;
   groupId: string;
@@ -59,9 +62,7 @@ export function launchStudentBoard(
   localStorage.removeItem("continueSessionId");
   localStorage.removeItem("continueLessonId");
 
-  sessionStorage.setItem("boardMode", "student");
   sessionStorage.setItem("boardExitPath", exitPath);
-  sessionStorage.setItem("boardDraftsPath", exitPath);
   // Routes stroke-batch uploads to the group-content pipeline (its own
   // queue/worker/Mongo collection, keyed by groupId + studentId + contentId +
   // batchIndex — no sessionId) instead of the teacher's live-session endpoint.

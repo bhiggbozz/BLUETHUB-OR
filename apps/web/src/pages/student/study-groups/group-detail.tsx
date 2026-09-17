@@ -304,16 +304,18 @@ const GroupDetailPage = () => {
           <section className="mt-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-bold text-[#3A3A3A] uppercase tracking-wide">Content</h3>
-              <button
-                type="button"
-                onClick={() => navigate(`/student/study-groups/${detail.groupId}/content/new`)}
-                className="inline-flex items-center gap-1.5 bg-student-chestnut text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Content
-              </button>
+              {detail.status !== "PendingApproval" && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/student/study-groups/${detail.groupId}/content/new`)}
+                  className="inline-flex items-center gap-1.5 bg-student-chestnut text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Content
+                </button>
+              )}
             </div>
 
-            {detail.content.length === 0 ? (
+            {detail.content.length === 0 && detail.status !== "PendingApproval" ? (
               <button
                 type="button"
                 onClick={() => navigate(`/student/study-groups/${detail.groupId}/content/new`)}

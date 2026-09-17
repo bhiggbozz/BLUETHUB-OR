@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { Loader2, AlertCircle } from "lucide-react";
 import Replay from "@/component/reply";
 import { markLessonWatched } from "@/utils/watched-lessons";
+import studentService from "@/services/student";
 import { store } from "@/store";
 import boardSessionService from "@/services/board-session";
 import type { SessionManifestPayload } from "@/services/board-session";
@@ -241,15 +242,19 @@ const StudentReplay = () => {
   const lessonId = state?.lessonId ?? classId ?? "";
 
   // const handleBackToLessons = () => {
-  //   if (lessonId) markLessonWatched(lessonId);
   //   navigate("/student/recorded-class");
   // };
 
-  useEffect(() => {
-  return () => {
-    if (lessonId) markLessonWatched(lessonId);
+  // Fires only when playback actually reaches the end of the timeline (see
+  // Replay's onFinished) — not on navigating away or pausing partway through,
+  // so "watched" genuinely means "watched it through to the end."
+  const handlePlaybackFinished = () => {
+    if (!lessonId) return;
+    markLessonWatched(lessonId);
+    studentService.updateWatchProgress(lessonId, 100).catch((err) => {
+      console.error("Failed to report lesson watch completion:", err);
+    });
   };
-}, [lessonId]);
 
   const [isReady, setIsReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -350,9 +355,12 @@ const StudentReplay = () => {
           console.warn('[StudentReplay] Could not initialise download cache:', cacheInitErr);
         }
 
+        // Fixed 0 fallback, not Date.now() — see watch-class.tsx's
+        // ensureReplayData for why an unstable per-run anchor breaks audio
+        // scheduling across resumed/interrupted downloads.
         const sessionStartWallMs = manifest.session?.recordedAt
           ? new Date(manifest.session.recordedAt).getTime()
-          : Date.now();
+          : 0;
 
         // ── Determine what is already in IDB ─────────────────────────────
         const [existingStrokes, existingAudio] = await Promise.all([
@@ -703,7 +711,7 @@ const StudentReplay = () => {
         Back to Lessons
       </button> */}
       <Provider store={store}>
-        <Replay sessionId={sessionId} />
+        <Replay sessionId={sessionId} onFinished={handlePlaybackFinished} lessonId={lessonId} />
       </Provider>
     </div>
   );

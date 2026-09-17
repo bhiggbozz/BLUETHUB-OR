@@ -213,7 +213,6 @@ function StepThree({ form, setForm }: { form: ForumForm; setForm: React.Dispatch
 
     const [selectedIdx, setSelectedIdx] = useState<string | null>()
 
-    console.log("selectedIdx", selectedIdx)
 
     const rows = [
         { label: "Title", value: form.title || "—" },

@@ -1,7 +1,8 @@
 import { Provider } from "react-redux";
 import { store } from "@/store/index";
 import Class from "@/pages/teacher/note-board/class";
-import AppBar from "./component/app-bar";
+import StudentAppBar from "./component/student-app-bar";
+import StudentClassBottom from "./component/student-class-bottom";
 import { Toaster } from "react-hot-toast";
 import { SessionProvider } from "@/contexts/session-context";
 import { useEffect, useState } from "react";
@@ -14,36 +15,31 @@ import SessionRecoveryDialog from "@/component/session-recovery-dialog";
 import { deleteImage } from "@/services/class-media";
 import { LESSON_MEDIA_CACHE, buildLessonScopedCacheKey } from "@/utils/lesson-media-cache";
 
-// Inner component that has access to Redux dispatch
-const ClassRoomInner = () => {
+/**
+ * Dedicated board shell for a student's study-group recording — a fork of
+ * layouts/teacher/class/class-room.tsx rather than the same component reused
+ * with sessionStorage flags. The canvas/toolbar/recording engine (Class,
+ * SessionProvider) has no teacher-vs-student behavior difference so it stays
+ * shared; what's forked here is the outer chrome (StudentAppBar, which wires
+ * to StudentEndClass and its own group-content upload path) and the exit
+ * destination on session recovery/discard, which points back into the
+ * student's study-group flow instead of /teacher.
+ */
+const StudentClassRoomInner = () => {
   const navigate = useNavigate();
   const [recoverySession, setRecoverySession] = useState<LocalSession | null>(null);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // The student board (utils/launch-student-board.ts) writes boardGroupId/
-    // boardContentId to sessionStorage so its background stroke-upload
-    // worker (contexts/session-context.tsx, shared by both boards) knows to
-    // target the group-content endpoint instead of the teacher's live-session
-    // one. Nothing ever cleared those keys, so a browser tab that visited the
-    // student board earlier would leak them into a later teacher session,
-    // silently sending the teacher's strokes to the wrong endpoint. The
-    // teacher board is the one place that must never see them.
-    sessionStorage.removeItem('boardGroupId');
-    sessionStorage.removeItem('boardContentId');
-
     const checkForRecovery = async () => {
-      // Check if we're continuing from a saved draft (manual continue flow)
       const continueSessionId = localStorage.getItem('continueSessionId');
 
       if (continueSessionId) {
-        // Manual continue flow - let class.tsx handle it
         setIsReady(true);
         return;
       }
 
-      // Check for interrupted sessions — only for the current lesson
       try {
         const currentLessonId = (() => {
           try {
@@ -55,8 +51,6 @@ const ClassRoomInner = () => {
         const interruptedSessions = await getInterruptedSessions();
 
         if (interruptedSessions.length > 0) {
-          // If we know the active lesson, discard interrupted sessions from other lessons.
-          // If active lesson is missing (deep-link/open board directly), never discard.
           if (currentLessonId) {
             const otherLessons = interruptedSessions.filter(
               s => s.lessonId !== currentLessonId
@@ -64,7 +58,6 @@ const ClassRoomInner = () => {
             await Promise.allSettled(otherLessons.map(s => cleanupEntireSession(s.id)));
           }
 
-          // Prefer same-lesson recovery when available; otherwise fall back to all sessions.
           const sameLesson = currentLessonId
             ? interruptedSessions.filter(s => s.lessonId === currentLessonId)
             : interruptedSessions;
@@ -79,10 +72,9 @@ const ClassRoomInner = () => {
           }
         }
       } catch (err) {
-        console.error('[ClassRoom] Failed to check for interrupted sessions:', err);
+        console.error('[StudentClassRoom] Failed to check for interrupted sessions:', err);
       }
 
-      // No recovery needed - reset and start fresh
       forceResetGlobalTimer();
       store.dispatch(resetClassRuntime());
       setIsReady(true);
@@ -94,25 +86,17 @@ const ClassRoomInner = () => {
   const handleContinueSession = () => {
     if (!recoverySession) return;
 
-   // console.log('[ClassRoom] User chose to continue session:', recoverySession.id);
-
-    // Set up for continuation via the existing flow
     localStorage.setItem('continueSessionId', recoverySession.id);
     localStorage.setItem('continueLessonId', recoverySession.lessonId);
 
-    // Also restore activeLesson for the topic display
     const activeLesson = {
       lesson: {
         id: recoverySession.lessonId,
         topic: recoverySession.lesson.topic,
         subTopic: recoverySession.lesson.subTopic,
         aim: recoverySession.lesson.aim,
-        subject: {
-          name: recoverySession.lesson.subjectName,
-        },
-        classroom: {
-          name: recoverySession.lesson.className,
-        },
+        subject: { name: recoverySession.lesson.subjectName },
+        classroom: { name: recoverySession.lesson.className },
       },
       startedAt: recoverySession.recording.startedAt,
     };
@@ -125,13 +109,9 @@ const ClassRoomInner = () => {
   const handleDiscardSession = async () => {
     if (!recoverySession) return;
 
-    //console.log('[ClassRoom] User chose to discard session:', recoverySession.id);
-
     try {
-      // Clean up the interrupted session
       await cleanupEntireSession(recoverySession.id);
 
-      // Remove lesson media cached in image-store by known media event IDs
       const mediaIds = Array.from(new Set(
         (recoverySession.mediaEvents ?? [])
           .map((m) => m.id)
@@ -139,7 +119,6 @@ const ClassRoomInner = () => {
       ));
       await Promise.allSettled(mediaIds.map((id) => deleteImage(id)));
 
-      // Remove lesson media URLs from Cache API (lesson-specific only)
       const cacheUrls = new Set<string>();
       for (const media of recoverySession.mediaEvents ?? []) {
         if (media?.url) cacheUrls.add(media.url);
@@ -172,7 +151,6 @@ const ClassRoomInner = () => {
         );
       }
 
-      // Clear local board replay/session artifacts for this session lifecycle
       localStorage.removeItem('continueSessionId');
       localStorage.removeItem('continueLessonId');
       localStorage.removeItem('currentBatches');
@@ -194,10 +172,9 @@ const ClassRoomInner = () => {
         sessionStorage.removeItem('activeLesson');
       }
     } catch (err) {
-      console.error('[ClassRoom] Failed to cleanup session:', err);
+      console.error('[StudentClassRoom] Failed to cleanup session:', err);
     }
 
-    // Reset and start fresh
     forceResetGlobalTimer();
     store.dispatch(resetClassRuntime());
 
@@ -205,8 +182,7 @@ const ClassRoomInner = () => {
     setRecoverySession(null);
     setIsReady(true);
 
-    // Exit board after discard to avoid continuing in a deleted session context.
-    navigate('/teacher', { replace: true });
+    navigate(sessionStorage.getItem('boardExitPath') || '/student/study-groups', { replace: true });
   };
 
   return (
@@ -214,7 +190,6 @@ const ClassRoomInner = () => {
       <SessionProvider>
         <Toaster position="bottom-center" />
 
-        {/* Recovery Dialog */}
         <SessionRecoveryDialog
           open={showRecoveryDialog}
           session={recoverySession}
@@ -222,12 +197,11 @@ const ClassRoomInner = () => {
           onDiscard={handleDiscardSession}
         />
 
-        {/* Only render the board when ready */}
         {isReady && (
           <>
-            <AppBar />
+            <StudentAppBar />
             <div>
-              <Class />
+              <Class BottomBar={StudentClassBottom} />
             </div>
           </>
         )}
@@ -236,14 +210,14 @@ const ClassRoomInner = () => {
   );
 };
 
-const ClassRoom = () => {
+const StudentClassRoom = () => {
   return (
     <div className="">
       <Provider store={store}>
-        <ClassRoomInner />
+        <StudentClassRoomInner />
       </Provider>
     </div>
   );
 };
 
-export default ClassRoom;
+export default StudentClassRoom;

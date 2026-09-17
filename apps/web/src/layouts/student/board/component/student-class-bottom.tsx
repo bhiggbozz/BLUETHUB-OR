@@ -3,13 +3,16 @@ import { setPauseTime } from "@/store/class-action-slice";
 import { Button } from "@bluethub/ui-kit";
 import { useDispatch, useSelector } from "react-redux";
 import { Play, Pause } from "lucide-react";
-import EndClass from "@/pages/teacher/note-board/app-bottom/end-class";
-import Audio from "./audio";
+import StudentEndClass from "./student-end-class";
+import Audio from "@/layouts/teacher/class/component/audio";
 import toast from 'react-hot-toast';
 import { useGlobalTimer } from "@/hooks/useGlobalTimer";
 import { useSession } from "@/contexts/session-context";
 
-const ClassBottom = () => {
+// Fork of layouts/teacher/class/component/class-bottom.tsx — identical
+// controls (start/pause/resume, mic), pointed at StudentEndClass instead of
+// the teacher's EndClass.
+const StudentClassBottom = () => {
     const dispatch = useDispatch();
     const timerElapsedSeconds = useSelector((state: RootState) => state.action.timerElapsedSeconds);
     const pauseTime = useSelector((state: RootState) => state.action.pauseTime);
@@ -27,11 +30,10 @@ const ClassBottom = () => {
 
     const timeHanlder = async () => {
         if (!pauseTime) {
-            //console.log('[ClassBottom] Pausing class');
             timer.pause();
             pauseRecording();
             dispatch(setPauseTime(true));
-            toast.success('Class paused');
+            toast.success('Recording paused');
             return;
         }
 
@@ -39,13 +41,11 @@ const ClassBottom = () => {
         const isContinuingFromDraft = !isRecording && timerElapsedSeconds > 0 && sessionIdRef;
 
         if (isFirstStart) {
-            //console.log('[ClassBottom] Starting class for first time');
             await startRecording();
             timer.start();
             dispatch(setPauseTime(false));
-            toast.success('Class started — click mic to unmute');
+            toast.success('Recording started — click mic to unmute');
         } else if (isContinuingFromDraft) {
-            //console.log('[ClassBottom] Continuing from saved draft, sessionId:', sessionIdRef);
             const elapsedMs = Math.round(timerElapsedSeconds * 1000);
             const pausedMs = parseInt(localStorage.getItem('totalPausedMs') || '0', 10);
             await continueSession(sessionIdRef, elapsedMs, pausedMs);
@@ -53,15 +53,13 @@ const ClassBottom = () => {
             dispatch(setPauseTime(false));
             toast.success('Recording continued — click mic to unmute');
         } else {
-            //console.log('[ClassBottom] Resuming class');
             resumeRecording();
             timer.start();
             dispatch(setPauseTime(false));
-            toast.success('Class resumed');
+            toast.success('Recording resumed');
         }
     }
 
-    // Button colors based on state
     const buttonStyles = {
         start: "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-emerald-200",
         pause: "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-amber-200",
@@ -78,7 +76,6 @@ const ClassBottom = () => {
             md:border md:border-gray-200
             md:shadow-lg
         ">
-            {/* Main Control Button */}
             <Button
                 onClick={timeHanlder}
                 title={controlLabel}
@@ -102,19 +99,11 @@ const ClassBottom = () => {
                 </span>
             </Button>
 
-            {/* Divider */}
-            {/* <div className="w-8 h-px bg-gray-200" /> */}
+            <StudentEndClass />
 
-            {/* End Class Button */}
-            <EndClass />
-
-            {/* Divider */}
-            {/* <div className="w-8 h-px bg-gray-200" /> */}
-
-            {/* Audio Control */}
             <Audio />
         </div>
     );
 }
 
-export default ClassBottom;
+export default StudentClassBottom;

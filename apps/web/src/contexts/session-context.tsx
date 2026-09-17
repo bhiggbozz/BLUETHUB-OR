@@ -137,14 +137,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       switch (msg.type) {
         case 'READY':
-          console.log('[SessionContext] Worker ready');
+          ////console.log('[SessionContext] Worker ready');
           break;
 
         case 'TICK':
           // Worker reached the 10-second boundary — stop the current audio batch.
           // Only process TICK if not paused (worker shouldn't send during pause anyway)
           if (!isPausedRef.current && recorderRef.current?.state === 'recording') {
-            console.log('[SessionContext] TICK received, stopping recorder for batch boundary');
+            //console.log('[SessionContext] TICK received, stopping recorder for batch boundary');
             recorderRef.current.stop();
           }
           break;
@@ -154,7 +154,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           break;
 
         case 'SESSION_COMPLETE':
-          console.log('[SessionContext] Session complete:', msg.sessionId);
+          //console.log('[SessionContext] Session complete:', msg.sessionId);
           // Trigger stroke-upload worker to upload pending stroke batches
           if (strokeUploadWorkerRef.current) {
             const authToken = localStorage.getItem('token') || '';
@@ -164,7 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             // upload to the group-content pipeline instead of the live session one.
             const groupId = sessionStorage.getItem('boardGroupId') || undefined;
 
-            console.log('[SessionContext] Initiating stroke batch uploads for session:', msg.sessionId);
+            //console.log('[SessionContext] Initiating stroke batch uploads for session:', msg.sessionId);
             strokeUploadWorkerRef.current.postMessage({
               type: 'START_UPLOAD',
               sessionId: msg.sessionId,
@@ -200,8 +200,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     );
 
     strokeUploadWorker.onmessage = (e: MessageEvent) => {
-      const msg = e.data;
-      console.log('[SessionContext] Stroke-upload worker message:', msg.type);
+       e.data;
+      //console.log('[SessionContext] Stroke-upload worker message:', msg.type);
     };
 
     strokeUploadWorker.onerror = (e) => {
@@ -242,11 +242,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (isPausedRef.current) {
-      console.log('[SessionContext] startAudioBatch: skipped (paused)');
+      //console.log('[SessionContext] startAudioBatch: skipped (paused)');
       return;
     }
 
-    console.log('[SessionContext] Starting audio batch', batchIndexRef.current);
+    //console.log('[SessionContext] Starting audio batch', batchIndexRef.current);
 
     const recorder = new MediaRecorder(stream, {
       mimeType:           getSupportedMimeType(),
@@ -261,7 +261,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!event.data || event.data.size === 0) return;
       const duration = (Date.now() - batchStartMs) / 1000;
 
-      console.log('[SessionContext] Audio chunk ready, batch:', batchIndexRef.current, 'duration:', duration.toFixed(2) + 's', 'size:', event.data.size);
+      //console.log('[SessionContext] Audio chunk ready, batch:', batchIndexRef.current, 'duration:', duration.toFixed(2) + 's', 'size:', event.data.size);
 
       workerRef.current?.postMessage({
         type:       'AUDIO_CHUNK',
@@ -273,23 +273,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
 
     recorder.onstop = () => {
-      console.log('[SessionContext] recorder.onstop - isPaused:', isPausedRef.current, 'isRecording:', isRecordingRef.current);
+      //console.log('[SessionContext] recorder.onstop - isPaused:', isPausedRef.current, 'isRecording:', isRecordingRef.current);
 
       if (isPausedRef.current) {
         // Paused — send PAUSE to worker NOW (after AUDIO_CHUNK was sent in ondataavailable)
         // This ensures the final chunk is saved before worker enters paused state
-        console.log('[SessionContext] Recorder stopped for pause - sending PAUSE to worker');
+        //console.log('[SessionContext] Recorder stopped for pause - sending PAUSE to worker');
         workerRef.current?.postMessage({ type: 'PAUSE', elapsedMs: 0 });
         return;
       }
 
       if (streamRef.current?.active && isRecordingRef.current) {
         // TICK-driven: session still running, start the next 10s batch
-        console.log('[SessionContext] Starting next batch after TICK');
+        //console.log('[SessionContext] Starting next batch after TICK');
         startAudioBatch(stream);
       } else {
         // Full stop — clean up
-        console.log('[SessionContext] Full stop - cleaning up stream and sending END');
+        //console.log('[SessionContext] Full stop - cleaning up stream and sending END');
         streamRef.current?.getTracks().forEach(t => t.stop());
         streamRef.current = null;
         workerRef.current?.postMessage({ type: 'END' });
@@ -311,11 +311,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (currentSessionIdRef.current) {
         localStorage.setItem('sessionStartSessionId', currentSessionIdRef.current);
       }
-      console.log('[SessionContext] SYNC ANCHOR set at recorder.start():', batchStartMs);
+      //console.log('[SessionContext] SYNC ANCHOR set at recorder.start():', batchStartMs);
     }
 
     recorder.start();
-    console.log('[SessionContext] Recorder started, batchStartMs:', batchStartMs);
+    //console.log('[SessionContext] Recorder started, batchStartMs:', batchStartMs);
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -338,7 +338,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const startRecording = useCallback(async () => {
     try {
-      console.log('[SessionContext] startRecording called');
+      //console.log('[SessionContext] startRecording called');
 
       const lessonId = getActiveLessonId();
       if (!lessonId) {
@@ -432,7 +432,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             screenHeight: window.innerHeight,
           };
 
-          console.log('[SessionContext] Built metadata for session:', metadata.lessonId);
+          //console.log('[SessionContext] Built metadata for session:', metadata.lessonId);
         } else {
           metadata = {
             lessonId: sid,
@@ -500,7 +500,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // right before recorder.start() and updates sessionStartWallMs
       startAudioBatch(stream, true);
 
-      console.log('[SessionContext] Recording started, sessionId:', sid);
+      //console.log('[SessionContext] Recording started, sessionId:', sid);
       toast.success('Recording started — mic is muted');
     } catch (err) {
       console.error('[SessionContext] startRecording failed:', err);
@@ -514,7 +514,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const continueSession = useCallback(async (sessionId: string, elapsedMs: number, pausedMs: number) => {
     try {
-      console.log('[SessionContext] Continuing session:', sessionId, 'elapsed:', elapsedMs, 'paused:', pausedMs);
+      //console.log('[SessionContext] Continuing session:', sessionId, 'elapsed:', elapsedMs, 'paused:', pausedMs);
 
       // Get the existing audio batch count to continue from the right index
       // Import dynamically to avoid circular dependencies
@@ -523,7 +523,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const existingBatchCount = existingAudio.length;
       const existingSession = await getSession(sessionId);
 
-      console.log('[SessionContext] Found', existingBatchCount, 'existing audio batches');
+      //console.log('[SessionContext] Found', existingBatchCount, 'existing audio batches');
 
       // Get microphone
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -563,7 +563,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('sessionStartSessionId', sessionId);
       localStorage.setItem('recordingStartSessionId', sessionId);
 
-      console.log('[SessionContext] Restored sessionStartWallMs:', sessionStartMs, 'batchIndex:', existingBatchCount);
+      //console.log('[SessionContext] Restored sessionStartWallMs:', sessionStartMs, 'batchIndex:', existingBatchCount);
 
       // Build metadata from existing session for the worker
       let metadata: {
@@ -610,7 +610,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // Start audio recording
       startAudioBatch(stream, true);
 
-      console.log('[SessionContext] Session continued:', sessionId);
+      //console.log('[SessionContext] Session continued:', sessionId);
       toast.success('Recording continued — click mic to unmute');
     } catch (err) {
       console.error('[SessionContext] continueSession failed:', err);
@@ -620,11 +620,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const pauseRecording = useCallback(() => {
     if (!isRecordingRef.current || isPausedRef.current) {
-      console.log('[SessionContext] pauseRecording: skipped (not recording or already paused)');
+      //console.log('[SessionContext] pauseRecording: skipped (not recording or already paused)');
       return;
     }
 
-    console.log('[SessionContext] Pausing recording');
+    //console.log('[SessionContext] Pausing recording');
 
     // Remember mic state before pause
     micWasMutedBeforePauseRef.current = isMicMutedRef.current;
@@ -637,7 +637,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     isPausedRef.current = true;
 
     if (recorderRef.current?.state === 'recording') {
-      console.log('[SessionContext] Stopping recorder for pause');
+      //console.log('[SessionContext] Stopping recorder for pause');
       // recorder.stop() triggers: ondataavailable (sends AUDIO_CHUNK) -> onstop
       // We send PAUSE to worker in onstop handler AFTER the chunk is sent
       recorderRef.current.stop();
@@ -647,16 +647,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       workerRef.current?.postMessage({ type: 'PAUSE', elapsedMs });
     }
 
-    console.log('[SessionContext] Recording paused at', pauseStartMsRef.current);
+    //console.log('[SessionContext] Recording paused at', pauseStartMsRef.current);
   }, [timerElapsedSeconds]);
 
   const resumeRecording = useCallback(() => {
     if (!isRecordingRef.current || !isPausedRef.current) {
-      console.log('[SessionContext] resumeRecording: skipped (not recording or not paused)');
+      //console.log('[SessionContext] resumeRecording: skipped (not recording or not paused)');
       return;
     }
 
-    console.log('[SessionContext] Resuming recording');
+    //console.log('[SessionContext] Resuming recording');
 
     // Calculate how long we were paused and update total
     const pauseDuration = Date.now() - pauseStartMsRef.current;
@@ -666,7 +666,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // Store in localStorage so stroke timestamps can access it
     localStorage.setItem('totalPausedMs', String(totalPausedMsRef.current));
 
-    console.log('[SessionContext] Pause duration:', pauseDuration, 'Total paused:', totalPausedMsRef.current);
+    //console.log('[SessionContext] Pause duration:', pauseDuration, 'Total paused:', totalPausedMsRef.current);
 
     // Clear paused state FIRST
     setIsPaused(false);
@@ -677,7 +677,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     // Restart audio recording from the same stream
     if (streamRef.current?.active) {
-      console.log('[SessionContext] Restarting audio batch after resume');
+      //console.log('[SessionContext] Restarting audio batch after resume');
       startAudioBatch(streamRef.current);
 
       // Restore mic state (unmute if it was unmuted before pause)
@@ -687,18 +687,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         });
         setIsMicMuted(false);
         isMicMutedRef.current = false;
-        console.log('[SessionContext] Mic restored to unmuted state');
+        //console.log('[SessionContext] Mic restored to unmuted state');
       }
     } else {
       console.error('[SessionContext] Cannot resume - stream is not active');
       toast.error('Cannot resume recording - please restart');
     }
 
-    console.log('[SessionContext] Recording resumed');
+    //console.log('[SessionContext] Recording resumed');
   }, []);
 
   const stopRecording = useCallback(() => {
-    console.log('[SessionContext] stopRecording called');
+    //console.log('[SessionContext] stopRecording called');
 
     // Clear all state
     isRecordingRef.current = false;
@@ -708,11 +708,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setIsPaused(false);
 
     if (recorderRef.current?.state === 'recording' || recorderRef.current?.state === 'paused') {
-      console.log('[SessionContext] Stopping active recorder');
+      //console.log('[SessionContext] Stopping active recorder');
       recorderRef.current.stop();
     } else {
       // Recorder already inactive
-      console.log('[SessionContext] Recorder already inactive, cleaning up');
+      //console.log('[SessionContext] Recorder already inactive, cleaning up');
       streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;
       workerRef.current?.postMessage({ type: 'END' });
@@ -735,7 +735,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     setIsMicMuted(true);
     isMicMutedRef.current = true;
-    console.log('[SessionContext] Mic muted');
+    //console.log('[SessionContext] Mic muted');
   }, []);
 
   const unmuteMic = useCallback(() => {
@@ -752,7 +752,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     setIsMicMuted(false);
     isMicMutedRef.current = false;
-    console.log('[SessionContext] Mic unmuted');
+    //console.log('[SessionContext] Mic unmuted');
   }, []);
 
   // React when Redux isRecording is turned off externally (e.g. EndClass)

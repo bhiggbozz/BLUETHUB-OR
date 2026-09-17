@@ -1,11 +1,11 @@
 import Activity from "@/pages/teacher/dashboard/activity"
-import Recordedclass from "@/pages/teacher/dashboard/recorded-class"
+// import Recordedclass from "@/pages/teacher/dashboard/recorded-class"
 import { Menu, } from "lucide-react"
 import TeacherAppBar from "@/pages/teacher/dashboard/teacher-app-bar"
-import TodayClasses from "./today-classes"
-import AssessmentSubmissions from "./assessment-submissions"
-import PendingReviews from "./pending-reviews"
-import UpcomingDeadlines from "./upcoming-deadlines"
+// import TodayClasses from "./today-classes"
+// import AssessmentSubmissions from "./assessment-submissions"
+// import PendingReviews from "./pending-reviews"
+// import UpcomingDeadlines from "./upcoming-deadlines"
 import PendingUploadsCard from "./pending-uploads-card"
 import { useOutletContext } from "react-router-dom";
 // import NavbarStats from "@/component/performance-navbar-stats";
@@ -42,7 +42,7 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white p-3 md:p-4 space-y-2 pb-2">
+        <div className="bg-white p-3 md:p-4 space-y-2 pb-2 min-h-screen">
           {/* Assigned classrooms indicator */}
           {/* {assignedClassrooms.length > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -57,20 +57,20 @@ const TeacherDashboard = () => {
           <Activity />
           {/* <PerformanceOverview assignedClassroomIds={assignedClassrooms} /> */}
 
-          <div className="flex flex-col lg:flex-row gap-2">
+          {/* <div className="flex flex-col lg:flex-row gap-2"> */}
             {/* Left column */}
-            <div className="space-y-2 flex-1">
+            {/* <div className="space-y-2 flex-1">
               <TodayClasses />
               <AssessmentSubmissions />
-            </div>
+            </div> */}
 
             {/* Right column */}
-            <div className="space-y-2 lg:w-[30%] shrink-0">
+            {/* <div className="space-y-2 lg:w-[30%] shrink-0">
               <PendingReviews />
               <Recordedclass />
               <UpcomingDeadlines />
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
       </div>
     </div>

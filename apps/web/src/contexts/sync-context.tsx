@@ -140,7 +140,7 @@ export function SyncProvider({ children, onSyncComplete, onSyncError }: SyncProv
 
       switch (msg.type) {
         case 'READY':
-          console.log('[SyncContext] Worker ready');
+          //console.log('[SyncContext] Worker ready');
           break;
 
         case 'PROGRESS':

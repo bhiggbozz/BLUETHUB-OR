@@ -288,7 +288,8 @@ function GroupDetailPanel() {
                 open={inviteOpen}
                 onClose={() => setInviteOpen(false)}
                 onSubmit={(data) => {
-                    console.log(data); // { teacherId, question, subject }
+                    data
+                     // { teacherId, question, subject }
                     // call your invite API here
                     setInviteOpen(false);
                 }}

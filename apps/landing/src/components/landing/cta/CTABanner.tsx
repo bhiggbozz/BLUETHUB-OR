@@ -19,7 +19,7 @@ export function CTABanner() {
             </h2>
 
             <p className="relative z-10 mb-7 text-sm sm:text-base text-white/65 sm:mb-9">
-              Join hundreds of schools already using Bluetthub to deliver better
+              Join hundreds of schools already using Bluethub to deliver better
               education, offline and online.
             </p>
 

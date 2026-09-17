@@ -12,6 +12,7 @@ import { useAuthContext } from "@/contexts/auth-context";
 import { loginSchema, TEACHER_ROLE_IDS, UserRole } from "@/utils/validate";
 import { API } from "@/services";
 import { getTenantFromUrl } from "@/utils/subdomain";
+import { offlineLogin, offlineRegister } from "@/utils/offline-learner";
 
 
 export interface UserLoginInput {
@@ -58,8 +59,6 @@ export interface UserLoginInput {
 function Login() {
   const navigate = useNavigate();
   const { login: loginAuth } = useAuthContext();
-
-
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -141,6 +140,7 @@ function Login() {
       localStorage.setItem("accessTokenExpiresAt", String(Date.now() + result.tokenExpiresIn * 1000));
       loginAuth(result.token, { ...user, roleName: user.role }, result.refreshToken);
 
+
       // Hydrate auth context (sets "token" key in localStorage + user state)
 
       // ── Role-based redirect via roleId ───────────────────────────────────
@@ -151,6 +151,7 @@ function Login() {
       } else if (result.roleId === UserRole.Parent) {
         navigate("/parent");
       } else {
+        offlineRegister({ username: payload.username, hashPassword: hashedPassword })
         navigate("/student");
       }
     } catch (error) {
@@ -166,7 +167,24 @@ function Login() {
         : msg;
 
       setErrorMsg(friendlyMsg);
-      console.log("[error message]", friendlyMsg)
+      //console.log("[error message]", friendlyMsg)
+
+
+      if (msg === 'Network Error') {
+        const result = await offlineLogin({
+          username: payload.username,
+          hashPassword: payload.hashPassword,
+        });
+
+        if (result.success) {
+          navigate('/student');
+        }
+        // surface this however you handle errors elsewhere — toast, form error, etc.
+        setErrorMsg(result.error ?? 'Offline login failed');
+      }
+
+      
+
     } finally {
       setLoading(false);
     }

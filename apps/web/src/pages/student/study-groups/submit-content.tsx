@@ -358,7 +358,7 @@ const SubmitContentPage = () => {
   // fields. Returns to the form (with the new board(s) attached) on save/cancel.
   if (showBoardTool) {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex flex-col font-Poppins">
+      <div className="fixed inset-0 z-50 bg-white flex flex-col font-Poppins overscroll-none">
         <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 shrink-0">
           <button
             type="button"
@@ -369,7 +369,7 @@ const SubmitContentPage = () => {
           </button>
           <h1 className="text-sm font-bold text-gray-800">Write on a Board</h1>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
           <div className="max-w-3xl mx-auto">
             <BoardSnapshotTool
               startingDisplayOrder={uploadFiles.length + 1}
@@ -563,7 +563,7 @@ const SubmitContentPage = () => {
                 onClick={() => setShowBoardTool(true)}
                 disabled={!subjectId}
                 title={!subjectId ? "Select a subject first" : undefined}
-                className="flex items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-student-chestnut/40 hover:bg-student-chestnut/5 hover:text-student-chestnut transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-500"
+                className="flex px-2 items-center justify-center gap-1.5 border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-student-chestnut/40 hover:bg-student-chestnut/5 hover:text-student-chestnut transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-500"
               >
                 <PencilRuler className="w-4 h-4" />
                 Write on a board (no recording)
@@ -589,11 +589,10 @@ const SubmitContentPage = () => {
                   type="button"
                   disabled={!canSubmit || submitting}
                   onClick={() => handleSubmit(false)}
-                  className={`h-11 rounded-lg font-semibold text-sm ${
-                    hasBoardSnapshot
+                  className={`h-11 rounded-lg font-semibold text-sm ${hasBoardSnapshot
                       ? "flex-1 bg-student-chestnut hover:bg-student-chestnut/90 text-white"
                       : "flex-1 border border-student-chestnut/30 bg-white hover:bg-student-chestnut/5 text-student-chestnut"
-                  }`}
+                    }`}
                 >
                   {submittingAction === "approval" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   {submittingAction === "approval" ? "Submitting..." : uploading ? "Waiting for uploads..." : "Submit for Approval"}

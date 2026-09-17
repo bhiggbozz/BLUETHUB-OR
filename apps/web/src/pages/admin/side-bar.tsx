@@ -18,14 +18,14 @@ import arrowMenu from "@/assets/svg/arrow_menu_open.svg";
 import arrowMenuOpen from "@/assets/svg/arrow_menu_close.svg";
 import registrationIcon from "@/assets/svg/registration.svg";
 import dashboardIcon from "@/assets/svg/element-4.svg";
-import messageIcon from "@/assets/svg/message.svg";
-import UserPlus from "@/assets/svg/user_plus.svg";
+// import messageIcon from "@/assets/svg/message.svg";
+// import UserPlus from "@/assets/svg/user_plus.svg";
 import ShieldCheck from "@/assets/svg/shield_check.svg";
 import analyticsIcon from "@/assets/svg/analytics.svg";
-import libraryIcon from "@/assets/svg/library.svg";
+// import libraryIcon from "@/assets/svg/library.svg";
 import lessonIcon from "@/assets/svg/lesson.svg";
 import schoolBrandingIcon from "@/assets/svg/school-branding.svg";
-import settingsIcon from "@/assets/svg/settings.svg";
+// import settingsIcon from "@/assets/svg/settings.svg";
 import logoutIcon from "@/assets/svg/logout.svg";
 import AttendanceIcon from "@/assets/svg/attendance.svg";
 import assignmentIcon from "@/assets/svg/assignment.svg";
@@ -62,7 +62,7 @@ const MAIN_LINKS: NavItem[] = [
     { name: "Dashboard", icons: dashboardIcon, path: "/admin" },
     { name: "Analytics", icons: analyticsIcon, path: "/admin/analytics" },
     { name: "Attendance", icons: AttendanceIcon, path: "/admin/attendance-analytics" },
-    { name: "Message", icons: messageIcon, path: "/admin/message" },
+    // { name: "Message", icons: messageIcon, path: "/admin/message" },
 ];
 
 // Grouped by workflow area — related entries (e.g. Admin Role / Admin
@@ -93,14 +93,14 @@ const NAV_GROUPS: NavGroup[] = [
                     { name: "Enable Parent", path: "/admin/registration/parent/enable", disabled: true },
                 ],
             },
-            { name: "Admin Role", path: "/admin/registration/admin", icons: UserPlus },
+            // { name: "Admin Role", path: "/admin/registration/admin", icons: UserPlus },
             { name: "Admin Permissions", path: "/admin/admin-permissions", icons: ShieldCheck },
         ],
     },
     {
         label: "Content",
         items: [
-            { name: "Library", icons: libraryIcon, path: "/admin/library" },
+            // { name: "Library", icons: libraryIcon, path: "/admin/library" },
             { name: "Module", icons: ModuletIcon, path: "/admin/module" },
             { name: "Lesson Approval", icons: lessonIcon, path: "/admin/lesson-approval" },
             { name: "School Branding", icons: schoolBrandingIcon, path: "/admin/school-branding" },
@@ -132,7 +132,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const other_menu_Link: NavItem[] = [
-    { name: "Settings", icons: settingsIcon, path: "/admin/settings" },
+    // { name: "Settings", icons: settingsIcon, path: "/admin/settings" },
     { name: "Log Out", icons: logoutIcon, path: "/" },
 ];
 

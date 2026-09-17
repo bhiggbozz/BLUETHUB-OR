@@ -79,13 +79,13 @@ const Tabs = ({ tabs, selected }: CourseDisplayProps) => {
 
     try {
       setLoading(true);
-      const response = await schoolService.registerSubject(payload)
+      await schoolService.registerSubject(payload)
       // if (response.data.status === "successful") {
       //   navigate("/admin");
       // } else {
       //   console.error("Failed to submit courses:", response);
       // }
-      console.log(response.data)
+      // console.log(response.data)
     } catch (error) {
       const errorMessage =
         error instanceof AxiosError

@@ -100,17 +100,17 @@ async function submitBatch(
         boardSwitches: batch.boardSwitches ?? [],
       };
 
-  console.log('[stroke-upload-worker] 📤 Submitting stroke batch:', {
-    url,
-    batchIndex: batch.batchIndex,
-    sessionId: batch.sessionId,
-    lessonId: batch.lessonId,
-    strokeCount: batch.strokeCount,
-    hasAuth: !!authToken,
-    authTokenPrefix: authToken ? authToken.slice(0, 20) + '...' : 'MISSING',
-    tenantId: tenantId || 'MISSING',
-    bodyStrokesSample: batch.strokes.slice(0, 2).map(s => ({ id: s.id, type: s.type, board: s.currentBoard })),
-  });
+  // console.log('[stroke-upload-worker] 📤 Submitting stroke batch:', {
+  //   url,
+  //   batchIndex: batch.batchIndex,
+  //   sessionId: batch.sessionId,
+  //   lessonId: batch.lessonId,
+  //   strokeCount: batch.strokeCount,
+  //   hasAuth: !!authToken,
+  //   authTokenPrefix: authToken ? authToken.slice(0, 20) + '...' : 'MISSING',
+  //   tenantId: tenantId || 'MISSING',
+  //   bodyStrokesSample: batch.strokes.slice(0, 2).map(s => ({ id: s.id, type: s.type, board: s.currentBoard })),
+  // });
 
   const response = await fetch(url, {
     method: "POST",
@@ -122,12 +122,12 @@ async function submitBatch(
     body: JSON.stringify(requestBody),
   });
 
-  console.log('[stroke-upload-worker] 📥 Response received:', {
-    status: response.status,
-    statusText: response.statusText,
-    batchIndex: batch.batchIndex,
-    ok: response.ok,
-  });
+  // console.log('[stroke-upload-worker] 📥 Response received:', {
+  //   status: response.status,
+  //   statusText: response.statusText,
+  //   batchIndex: batch.batchIndex,
+  //   ok: response.ok,
+  // });
 
   if (response.status !== 204 && response.status !== 200) {
     const text = await response.text();
@@ -135,17 +135,17 @@ async function submitBatch(
     throw new Error(`Stroke batch upload failed: ${response.status} ${text}`);
   }
 
-  console.log('[stroke-upload-worker] ✅ Batch', batch.batchIndex, 'uploaded successfully');
+  // console.log('[stroke-upload-worker] ✅ Batch', batch.batchIndex, 'uploaded successfully');
 }
 
 self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
   const msg = event.data;
 
-  console.log('[stroke-upload-worker] Message received:', msg.type);
+  // console.log('[stroke-upload-worker] Message received:', msg.type);
 
   if (msg.type === "START_UPLOAD") {
     // New flow: Load batches from IDB for a completed session
-    console.log('[stroke-upload-worker] START_UPLOAD for sessionId:', (msg as any).sessionId);
+    // console.log('[stroke-upload-worker] START_UPLOAD for sessionId:', (msg as any).sessionId);
 
     if (!(msg as any).apiBaseUrl) {
       console.error('[stroke-upload-worker] ❌ apiBaseUrl is missing');
@@ -163,10 +163,10 @@ self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
         .filter((b: LocalStrokeBatch) => b.sessionId === (msg as any).sessionId && b.syncStatus === 'pending')
         .sort((a: LocalStrokeBatch, b: LocalStrokeBatch) => a.batchIndex - b.batchIndex);
 
-      console.log('[stroke-upload-worker] Loaded', sessionBatches.length, 'pending batches from IDB for sessionId:', (msg as any).sessionId);
+      // console.log('[stroke-upload-worker] Loaded', sessionBatches.length, 'pending batches from IDB for sessionId:', (msg as any).sessionId);
 
       if (sessionBatches.length === 0) {
-        console.log('[stroke-upload-worker] No pending batches to upload');
+        // console.log('[stroke-upload-worker] No pending batches to upload');
         self.postMessage({ type: 'COMPLETE' } as FromWorkerMessage);
         return;
       }
@@ -188,10 +188,10 @@ self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
         groupId,
       }));
 
-      console.log('[stroke-upload-worker] ✅ Converted batches for upload:', {
-        count: batches.length,
-        sample: batches.slice(0, 2).map(b => ({ index: b.batchIndex, strokes: b.strokeCount })),
-      });
+      // console.log('[stroke-upload-worker] ✅ Converted batches for upload:', {
+      //   count: batches.length,
+      //   sample: batches.slice(0, 2).map(b => ({ index: b.batchIndex, strokes: b.strokeCount })),
+      // });
 
       // Now process like START message
       await processUpload((msg as any).apiBaseUrl, (msg as any).authToken, (msg as any).tenantId, batches);
@@ -204,7 +204,7 @@ self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
   }
 
   if (msg.type !== "START") {
-    console.log('[stroke-upload-worker] Received non-START message:', (msg as unknown as { type: string }).type);
+    // console.log('[stroke-upload-worker] Received non-START message:', (msg as unknown as { type: string }).type);
     return;
   }
 
@@ -219,18 +219,18 @@ async function processUpload(
   tenantId: string,
   batches: StrokeBatchMessage[]
 ): Promise<void> {
-  console.log('[stroke-upload-worker] Processing upload:', {
-    apiBaseUrl,
-    hasAuthToken: !!authToken,
-    tenantId,
-    batchCount: batches?.length ?? 0,
-    batches: batches?.map(b => ({
-      localId: b.localId,
-      batchIndex: b.batchIndex,
-      sessionId: b.sessionId,
-      strokeCount: b.strokeCount,
-    })),
-  });
+  // console.log('[stroke-upload-worker] Processing upload:', {
+  //   apiBaseUrl,
+  //   hasAuthToken: !!authToken,
+  //   tenantId,
+  //   batchCount: batches?.length ?? 0,
+  //   batches: batches?.map(b => ({
+  //     localId: b.localId,
+  //     batchIndex: b.batchIndex,
+  //     sessionId: b.sessionId,
+  //     strokeCount: b.strokeCount,
+  //   })),
+  // });
 
   // ── Critical pre-flight checks ─────────────────────────────────────────────
   if (!apiBaseUrl) {
@@ -253,7 +253,7 @@ async function processUpload(
     self.postMessage({ type: 'COMPLETE' } as FromWorkerMessage);
     return;
   }
-  console.log('[stroke-upload-worker] ✅ Pre-flight OK — starting upload of', batches.length, 'batch(es)');
+  // console.log('[stroke-upload-worker] ✅ Pre-flight OK — starting upload of', batches.length, 'batch(es)');
 
   try {
     for (const batch of batches) {
@@ -262,7 +262,7 @@ async function processUpload(
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          console.log(`[stroke-upload-worker] Attempting batch ${batch.batchIndex}, attempt ${attempt + 1}/${MAX_RETRIES}`);
+          // console.log(`[stroke-upload-worker] Attempting batch ${batch.batchIndex}, attempt ${attempt + 1}/${MAX_RETRIES}`);
           await submitBatch(apiBaseUrl, authToken, tenantId, batch);
           const indexKey = `${batch.sessionId}_${batch.batchIndex}`;
           const done: FromWorkerMessage = {
@@ -272,13 +272,13 @@ async function processUpload(
             id: indexKey,
             indexKey,
           };
-          console.log('[stroke-upload-worker] Posting BATCH_SENT message:', done);
+          // console.log('[stroke-upload-worker] Posting BATCH_SENT message:', done);
           self.postMessage(done);
           uploaded = true;
           break;
         } catch (err) {
           lastError = err instanceof Error ? err.message : "Unknown error";
-          console.log(`[stroke-upload-worker] Batch ${batch.batchIndex} attempt ${attempt + 1} failed:`, lastError);
+          // console.log(`[stroke-upload-worker] Batch ${batch.batchIndex} attempt ${attempt + 1} failed:`, lastError);
           if (attempt < MAX_RETRIES - 1) {
             await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
           }
@@ -292,13 +292,13 @@ async function processUpload(
           batchIndex: batch.batchIndex,
           error: lastError,
         };
-        console.log('[stroke-upload-worker] Posting BATCH_FAILED message:', failed);
+        // console.log('[stroke-upload-worker] Posting BATCH_FAILED message:', failed);
         self.postMessage(failed);
       }
     }
 
     const complete: FromWorkerMessage = { type: "COMPLETE" };
-    console.log('[stroke-upload-worker] All batches processed, posting COMPLETE');
+    // console.log('[stroke-upload-worker] All batches processed, posting COMPLETE');
     self.postMessage(complete);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Worker failed";

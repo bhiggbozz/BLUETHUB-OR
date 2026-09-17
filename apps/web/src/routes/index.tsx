@@ -3,6 +3,7 @@ import Auth from '@/pages/auth';
 import NotFound from '@/component/not-found';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ClassRoom from '@/layouts/teacher/class/class-room';
+import StudentBoardRoom from '@/layouts/student/board/student-class-room';
 import Replay from '@/component/reply';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
@@ -106,7 +107,7 @@ import CreateSyllabus from '@/pages/teacher/Syllabus/create-syllabus';
 import ApprovalsPage from '@/pages/admin/approvals';
 import GroupRecordingViewer from '@/pages/admin/approvals/group-recording-viewer';
 import TeacherProtectedRoute from '@/component/protected-routes/teacher-routes';
-import IdbViewer from '@/pages/dev/idb-viewer';
+// import IdbViewer from '@/pages/dev/idb-viewer';
 import DraftLessons from '@/pages/teacher/drafts';
 import PendingUploads from '@/pages/teacher/pending-uploads';
 import ModulePage from '@/pages/module';
@@ -210,32 +211,34 @@ const router = createBrowserRouter([
         </ErrorBoundary>
     },
     {
-        // Same whiteboard component the teacher live-class flow uses — a board
-        // session is just whatever lessonId sessionStorage.activeLesson holds
-        // (see utils/launch-student-board.ts), so it works unchanged here.
+        // Dedicated student board shell (layouts/student/board) — shares the
+        // canvas/toolbar/recording engine with the teacher's board (Class has
+        // no teacher-vs-student behavior of its own) but has its own app bar,
+        // bottom controls, and end-of-recording upload flow pointed at the
+        // group-content endpoints instead of the teacher's live-session ones.
         path: "student/board",
         element: <ErrorBoundary fallbackMessage="Whiteboard error">
-            <StudentProtectedRoute><ClassRoom /></StudentProtectedRoute>
+            <StudentProtectedRoute><StudentBoardRoom /></StudentProtectedRoute>
         </ErrorBoundary>
     },
 
     // ── Dev routes (no auth) ─────────────────────────────────────────────────
-    {
-        path: "/dev/lesson-approval",
-        element: <LessonApproval />,
-    },
-    {
-        path: "/dev/submit-lesson",
-        element: <SubmitLesson />,
-    },
-    {
-        path: "/dev/start-class",
-        element: <StartClass />,
-    },
-    {
-        path: "/dev/idb",
-        element: <IdbViewer />,
-    },
+    // {
+    //     path: "/dev/lesson-approval",
+    //     element: <LessonApproval />,
+    // },
+    // {
+    //     path: "/dev/submit-lesson",
+    //     element: <SubmitLesson />,
+    // },
+    // {
+    //     path: "/dev/start-class",
+    //     element: <StartClass />,
+    // },
+    // {
+    //     path: "/dev/idb",
+    //     element: <IdbViewer />,
+    // },
 
     //  admin route
     {
@@ -405,16 +408,16 @@ const router = createBrowserRouter([
     //  teacher route
     {
         path: '/teacher',
-        element: <ErrorBoundary fallbackMessage="Teacher page error" >
-            <TeacherLayout />
-        </ErrorBoundary>,
+        element:
+            <ErrorBoundary fallbackMessage="Teacher page error" >
+                <TeacherProtectedRoute>
+                    <TeacherLayout />
+                </TeacherProtectedRoute>
+            </ErrorBoundary>,
         children: [
             {
                 index: true,
-                element:
-                    <TeacherProtectedRoute>
-                        <TeacherDashboard />
-                    </TeacherProtectedRoute>
+                element: <TeacherDashboard />
             },
             { path: "module", element: <MyClassroomPage /> },
             { path: "module/quiz", element: <ModuleQuiz /> },

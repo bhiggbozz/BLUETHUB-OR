@@ -1,9 +1,9 @@
 export const SITE_CONFIG = {
-  name: "Bluetthub",
+  name: "Bluethub",
   tagline: "Learn. Grow. Thrive.",
   description:
-    "Bluetthub connects schools, teachers, students and parents on one powerful platform — with offline-first tools, intelligent question banks, and real-time progress monitoring.",
-  url: "https://bluetthub.com",
+    "Bluethub connects schools, teachers, students and parents on one powerful platform — with offline-first tools, intelligent question banks, and real-time progress monitoring.",
+  url: "https://bluethub.com",
 } as const;
 
 export const NAV_LINKS = [

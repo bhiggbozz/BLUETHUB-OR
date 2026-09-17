@@ -209,10 +209,10 @@ const SubmissionPortal = () => {
             {/* ✅ Only show this section if Recorded Class is selected */}
             {classType === "recorded" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-300">
-                <MediaUpload onFilesSelected={(files) => console.log(files)} />
+                <MediaUpload onFilesSelected={(files) => files} />
                 <FileList
                   files={files}
-                  onDelete={(id) => console.log("Delete file with id", id)}
+                  onDelete={(id) => id}
                 />
               </div>
             )}

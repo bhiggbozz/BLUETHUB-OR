@@ -25,7 +25,7 @@ const EmailModal = () => {
         // Simulate API call
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setIsLoading(false);
-        console.log("Email:", email);
+        //console.log("Email:", email);
         // Navigate to OTP page
         navigate("/admin/registration/teacher/verification/otp");
     };
