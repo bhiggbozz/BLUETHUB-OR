@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Stage, Layer, Line, Rect } from 'react-konva';
 // import type Konva from 'konva';
 import {
@@ -12,7 +13,8 @@ import {
   Loader,
 } from 'lucide-react';
 import type { AudioBatch, CompressedStroke, IActions, IActiveMedia, Stroke } from '@/utils/constant';
-import { clearAudio, clearClass, getAudio, getClass, getAudioBySession, getClassBySession } from '@/utils/db';
+import { deleteAudioBySession, deleteClassBySession, getAudio, getClass, getAudioBySession, getClassBySession } from '@/utils/db';
+import toast from 'react-hot-toast';
 import { getImage } from '@/services/class-media';
 import { base64ToUint8 } from '@/utils';
 import { gzipDecompress } from '@/utils/gzip';
@@ -194,9 +196,16 @@ interface ReplayProps {
   // deliberately excludes). This is the one reliable "the student watched it
   // through to the end" signal in the whole replay pipeline.
   onFinished?: () => void;
+  // When provided, the "No replay data available" empty state (e.g. right
+  // after "Remove from device", which only clears local IndexedDB and never
+  // re-fetches anything) offers a way back to the download flow instead of
+  // being a dead end. Omitted on the standalone /replay debug route, which
+  // has no lesson context to link back to.
+  lessonId?: string;
 }
 
-export default function Replay({ sessionId, onFinished }: ReplayProps = {}) {
+export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps = {}) {
+  const navigate = useNavigate();
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -1502,8 +1511,16 @@ export default function Replay({ sessionId, onFinished }: ReplayProps = {}) {
   const Cleardata = async () => {
     setIsClearing(true);
     try {
-      await clearAudio();
-      await clearClass();
+      // Scoped to this recording only — the old clearAudio()/clearClass()
+      // wiped IndexedDB globally, silently deleting every OTHER downloaded
+      // lesson on the device too.
+      await deleteAudioBySession(activeSessionId);
+      await deleteClassBySession(activeSessionId);
+      // watch-class.tsx's download checkpoint is keyed by session and lives
+      // in localStorage, untouched by the IndexedDB clears above — leaving it
+      // behind meant a "redownload" could look at stale progress bookkeeping
+      // for this exact session on the next visit to /watch.
+      localStorage.removeItem(`replay.download.checkpoint.${activeSessionId}`);
       localStorage.removeItem('currentBatches');
       localStorage.removeItem('recordingStartTimerMs');
       localStorage.removeItem('recordingStartSessionId');
@@ -1518,6 +1535,7 @@ export default function Replay({ sessionId, onFinished }: ReplayProps = {}) {
       setRenderTick(0);
     } catch (err) {
       console.error('❌ Clear failed:', err);
+      toast.error('Could not remove this recording from your device. Please try again.');
     } finally {
       setIsClearing(false);
     }
@@ -1549,8 +1567,17 @@ export default function Replay({ sessionId, onFinished }: ReplayProps = {}) {
     </div>
   );
   if (strokes.length === 0 && audioList.length === 0) return (
-    <div className="p-6 text-center text-slate-400 font-bold font-poppins text-xl flex items-center justify-center min-h-screen bg-slate-50">
-      No replay data available
+    <div className="p-6 text-center flex flex-col items-center justify-center gap-4 min-h-screen bg-slate-50">
+      <p className="text-slate-400 font-bold font-poppins text-xl">No replay data available</p>
+      {lessonId && (
+        <button
+          type="button"
+          onClick={() => navigate(`/student/recorded-class/${lessonId}/watch`)}
+          className="rounded-full bg-student-chestnut px-6 py-2.5 text-sm font-semibold text-white hover:bg-student-chestnut/90 transition-colors"
+        >
+          Go back and download again
+        </button>
+      )}
     </div>
   );
 

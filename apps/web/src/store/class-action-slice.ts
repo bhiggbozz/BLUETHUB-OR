@@ -134,6 +134,12 @@ const ClassActionSlice = createSlice({
       state.timerDisplay = "00:00";
       state.timerRunning = false;
       state.timerElapsedSeconds = 0;
+      // Redux is a single store that persists across route navigations —
+      // without this, opening the board for a brand-new lesson still carries
+      // the previous lesson's sessionIdRef, and the board's stroke-loading
+      // effect (class.tsx) would fetch and briefly show that old lesson's
+      // saved strokes before a real session id gets set for the new one.
+      state.sessionIdRef = "";
     },
   },
 });

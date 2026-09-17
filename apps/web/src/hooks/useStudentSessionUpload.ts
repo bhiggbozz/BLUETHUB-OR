@@ -1,77 +1,37 @@
 /**
- * useSessionUpload Hook
+ * useStudentSessionUpload Hook
  *
- * Handles uploading lesson recording data:
- * - Audio chunks → Cloudinary (token-based direct upload)
- * - Stroke batches → Backend MongoDB (via board session API)
+ * Dedicated upload path for a student's study-group board recording — always
+ * routes strokes to the group-content endpoint (boardSessionService.submitGroupContentBatch),
+ * never the teacher's live-session endpoint. This is a deliberate fork of
+ * useSessionUpload.ts rather than a shared groupId/contentId branch, so a
+ * student recording's upload path can never accidentally fall through to the
+ * teacher endpoint (or vice versa) if either file changes independently.
  *
- * Features:
- * - Parallel uploads with concurrency control
- * - Progress tracking per chunk
- * - Retry logic for failed uploads
- * - Status updates to IndexedDB
- * - Stroke batch ID generation: sessionId_batchIndex
+ * Audio upload (Cloudinary, token-based) is identical either way — no fork
+ * needed there.
  */
 
 import { useCallback, useRef, useState } from 'react';
 import { mediaUploadService, type UploadProgress } from '@/services/media-upload';
-import {
-  boardSessionService,
-  type BoardBatchPayload,
-  type WireStroke,
-} from '@/services/board-session';
+import { boardSessionService, type GroupContentBoardBatchPayload } from '@/services/board-session';
 import {
   getAudioChunksBySession,
   getStrokeBatchesBySession,
   updateAudioChunkStatus,
   updateStrokeBatchStatus,
 } from '@/utils/db';
-import type { LocalAudioChunk, LocalStrokeBatch, CompressedStroke } from '@/utils/constant';
-import { LOCAL_BATCH_MS, UPLOAD_BATCH_MS, base64ToUint8 } from '@/utils';
-import { gzipDecompress } from '@/utils/gzip';
+import type { LocalAudioChunk, LocalStrokeBatch } from '@/utils/constant';
+import { LOCAL_BATCH_MS, UPLOAD_BATCH_MS } from '@/utils';
 
-/**
- * Converts a locally-stored, gzip-compressed stroke (CompressedStroke — the
- * shape used for IndexedDB storage/replay) into the raw wire shape the batch
- * endpoint expects. `data` decompresses back to the flat Konva points array
- * ([x1,y1,x2,y2,...]) that was compressed at capture time — pair it up into
- * [x,y] tuples for `pts`.
- */
-async function toWireStroke(stroke: CompressedStroke): Promise<WireStroke> {
-  const binary = base64ToUint8(stroke.data);
-  const json = await gzipDecompress(binary);
-  const flat: number[] = JSON.parse(json);
-
-  const pts: [number, number][] = [];
-  for (let i = 0; i + 1 < flat.length; i += 2) {
-    pts.push([flat[i], flat[i + 1]]);
-  }
-
-  return {
-    id: stroke.id,
-    pts,
-    c: stroke.color,
-    w: stroke.width,
-    ts: stroke.timestamp,
-    currentBoard: stroke.currentBoard,
-    sessionId: stroke.sessionId,
-  };
-}
-
-// Number of 10s chunks per 60s upload batch (kept for reference)
-const _CHUNKS_PER_UPLOAD_BATCH = UPLOAD_BATCH_MS / LOCAL_BATCH_MS; // 6
+const _CHUNKS_PER_UPLOAD_BATCH = UPLOAD_BATCH_MS / LOCAL_BATCH_MS;
 void _CHUNKS_PER_UPLOAD_BATCH;
 
-/**
- * Converts an AudioBuffer to a WAV Blob (16-bit PCM).
- * WAV is a flat PCM container — safe to construct from raw sample data,
- * unlike WebM which requires a full Matroska container with proper headers.
- */
 function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
   const numCh = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const numSamples = buffer.length;
-  const bytesPerSample = 2; // 16-bit
+  const bytesPerSample = 2;
   const blockAlign = numCh * bytesPerSample;
   const dataSize = numSamples * blockAlign;
   const ab = new ArrayBuffer(44 + dataSize);
@@ -96,22 +56,6 @@ function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
   return new Blob([ab], { type: 'audio/wav' });
 }
 
-/**
- * Merge multiple audio blobs into a single blob via PCM-level concatenation.
- *
- * WHY NOT new Blob(blobs):
- *   Each WebM/Opus blob is a self-contained Matroska container with its own
- *   EBML header and cluster structure. Concatenating raw bytes produces an
- *   invalid container — decoders stop at the end of the first valid stream
- *   and silently discard everything after it. Result: only the first 10-second
- *   sub-chunk plays; the other 50 seconds are lost.
- *
- * FIX:
- *   1. Decode each blob to a raw PCM AudioBuffer with decodeAudioData().
- *   2. Copy all sample frames sequentially into one merged AudioBuffer.
- *   3. Encode the merged buffer to a WAV file (flat PCM container — no header
- *      complexity, fully seekable, universally decodable).
- */
 async function mergeAudioBlobs(blobs: Blob[]): Promise<Blob> {
   if (blobs.length === 0) throw new Error('No blobs to merge');
   if (blobs.length === 1) return blobs[0];
@@ -122,20 +66,17 @@ async function mergeAudioBlobs(blobs: Blob[]): Promise<Blob> {
   for (const blob of blobs) {
     try {
       const ab = await blob.arrayBuffer();
-      if (ab.byteLength < 32) {
-        console.warn('[Upload] sub-chunk too small, skipping:', ab.byteLength, 'bytes');
-        continue;
-      }
+      if (ab.byteLength < 32) continue;
       const buffer = await tempCtx.decodeAudioData(ab);
       decoded.push(buffer);
     } catch (e) {
-      console.warn('[Upload] sub-chunk decode failed, skipping:', e);
+      console.warn('[StudentUpload] sub-chunk decode failed, skipping:', e);
     }
   }
 
   await tempCtx.close();
 
-  if (decoded.length === 0) return blobs[0]; // fallback: nothing decoded, send first blob
+  if (decoded.length === 0) return blobs[0];
   if (decoded.length === 1) return audioBufferToWavBlob(decoded[0]);
 
   const sampleRate = decoded[0].sampleRate;
@@ -148,14 +89,12 @@ async function mergeAudioBlobs(blobs: Blob[]): Promise<Blob> {
     for (let c = 0; c < numCh; c++) {
       const src = c < buf.numberOfChannels
         ? buf.getChannelData(c)
-        : new Float32Array(buf.length); // silence for missing channels
+        : new Float32Array(buf.length);
       merged.copyToChannel(src, c, sampleOff);
     }
     sampleOff += buf.length;
   }
 
-  // Pad with silence to the full upload-batch duration so downstream
-  // consumers (AudioContext scheduling) see no gap at batch boundaries.
   const targetSamples = Math.round((UPLOAD_BATCH_MS / 1000) * sampleRate);
   if (merged.length < targetSamples) {
     const padded = new AudioBuffer({ numberOfChannels: numCh, length: targetSamples, sampleRate });
@@ -166,28 +105,20 @@ async function mergeAudioBlobs(blobs: Blob[]): Promise<Blob> {
   return audioBufferToWavBlob(merged);
 }
 
-/**
- * Group audio chunks by their uploadBatchIndex
- */
 function groupChunksByUploadBatch(chunks: LocalAudioChunk[]): Map<number, LocalAudioChunk[]> {
   const groups = new Map<number, LocalAudioChunk[]>();
   for (const chunk of chunks) {
     const batchIdx = chunk.uploadBatchIndex;
-    if (!groups.has(batchIdx)) {
-      groups.set(batchIdx, []);
-    }
+    if (!groups.has(batchIdx)) groups.set(batchIdx, []);
     groups.get(batchIdx)!.push(chunk);
   }
-  // Sort chunks within each group by chunkIndex
   for (const [, chunkList] of groups) {
     chunkList.sort((a, b) => a.chunkIndex - b.chunkIndex);
   }
   return groups;
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface UploadState {
+export interface StudentUploadState {
   isUploading: boolean;
   phase: 'idle' | 'audio' | 'strokes' | 'complete' | 'error';
   currentChunk: number;
@@ -199,28 +130,20 @@ export interface UploadState {
   uploadedStrokes: number;
 }
 
-export interface UploadResults {
+export interface StudentUploadResults {
   audioUrls: Array<{ chunkIndex: number; url: string; mediaId: string }>;
-  // Stroke batches go to MongoDB, not Cloudinary - tracked by session-scoped batch ID
-  strokeBatches: Array<{ batchIndex: number; id: string; indexKey: string }>;
+  strokeBatches: Array<{ batchIndex: number; indexKey: string }>;
   success: boolean;
   errors: string[];
 }
 
-function buildStrokeBatchId(sessionId: string, batchIndex: number): string {
-  return `${sessionId}_${batchIndex}`;
-}
-
-interface UploadOptions {
+interface StudentUploadOptions {
   concurrency?: number;
-  retryAttempts?: number;
-  onProgress?: (state: UploadState) => void;
+  onProgress?: (state: StudentUploadState) => void;
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────────
-
-export function useSessionUpload() {
-  const [state, setState] = useState<UploadState>({
+export function useStudentSessionUpload() {
+  const [state, setState] = useState<StudentUploadState>({
     isUploading: false,
     phase: 'idle',
     currentChunk: 0,
@@ -234,142 +157,103 @@ export function useSessionUpload() {
 
   const abortRef = useRef(false);
 
-  const updateState = useCallback((updates: Partial<UploadState>) => {
+  const updateState = useCallback((updates: Partial<StudentUploadState>) => {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  /**
-   * Upload a merged audio batch (multiple 10s chunks → single 60s upload)
-   * All chunks in the batch share the same uploadBatchIndex
-   */
   const uploadMergedAudioBatch = useCallback(async (
     chunks: LocalAudioChunk[],
     sessionId: string,
     uploadBatchIdx: number,
     onProgress?: (progress: UploadProgress) => void
-  ): Promise<{ success: boolean; url?: string; mediaId?: string; error?: string; chunkIds: string[] }> => {
+  ): Promise<{ success: boolean; url?: string; mediaId?: string; error?: string }> => {
     const maxRetries = 3;
     let lastError = '';
-    const chunkIds = chunks.map(c => c.id);
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      if (abortRef.current) {
-        return { success: false, error: 'Upload aborted', chunkIds };
-      }
+      if (abortRef.current) return { success: false, error: 'Upload aborted' };
 
       try {
-        // Merge all blobs in this batch into one
         const mergedBlob = await mergeAudioBlobs(chunks.map(c => c.blob));
-
-        const result = await mediaUploadService.uploadAudio(
-          mergedBlob,
-          sessionId,
-          uploadBatchIdx, // Use upload batch index (0, 1, 2...) not local chunk index
-          onProgress
-        );
+        const result = await mediaUploadService.uploadAudio(mergedBlob, sessionId, uploadBatchIdx, onProgress);
 
         if (result.success && result.cdnUrl && result.mediaId) {
-          // Update ALL chunks in this batch with success
           for (const chunk of chunks) {
             await updateAudioChunkStatus(chunk.id, 'sent', {
               cloudinaryUrl: result.cdnUrl,
               cloudinaryPublicId: result.mediaId,
             });
           }
-          return { success: true, url: result.cdnUrl, mediaId: result.mediaId, chunkIds };
+          return { success: true, url: result.cdnUrl, mediaId: result.mediaId };
         }
-
         lastError = result.error || 'Upload failed';
       } catch (err) {
         lastError = err instanceof Error ? err.message : 'Unknown error';
       }
 
-      // Wait before retry (exponential backoff)
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
       }
     }
 
-    // Update ALL chunks in this batch with failure
     for (const chunk of chunks) {
       await updateAudioChunkStatus(chunk.id, 'failed', { lastError });
     }
-    return { success: false, error: lastError, chunkIds };
+    return { success: false, error: lastError };
   }, []);
 
-  /**
-   * Upload a single stroke batch to backend MongoDB with retry logic
-   * Stroke batch ID format: sessionId_batchIndex (e.g., "session-123_0")
-   */
-  const uploadStrokeBatch = useCallback(async (
+  const uploadStrokeBatchToGroupContent = useCallback(async (
     batch: LocalStrokeBatch,
-    sessionId: string,
-    _onProgress?: (progress: UploadProgress) => void
-  ): Promise<{ success: boolean; id?: string; indexKey?: string; error?: string }> => {
+    groupId: string,
+    contentId: string,
+  ): Promise<{ success: boolean; indexKey?: string; error?: string }> => {
     const maxRetries = 3;
     let lastError = '';
-
-    const strokeBatchId = buildStrokeBatchId(sessionId, batch.batchIndex);
+    const indexKey = `${groupId}_${contentId}_${batch.batchIndex}`;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      if (abortRef.current) {
-        return { success: false, error: 'Upload aborted' };
-      }
+      if (abortRef.current) return { success: false, error: 'Upload aborted' };
 
       try {
-        // Teacher-only now — a student recording study-group content uses
-        // its own dedicated useStudentSessionUpload, which always targets
-        // the group-content endpoint.
-        const wireStrokes = await Promise.all(batch.strokes.map(toWireStroke));
-
-        const payload: BoardBatchPayload = {
-          sessionId,
-          lessonId: batch.lessonId,
+        const payload: GroupContentBoardBatchPayload = {
+          groupId,
+          contentId,
           batchIndex: batch.batchIndex,
           startMs: batch.startMs,
           endMs: batch.endMs,
-          strokes: wireStrokes,
+          strokes: batch.strokes,
           strokeCount: batch.strokeCount,
           sizeBytes: batch.sizeBytes,
           boardIndex: batch.strokes[0]?.currentBoard ?? 0,
           boardSwitches: batch.boardSwitches,
           audioUrl: null,
         };
-
-        // Submit to backend (returns 204 No Content on success)
-        await boardSessionService.submitBatch(sessionId, payload);
-
-        // Persist the backend-facing identifier so manifest assembly can reuse it later.
-        await updateStrokeBatchStatus(batch.id, 'sent', {
-          indexKey: strokeBatchId,
-        });
-        return { success: true, id: strokeBatchId, indexKey: strokeBatchId };
+        await boardSessionService.submitGroupContentBatch(groupId, contentId, payload);
+        await updateStrokeBatchStatus(batch.id, 'sent', { indexKey });
+        return { success: true, indexKey };
       } catch (err) {
         lastError = err instanceof Error ? err.message : 'Unknown error';
       }
 
-      // Wait before retry (exponential backoff)
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
       }
     }
 
-    // Update local DB with failure
     await updateStrokeBatchStatus(batch.id, 'failed', { lastError });
     return { success: false, error: lastError };
   }, []);
 
-  /**
-   * Upload all session data (audio + strokes) with progress tracking
-   */
   const uploadSession = useCallback(async (
     sessionId: string,
-    options: UploadOptions = {}
-  ): Promise<UploadResults> => {
+    groupId: string,
+    contentId: string,
+    options: StudentUploadOptions = {}
+  ): Promise<StudentUploadResults> => {
     const { concurrency = 2, onProgress } = options;
     abortRef.current = false;
 
-    const results: UploadResults = {
+    const results: StudentUploadResults = {
       audioUrls: [],
       strokeBatches: [],
       success: true,
@@ -377,39 +261,25 @@ export function useSessionUpload() {
     };
 
     try {
-      // Get pending chunks from IndexedDB
       const audioChunks = await getAudioChunksBySession(sessionId);
       const strokeBatches = await getStrokeBatchesBySession(sessionId);
 
-      // Filter to pending or failed items (for retry capability)
       const pendingAudio = audioChunks.filter(c => c.syncStatus === 'pending' || c.syncStatus === 'failed');
       const pendingStrokes = strokeBatches.filter(b => b.syncStatus === 'pending' || b.syncStatus === 'failed');
 
-      // Group audio chunks by uploadBatchIndex (6 x 10s chunks → 1 x 60s upload)
       const audioUploadGroups = groupChunksByUploadBatch(pendingAudio);
       const uploadBatchIndices = Array.from(audioUploadGroups.keys()).sort((a, b) => a - b);
-
-      // Total items: merged audio batches + stroke batches
       const totalItems = uploadBatchIndices.length + pendingStrokes.length;
 
       updateState({
-        isUploading: true,
-        phase: 'audio',
-        totalChunks: totalItems,
-        currentChunk: 0,
-        overallProgress: 0,
-        error: null,
-        uploadedAudio: 0,
-        uploadedStrokes: 0,
+        isUploading: true, phase: 'audio', totalChunks: totalItems, currentChunk: 0,
+        overallProgress: 0, error: null, uploadedAudio: 0, uploadedStrokes: 0,
       });
-
       if (onProgress) onProgress(state);
 
-      // Upload merged audio batches (60s each, containing 6 x 10s chunks)
       let uploadedAudioBatches = 0;
       for (let i = 0; i < uploadBatchIndices.length; i += concurrency) {
         if (abortRef.current) break;
-
         const batchSlice = uploadBatchIndices.slice(i, i + concurrency);
         const uploadPromises = batchSlice.map((uploadBatchIdx, idx) => {
           const chunksInBatch = audioUploadGroups.get(uploadBatchIdx) ?? [];
@@ -421,67 +291,49 @@ export function useSessionUpload() {
             });
           });
         });
-
         const batchResults = await Promise.all(uploadPromises);
-
         for (let j = 0; j < batchResults.length; j++) {
           const result = batchResults[j];
           const uploadBatchIdx = batchSlice[j];
           if (result.success && result.url && result.mediaId) {
-            results.audioUrls.push({
-              chunkIndex: uploadBatchIdx, // Use upload batch index (60s granularity)
-              url: result.url,
-              mediaId: result.mediaId,
-            });
+            results.audioUrls.push({ chunkIndex: uploadBatchIdx, url: result.url, mediaId: result.mediaId });
             uploadedAudioBatches++;
           } else if (result.error) {
             results.errors.push(`Audio batch ${uploadBatchIdx}: ${result.error}`);
             results.success = false;
           }
         }
-
         updateState({ uploadedAudio: uploadedAudioBatches });
       }
 
-      // Upload stroke batches to backend MongoDB
       updateState({ phase: 'strokes' });
-
       let uploadedStrokes = 0;
       for (let i = 0; i < pendingStrokes.length; i += concurrency) {
         if (abortRef.current) break;
-
         const batch = pendingStrokes.slice(i, i + concurrency);
         const uploadPromises = batch.map((strokeBatch, idx) =>
-          uploadStrokeBatch(strokeBatch, sessionId, () => {
-            // Stroke uploads to backend don't have granular progress
-            // Update overall progress based on batch completion
+          uploadStrokeBatchToGroupContent(strokeBatch, groupId, contentId).then((result) => {
             const audioOffset = pendingAudio.length;
             updateState({
               currentChunk: audioOffset + i + idx + 1,
               currentProgress: 100,
               overallProgress: Math.round(((audioOffset + i + idx + 1) / totalItems) * 100),
             });
+            return result;
           })
         );
-
         const batchResults = await Promise.all(uploadPromises);
-
         for (let j = 0; j < batchResults.length; j++) {
           const result = batchResults[j];
           const originalBatch = batch[j];
-          if (result.success && result.id && result.indexKey) {
-            results.strokeBatches.push({
-              batchIndex: originalBatch.batchIndex,
-              id: result.id,
-              indexKey: result.indexKey,
-            });
+          if (result.success && result.indexKey) {
+            results.strokeBatches.push({ batchIndex: originalBatch.batchIndex, indexKey: result.indexKey });
             uploadedStrokes++;
           } else if (result.error) {
             results.errors.push(`Stroke batch ${originalBatch.batchIndex}: ${result.error}`);
             results.success = false;
           }
         }
-
         updateState({ uploadedStrokes });
       }
 
@@ -495,53 +347,27 @@ export function useSessionUpload() {
       return results;
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Upload failed';
-      updateState({
-        isUploading: false,
-        phase: 'error',
-        error,
-      });
+      updateState({ isUploading: false, phase: 'error', error });
       results.success = false;
       results.errors.push(error);
       return results;
     }
-  }, [state, updateState, uploadMergedAudioBatch, uploadStrokeBatch]);
+  }, [state, updateState, uploadMergedAudioBatch, uploadStrokeBatchToGroupContent]);
 
-  /**
-   * Abort ongoing upload
-   */
   const abort = useCallback(() => {
     abortRef.current = true;
-    updateState({
-      isUploading: false,
-      phase: 'idle',
-      error: 'Upload cancelled',
-    });
+    updateState({ isUploading: false, phase: 'idle', error: 'Upload cancelled' });
   }, [updateState]);
 
-  /**
-   * Reset state
-   */
   const reset = useCallback(() => {
     abortRef.current = false;
     setState({
-      isUploading: false,
-      phase: 'idle',
-      currentChunk: 0,
-      totalChunks: 0,
-      currentProgress: 0,
-      overallProgress: 0,
-      error: null,
-      uploadedAudio: 0,
-      uploadedStrokes: 0,
+      isUploading: false, phase: 'idle', currentChunk: 0, totalChunks: 0,
+      currentProgress: 0, overallProgress: 0, error: null, uploadedAudio: 0, uploadedStrokes: 0,
     });
   }, []);
 
-  return {
-    state,
-    uploadSession,
-    abort,
-    reset,
-  };
+  return { state, uploadSession, abort, reset };
 }
 
-export default useSessionUpload;
+export default useStudentSessionUpload;

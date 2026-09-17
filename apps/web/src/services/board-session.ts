@@ -19,16 +19,34 @@ const X_Tenant_ID = getTenantFromUrl()
 
 // ── Types matching backend ViewModels ────────────────────────────────────────
 
+// Wire shape for a single stroke in the batch payload — raw, uncompressed
+// point pairs with short field names, per the current backend contract.
+// Distinct from CompressedStroke (utils/constant.ts), which is the
+// gzip-compressed shape used for local IndexedDB storage/replay; strokes are
+// converted from one to the other only at the point of sending (see
+// useSessionUpload.ts's uploadStrokeBatch).
+export interface WireStroke {
+  id: string;
+  pts: [number, number][];
+  c: string;
+  w: number;
+  ts: number;
+  currentBoard: number;
+  sessionId: string | null;
+}
+
 export interface BoardBatchPayload {
   sessionId: string;
   lessonId: string;
   batchIndex: number;
   startMs: number;
   endMs: number;
-  strokes: CompressedStroke[];
   strokeCount: number;
+  sizeBytes: number;
   boardIndex: number;
-  audioChunkUrls?: string[];
+  strokes: WireStroke[];
+  boardSwitches?: Array<{ fromBoard: number; toBoard: number; timestampMs: number }>;
+  audioUrl?: string | null;
 }
 
 // Body for POST /api/board/group-content/group/{groupId}/content/{contentId}/batch

@@ -3,6 +3,7 @@ import Auth from '@/pages/auth';
 import NotFound from '@/component/not-found';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ClassRoom from '@/layouts/teacher/class/class-room';
+import StudentBoardRoom from '@/layouts/student/board/student-class-room';
 import Replay from '@/component/reply';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
@@ -210,12 +211,14 @@ const router = createBrowserRouter([
         </ErrorBoundary>
     },
     {
-        // Same whiteboard component the teacher live-class flow uses — a board
-        // session is just whatever lessonId sessionStorage.activeLesson holds
-        // (see utils/launch-student-board.ts), so it works unchanged here.
+        // Dedicated student board shell (layouts/student/board) — shares the
+        // canvas/toolbar/recording engine with the teacher's board (Class has
+        // no teacher-vs-student behavior of its own) but has its own app bar,
+        // bottom controls, and end-of-recording upload flow pointed at the
+        // group-content endpoints instead of the teacher's live-session ones.
         path: "student/board",
         element: <ErrorBoundary fallbackMessage="Whiteboard error">
-            <StudentProtectedRoute><ClassRoom /></StudentProtectedRoute>
+            <StudentProtectedRoute><StudentBoardRoom /></StudentProtectedRoute>
         </ErrorBoundary>
     },
 
