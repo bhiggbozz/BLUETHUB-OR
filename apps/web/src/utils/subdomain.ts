@@ -23,7 +23,7 @@ export function getTenantFromUrl(): string {
   const isNetlify = hostname.endsWith('.netlify.app');
 
   if (isLocal || isNetlify) {
-    const tenant = (import.meta.env.VITE_TENANT_ID as string) || 'green';
+    const tenant = (import.meta.env.VITE_TENANT_ID as string) || 'westfield';
     // console.log('[getTenantFromUrl] dev/staging → using env fallback:', tenant);
     return tenant;
   }
@@ -37,7 +37,7 @@ export function getTenantFromUrl(): string {
     return subdomain;
   }
 
-  const fallback = (import.meta.env.VITE_TENANT_ID as string) || 'green';
+  const fallback = (import.meta.env.VITE_TENANT_ID as string) || 'westfield';
   // console.log('[getTenantFromUrl] fallback → no subdomain found, using:', fallback);
   return fallback;
 }

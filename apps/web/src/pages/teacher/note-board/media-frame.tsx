@@ -8,6 +8,7 @@ import { clearSelectedImage } from "@/store/class-action-slice";
 import { useSession } from "@/contexts/session-context";
 import { fetchMediaWithAuthFallback } from "@/utils/blob";
 import { LESSON_MEDIA_CACHE, buildLessonScopedCacheKey } from "@/utils/lesson-media-cache";
+import PdfScrollViewer from "@/component/pdf-scroll-viewer";
 
 const getFileExtension = (nameOrUrl?: string): string => {
   if (!nameOrUrl) return '';
@@ -47,7 +48,7 @@ const getFrameSizeByType = (type?: string): string => {
 const MediaFrame = () => {
   const selectedImage = useSelector((state: RootState) => state.action.selectedImage);
   const sessionIdRef = useSelector((state: RootState) => state.action.sessionIdRef);
-  const timerDisplay  = useSelector((state: RootState) => state.action.timerDisplay);
+  const timerDisplay = useSelector((state: RootState) => state.action.timerDisplay);
   const timerElapsedSeconds = useSelector((state: RootState) => state.action.timerElapsedSeconds);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +108,8 @@ const MediaFrame = () => {
                 }
 
                 if (response) {
-                  const blob = await response.blob();
+                  const arrayBuffer = await response.arrayBuffer();
+                  const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
                   const objectUrl = URL.createObjectURL(blob);
                   cacheBlobUrlRef.current = objectUrl;
                   setMediaUrl(objectUrl);
@@ -215,6 +217,9 @@ const MediaFrame = () => {
     );
   }
 
+  console.log('mediaUrl', mediaUrl)
+  console.log('i am here doing nothing')
+
   return (
     <div className={`pointer-events-none absolute inset-0 z-40 flex justify-center p-2 sm:p-4 ${isPdf ? 'items-start' : 'items-center'}`}>
       <div className={`pointer-events-auto bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col ${frameSize}`}>
@@ -250,10 +255,11 @@ const MediaFrame = () => {
                 </a>
               </div>
               <div className="h-[calc(100%-37px)] w-full">
-                <iframe
-                  src={`${mediaUrl}#toolbar=0&navpanes=0&view=FitH`}
-                  title={selectedImage.name}
-                  className="h-full w-full border-0"
+                <PdfScrollViewer
+                  fileUrl={mediaUrl}
+                  mode="live"
+                  preferIframe={false}
+                  className="bg-white"
                 />
               </div>
             </div>

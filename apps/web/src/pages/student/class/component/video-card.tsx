@@ -215,7 +215,6 @@ const VideoLessonCard = ({ lesson }: VideoLessonCardProps) => {
 
                     <h3 className="text-base font-semibold text-slate-900">{lesson.topicName}</h3>
                     <p className="text-sm leading-6 text-slate-600">
-                        {}
                         <ReactMarkdown
                         remarkPlugins={[remarkMath]}
                         rehypePlugins={[rehypeKatex]}
