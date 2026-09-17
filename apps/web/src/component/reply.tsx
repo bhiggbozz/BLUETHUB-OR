@@ -1513,14 +1513,18 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     try {
       // Scoped to this recording only — the old clearAudio()/clearClass()
       // wiped IndexedDB globally, silently deleting every OTHER downloaded
-      // lesson on the device too.
-      await deleteAudioBySession(activeSessionId);
-      await deleteClassBySession(activeSessionId);
-      // watch-class.tsx's download checkpoint is keyed by session and lives
-      // in localStorage, untouched by the IndexedDB clears above — leaving it
-      // behind meant a "redownload" could look at stale progress bookkeeping
-      // for this exact session on the next visit to /watch.
-      localStorage.removeItem(`replay.download.checkpoint.${activeSessionId}`);
+      // lesson on the device too. activeSessionId can be null on the bare
+      // /replay debug route (no sessionId prop, nothing cached to match against
+      // yet) — there's no specific session to scope a delete to in that case.
+      if (activeSessionId) {
+        await deleteAudioBySession(activeSessionId);
+        await deleteClassBySession(activeSessionId);
+        // watch-class.tsx's download checkpoint is keyed by session and lives
+        // in localStorage, untouched by the IndexedDB clears above — leaving it
+        // behind meant a "redownload" could look at stale progress bookkeeping
+        // for this exact session on the next visit to /watch.
+        localStorage.removeItem(`replay.download.checkpoint.${activeSessionId}`);
+      }
       localStorage.removeItem('currentBatches');
       localStorage.removeItem('recordingStartTimerMs');
       localStorage.removeItem('recordingStartSessionId');
