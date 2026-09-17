@@ -257,10 +257,17 @@ const WatchClass = () => {
 
     // Derive session start from the manifest's recorded-at timestamp so that
     // stroke timestamps (real wall-clock ms from the server) and audio batch
-    // timestamps all share the same reference frame.
+    // timestamps all share the same reference frame. Falls back to a FIXED
+    // 0, not Date.now() — the manifest currently never includes session.recordedAt,
+    // so a Date.now() fallback would anchor each download run to a different
+    // arbitrary wall-clock moment. If a download is ever interrupted and
+    // resumed later (or re-run after a partial failure), chunks fetched in
+    // different runs would end up anchored to different references, scrambling
+    // their relative scheduling once combined for playback. 0 is stable and
+    // matches buildReplayBatches' own (already-correct) fallback above.
     const sessionStartWallMs = manifest.session?.recordedAt
       ? new Date(manifest.session.recordedAt).getTime()
-      : Date.now();
+      : 0;
 
     const replayManifest = buildReplayBatches(manifest);
     localStorage.setItem("currentBatches", JSON.stringify(replayManifest));
@@ -537,7 +544,7 @@ const WatchClass = () => {
           </div>
           <h2 className="mt-5 text-lg font-semibold text-slate-900">Your class playback awaits</h2>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
-            We'll get your board and audio ready. It only takes a moment the first time you watch —
+            We'll get your content ready. It only takes a moment the first time you watch —
             after that it opens instantly.
           </p>
 

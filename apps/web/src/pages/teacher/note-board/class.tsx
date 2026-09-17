@@ -8,7 +8,7 @@ import {
     Arrow,
     RegularPolygon,
 } from "react-konva";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { gzipCompress, gzipDecompress } from "@/utils/gzip";
 import { addStrokes, getClassBySessionAndBoard, getSession } from "@/utils/db";
 import type { RootState } from "@/store";
@@ -37,7 +37,16 @@ const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.5;
 
 
-const Class = () => {
+interface ClassProps {
+    // Lets a caller swap in its own bottom bar (start/pause/resume + end +
+    // audio) without this shared canvas/toolbar component needing to know
+    // who's using it. StudentClassRoom passes StudentClassBottom here so the
+    // student flow never touches the teacher's EndClass/upload path — see
+    // layouts/student/board/student-class-room.tsx.
+    BottomBar?: ComponentType;
+}
+
+const Class = ({ BottomBar = ClassBottom }: ClassProps = {}) => {
     const dispatch = useDispatch();
     const pauseTime = useSelector((state: RootState) => state.action.pauseTime);
     const currentBoard = useSelector((state: RootState) => state.action.currentBoard);
@@ -871,7 +880,7 @@ const penDownEvent = useCallback(async (
                 {/* Left Sidebar - Tools */}
                 <div className="hidden relative z-40 shrink-0 md:flex flex-col  gap-2 md:justify-between py-3 px-1.5">
                     <ClassMenu />
-                    <ClassBottom />
+                    <BottomBar />
                 </div>
 
                 {/* Main Board Area */}

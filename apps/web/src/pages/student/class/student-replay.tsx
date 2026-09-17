@@ -355,9 +355,12 @@ const StudentReplay = () => {
           console.warn('[StudentReplay] Could not initialise download cache:', cacheInitErr);
         }
 
+        // Fixed 0 fallback, not Date.now() — see watch-class.tsx's
+        // ensureReplayData for why an unstable per-run anchor breaks audio
+        // scheduling across resumed/interrupted downloads.
         const sessionStartWallMs = manifest.session?.recordedAt
           ? new Date(manifest.session.recordedAt).getTime()
-          : Date.now();
+          : 0;
 
         // ── Determine what is already in IDB ─────────────────────────────
         const [existingStrokes, existingAudio] = await Promise.all([
@@ -708,7 +711,7 @@ const StudentReplay = () => {
         Back to Lessons
       </button> */}
       <Provider store={store}>
-        <Replay sessionId={sessionId} onFinished={handlePlaybackFinished} />
+        <Replay sessionId={sessionId} onFinished={handlePlaybackFinished} lessonId={lessonId} />
       </Provider>
     </div>
   );
