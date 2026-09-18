@@ -1764,7 +1764,15 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
                       key={stroke.id}
                       points={stroke.points}
                       stroke={stroke.type === 'eraser' ? 'white' : stroke.color}
-                      strokeWidth={stroke.type === 'eraser' ? 20 : 4}
+                      // Use the actual recorded width, not a hardcoded guess — the
+                      // teacher board writes 2 (pen) / 30 (eraser) at capture time
+                      // (class.tsx), and this Layer is already scaled via
+                      // scaleX/scaleY below, which proportionally scales strokeWidth
+                      // too. Rendering at a fixed 4/20 regardless of the real value
+                      // made every pen stroke render at double its actual thickness,
+                      // which can visually merge/obscure adjacent strokes (e.g. tight
+                      // cursive letters) that were never actually missing from the data.
+                      strokeWidth={stroke.width || (stroke.type === 'eraser' ? 30 : 2)}
                       lineCap="round"
                       lineJoin="round"
                       tension={0.4}

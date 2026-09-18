@@ -80,6 +80,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isLoggingOut: boolean;
+  OfflineUser: boolean;
   login: (tokenValue: string, userData: any, refreshToken: string) => void;
   logout: () => void;
   setUser: (user: IUser | null) => void;
@@ -92,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<IUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  var OfflineUser = false;
 
   const hydrateUserFromToken = async () => {
     const storedToken = token.getToken();
@@ -112,6 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await authService.getUserById(parsed.id);
       setUser(response.data.data);
       saveCachedUser(response.data.data);
+      OfflineUser = false;
       // Deliberately NOT markOnlineContact() here — this just revalidates an
       // existing token on app boot / periodic refresh, it isn't the student
       // presenting credentials. The 3-day clock only resets on an explicit
@@ -135,6 +138,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
+      // login.tsx stashes a limited, first-time-login token here before
+      // sending the user to /auth/new-password — it's only valid for the
+      // password-change call that page makes directly, not for general API
+      // use. Hydrating a full user from it gets a 401, which the shared
+      // axios instance's interceptor treats as a real auth failure: it
+      // clears tokens and hard-redirects to /auth, wiping out the
+      // in-progress password-reset flow before the user can submit it.
+      if (window.location.pathname === "/auth/new-password") {
+        setIsLoading(false);
+        return;
+      }
+
       const storedToken = token.getToken();
 
       if (!storedToken) {
@@ -220,6 +235,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     setUser,
     refreshUser,
+    OfflineUser
   };
 
   return (

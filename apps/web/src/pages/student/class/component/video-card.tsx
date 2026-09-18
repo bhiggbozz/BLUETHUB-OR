@@ -98,15 +98,15 @@ const VideoLessonCard = ({ lesson }: VideoLessonCardProps) => {
         })
         : "N/A";
 
-    const expiryDate = lesson.accessEndsAt
-        ? new Date(lesson.accessEndsAt).toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-        })
-        : "No expiry";
+    // const expiryDate = lesson.accessEndsAt
+    //     ? new Date(lesson.accessEndsAt).toLocaleString("en-US", {
+    //         month: "short",
+    //         day: "numeric",
+    //         year: "numeric",
+    //         hour: "numeric",
+    //         minute: "2-digit",
+    //     })
+    //     : "No expiry";
 
     const durationLabel = `${Math.max(1, lesson.mediaCount)} file${lesson.mediaCount === 1 ? "" : "s"}`;
     const lessonDuration = lesson.durationMinutes ? `${lesson.durationMinutes} min` : "Flexible";
@@ -245,9 +245,9 @@ const VideoLessonCard = ({ lesson }: VideoLessonCardProps) => {
                         Duration: {lessonDuration}
                     </div>
 
-                    <div className="rounded-full bg-rose-50 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-rose-600 whitespace-nowrap">
+                    {/* <div className="rounded-full bg-rose-50 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-rose-600 whitespace-nowrap">
                         Expires: {expiryDate}
-                    </div>
+                    </div> */}
 
                     <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-slate-700">
                         <Signal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f0b429] shrink-0" />
