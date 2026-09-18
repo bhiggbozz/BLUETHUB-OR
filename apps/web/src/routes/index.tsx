@@ -143,6 +143,7 @@ import QuizBySubject from '@/pages/admin/quiz/by-subject';
 import QuizByStudent from '@/pages/admin/quiz/by-student';
 import AttendanceAnalytics from '@/pages/admin/attendance-analytics';
 import UploadSchoolLogoPage from '@/component/upload-school-logo-page';
+import OfflineStudentPage from '@/pages/offline/student';
 
 const router = createBrowserRouter([
     {
@@ -576,6 +577,14 @@ const router = createBrowserRouter([
 
         ],
     },
+
+
+
+    /// offline Routes
+    {
+        path: "/offline/student",
+        element: <OfflineStudentPage/>
+    }
 ])
 
 

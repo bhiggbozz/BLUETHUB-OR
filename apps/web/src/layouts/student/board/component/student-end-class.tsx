@@ -90,6 +90,20 @@ const StudentEndClass = () => {
     };
   }, [classNotStarted]);
 
+  // Best-effort warning on tab close/refresh while the manifest upload has
+  // failed — the browser won't let JS fully block this, but a native prompt
+  // is the strongest deterrent available against silently abandoning batch
+  // data that's orphaned without its manifest.
+  useEffect(() => {
+    if (modalState !== "error") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [modalState]);
+
   const handleEndClick = () => {
     if (classNotStarted) {
       toast.error("Recording hasn't started yet");
@@ -293,13 +307,19 @@ const StudentEndClass = () => {
                 {modalState === "complete" && "Upload Complete"}
                 {modalState === "error" && "Upload Failed"}
               </h2>
-              <button
-                onClick={handleClose}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                title={modalState === "uploading" ? "Cancel upload" : "Close"}
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              {/* No close button on a failed upload — the batch data already sent
+                  to the backend is orphaned without a manifest to reference it, so
+                  leaving this screen must be a deliberate choice (Try Again or
+                  Discard below), not an accidental dismiss. */}
+              {modalState !== "error" && (
+                <button
+                  onClick={handleClose}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  title={modalState === "uploading" ? "Cancel upload" : "Close"}
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
             </div>
 
             <div className="px-6 py-5">
@@ -419,14 +439,16 @@ const StudentEndClass = () => {
                     </div>
                   </div>
                   <p className="text-sm text-gray-500">
-                    Your recording is saved locally. You can try uploading again later.
+                    This recording could not be fully saved to the server. Partial data sent before the
+                    failure is unusable without a completed upload — it can't be attached to your content
+                    from it alone. Please try again, or discard and re-record.
                   </p>
                   <div className="flex gap-3">
                     <button
-                      onClick={handleClose}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      onClick={handleDiscard}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                     >
-                      Close
+                      Discard Recording
                     </button>
                     <button
                       onClick={handleUpload}

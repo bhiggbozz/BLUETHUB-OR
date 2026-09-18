@@ -3,6 +3,8 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { CalendarCheck2, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import bluethub from "@/assets/png/bluethub.png";
+import { localData } from "@/utils";
+import type { schoolInfo } from "@/services";
 
 interface NavItem {
   name: string;
@@ -77,6 +79,7 @@ function ParentNavContent({ onNavigate, onLogout }: { onNavigate?: () => void; o
 const ParentSideBar = () => {
   const navigate = useNavigate();
   const { logout } = useAuthContext();
+  const school = localData.retrieve("schoolInfo") as schoolInfo;
 
   const handleLogout = () => {
     logout();
@@ -85,8 +88,9 @@ const ParentSideBar = () => {
 
   return (
     <aside className="hidden lg:flex flex-col w-[220px] h-full bg-white border-r border-slate-100 shrink-0">
-      <div className="flex items-center px-4 py-3 border-b border-slate-100">
-        <img src={bluethub} alt="Bluethub" className="h-5" />
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+        <img src={school?.logoUrl || bluethub} alt={school?.schoolName || "Bluethub"} className="h-7 w-7 rounded-full object-cover shrink-0" />
+        <span className="text-sm font-semibold text-[#12122A] truncate">{school?.schoolName || "Bluethub"}</span>
       </div>
       <div className="flex-1 overflow-y-auto">
         <ParentNavContent onLogout={handleLogout} />
@@ -106,6 +110,7 @@ export const MobileParentNav = ({ isOpen, setIsOpen }: MobileParentNavProps) => 
   const navigate = useNavigate();
   const { logout } = useAuthContext();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const school = localData.retrieve("schoolInfo") as schoolInfo;
 
   const handleLogout = () => {
     setIsOpen(false);
@@ -147,7 +152,10 @@ export const MobileParentNav = ({ isOpen, setIsOpen }: MobileParentNavProps) => 
         ].join(" ")}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-          <img src={bluethub} alt="Bluethub" className="h-5" />
+          <div className="flex items-center gap-2 min-w-0">
+            <img src={school?.logoUrl || bluethub} alt={school?.schoolName || "Bluethub"} className="h-7 w-7 rounded-full object-cover shrink-0" />
+            <span className="text-sm font-semibold text-[#12122A] truncate">{school?.schoolName || "Bluethub"}</span>
+          </div>
           <button
             type="button"
             onClick={() => setIsOpen(false)}

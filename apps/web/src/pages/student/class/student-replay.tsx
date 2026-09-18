@@ -68,11 +68,17 @@ const buildReplayBatches = (manifest: SessionManifestPayload): IActions => {
   const openMedia = new Map<string, {
     id: string; name: string; url: string; type: MediaType;
     show: string; showMs: number; frameIndex?: 0 | 1;
+    pdfPages?: typeof manifest.mediaAssets[number]["pdfPages"];
+    pdfScrollEvents?: typeof manifest.mediaAssets[number]["pdfScrollEvents"];
+    playbackEvents?: typeof manifest.mediaAssets[number]["playbackEvents"];
   }>();
 
   const attachToBatch = (media: {
     id: string; name: string; url: string; type: MediaType;
     show: string; closed: string; showMs: number; closedMs: number; frameIndex?: 0 | 1;
+    pdfPages?: typeof manifest.mediaAssets[number]["pdfPages"];
+    pdfScrollEvents?: typeof manifest.mediaAssets[number]["pdfScrollEvents"];
+    playbackEvents?: typeof manifest.mediaAssets[number]["playbackEvents"];
   }) => {
     const idx = sortedChunks.findIndex(
       (c) => media.showMs >= c.startMs && media.showMs < c.endMs
@@ -149,6 +155,13 @@ const buildReplayBatches = (manifest: SessionManifestPayload): IActions => {
           type: asset.type as MediaType,
           show: toMmSs(relativeMs), showMs: relativeMs,
           frameIndex: event.frameIndex,
+          // Without these, a PDF/video shows but never advances its page,
+          // scroll position, or play state during replay — it just sits
+          // static wherever it opens (see resolvePdfPage/resolvePdfScrollRatio
+          // in reply.tsx, which need this data on the media object itself).
+          pdfPages: asset.pdfPages,
+          pdfScrollEvents: asset.pdfScrollEvents,
+          playbackEvents: asset.playbackEvents,
         });
       } else if (event.type === "media:hide") {
         const active = openMedia.get(event.mediaAssetId);

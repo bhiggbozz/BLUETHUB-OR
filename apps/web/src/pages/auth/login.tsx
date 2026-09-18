@@ -177,7 +177,7 @@ function Login() {
         });
 
         if (result.success) {
-          navigate('/student');
+          navigate('/offline/student');
         }
         // surface this however you handle errors elsewhere — toast, form error, etc.
         setErrorMsg(result.error ?? 'Offline login failed');

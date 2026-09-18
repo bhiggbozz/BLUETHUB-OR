@@ -13,7 +13,7 @@
 import { getTenantFromUrl } from '@/utils/subdomain';
 import { API } from './index';
 // import { X_Tenant_ID } from "@/utils/tenant";
-import type { CompressedStroke } from '@/utils/constant';
+import type { CompressedStroke, IPdfPageEvent, IPdfScrollEvent, IMediaPlaybackEvent } from '@/utils/constant';
 
 const X_Tenant_ID = getTenantFromUrl()
 
@@ -140,6 +140,13 @@ export interface SessionManifestPayload {
     name: string;
     type: string;
     url: string;
+    // PDF page-turns / scroll position / video play-pause timeline captured
+    // locally during recording (session.worker.ts's PDF_PAGE/MEDIA_SCROLL
+    // handlers). Optional because older recordings won't have them, and a
+    // non-PDF/video asset never will.
+    pdfPages?: IPdfPageEvent[];
+    pdfScrollEvents?: IPdfScrollEvent[];
+    playbackEvents?: IMediaPlaybackEvent[];
   }>;
   boards: Array<{
     index: number;

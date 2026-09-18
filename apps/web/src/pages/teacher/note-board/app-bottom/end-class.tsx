@@ -74,6 +74,20 @@ const EndClass = () => {
     };
   }, [classNotStarted]);
 
+  // Best-effort warning on tab close/refresh while the manifest upload has
+  // failed — the browser won't let JS fully block this, but a native prompt
+  // is the strongest deterrent available against silently abandoning batch
+  // data that's orphaned without its manifest.
+  useEffect(() => {
+    if (modalState !== "error") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [modalState]);
+
   const handleEndClick = () => {
     if (classNotStarted) {
       toast.error("Class hasn't started yet");
@@ -452,9 +466,40 @@ const EndClass = () => {
       },
       chunks,
       strokeBatches: strokeBatchesManifest,
-      mediaAssets: mediaEvents
-        .filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i)
-        .map((m) => ({ id: m.id, name: m.name, type: m.type, url: m.url })),
+      // A PDF/video shown more than once gets a separate mediaAction entry
+      // per viewing (session.worker.ts creates a new one on each MEDIA_SHOW),
+      // each with its own pdfPages/pdfScrollEvents/playbackEvents for that
+      // window. mediaAssets is a catalog of the underlying files (deduped by
+      // id), so page/scroll/playback timelines from every viewing are merged
+      // here into one time-sorted history per asset — otherwise only one
+      // viewing's history would survive and the others would replay with no
+      // page/scroll data at all. Previously this dropped that data entirely,
+      // which is why replay could show a PDF but never advance its page or
+      // scroll position.
+      mediaAssets: (() => {
+        const byId = new Map<string, typeof mediaEvents[number]>();
+        for (const m of mediaEvents) {
+          const existing = byId.get(m.id);
+          if (!existing) {
+            byId.set(m.id, { ...m });
+            continue;
+          }
+          existing.pdfPages = [...(existing.pdfPages ?? []), ...(m.pdfPages ?? [])];
+          existing.pdfScrollEvents = [...(existing.pdfScrollEvents ?? []), ...(m.pdfScrollEvents ?? [])];
+          existing.playbackEvents = [...(existing.playbackEvents ?? []), ...(m.playbackEvents ?? [])];
+        }
+        const byElapsed = (a: { elapsedMs?: number }, b: { elapsedMs?: number }) =>
+          (a.elapsedMs ?? 0) - (b.elapsedMs ?? 0);
+        return Array.from(byId.values()).map((m) => ({
+          id: m.id,
+          name: m.name,
+          type: m.type,
+          url: m.url,
+          pdfPages: m.pdfPages?.length ? [...m.pdfPages].sort(byElapsed) : undefined,
+          pdfScrollEvents: m.pdfScrollEvents?.length ? [...m.pdfScrollEvents].sort(byElapsed) : undefined,
+          playbackEvents: m.playbackEvents?.length ? [...m.playbackEvents].sort(byElapsed) : undefined,
+        }));
+      })(),
       boards: Array.from(boardIndices).sort().map(index => ({
         index,
         dimensions: { width: session.recording.screenWidth, height: session.recording.screenHeight },
@@ -507,13 +552,19 @@ const EndClass = () => {
                 {modalState === "error" && "Upload Failed"}
                 {modalState === "draft-saved" && "Draft Saved"}
               </h2>
-              <button
-                onClick={handleClose}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                title={modalState === "uploading" ? "Cancel upload" : "Close"}
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              {/* No close button on a failed upload — the batch data already sent
+                  to the backend is orphaned without a manifest to reference it, so
+                  leaving this screen must be a deliberate choice (Try Again or
+                  Discard below), not an accidental dismiss. */}
+              {modalState !== "error" && (
+                <button
+                  onClick={handleClose}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  title={modalState === "uploading" ? "Cancel upload" : "Close"}
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
             </div>
 
             {/* Content */}
@@ -684,14 +735,16 @@ const EndClass = () => {
                     </div>
                   </div>
                   <p className="text-sm text-gray-500">
-                    Your recording is saved locally. You can try uploading again later from your lessons.
+                    This recording could not be fully saved to the server. Partial data sent before the
+                    failure is unusable without a completed upload — this lesson can't be published from
+                    it alone. Please try again, or discard and re-record.
                   </p>
                   <div className="flex gap-3">
                     <button
-                      onClick={handleClose}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      onClick={handleDiscard}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                     >
-                      Close
+                      Discard Recording
                     </button>
                     <button
                       onClick={handleUpload}
