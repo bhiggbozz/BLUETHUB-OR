@@ -188,9 +188,9 @@ const NewPassword = () => {
                         <input
                             id="Oldpassword"
                             {...register("hashPassword")}
-                            type="text"
-                            placeholder="Enter your username"
-                            autoComplete="username"
+                            type="password"
+                            placeholder="Enter your old password"
+                            autoComplete="current-password"
                             className="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-chestnut/30 focus:border-chestnut/40 transition-all"
                         />
                     </div>

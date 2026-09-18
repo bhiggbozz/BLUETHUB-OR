@@ -1,5 +1,9 @@
 import { Dialog, DialogContent } from "@bluethub/ui-kit";
 import { Check, X, Clock } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 export interface RLesson {
     title: string;
@@ -134,7 +138,16 @@ export const ReviewModal = ({ open, onOpenChange, lesson }: ReviewModalProps) =>
                     {/* Lesson notes */}
                     <div className="bg-gray-50 rounded-xl p-3.5">
                         <p className="text-[#A8A8A4] text-[11px] font-medium mb-1">Lesson Notes</p>
-                        <p className="text-[#0F0F0E] text-xs leading-relaxed whitespace-pre-wrap break-words">{lesson.lessonNotes}</p>
+                        <p className="text-[#0F0F0E] text-xs leading-relaxed whitespace-pre-wrap break-words">
+
+                            <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                            >
+                                {(lesson.lessonNotes)
+                                    .replace(/\\\(/g, "$")
+                                    .replace(/\\\)/g, "$")}
+                            </ReactMarkdown></p>
                     </div>
 
                     {/* Activity timeline */}

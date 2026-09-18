@@ -19,10 +19,11 @@ function generateFakeToken(username: string): string {
 
 function setOfflineSession(username: string, learnerId: string, roleName: string) {
   const token = generateFakeToken(username);
+  const OfflineUser = true
   localStorage.setItem(OFFLINE_TOKEN_KEY, token);
   localStorage.setItem(
     OFFLINE_USER_KEY,
-    JSON.stringify({ id: learnerId, username, roleName }) // roleName added here
+    JSON.stringify({ id: learnerId, username, roleName, OfflineUser }) // roleName added here
   );
   return token;
 }
@@ -71,7 +72,7 @@ export function getOfflineToken(): string | null {
   return localStorage.getItem(OFFLINE_TOKEN_KEY);
 }
 
-export function getOfflineUser(): { id: string; username: string; roleName?: string } | null {
+export function getOfflineUser(): { id: string; username: string; roleName?: string; OfflineUser: boolean } | null {
   const raw = localStorage.getItem(OFFLINE_USER_KEY);
   return raw ? JSON.parse(raw) : null;
 }

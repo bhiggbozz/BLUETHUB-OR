@@ -1513,14 +1513,18 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     try {
       // Scoped to this recording only — the old clearAudio()/clearClass()
       // wiped IndexedDB globally, silently deleting every OTHER downloaded
-      // lesson on the device too.
-      await deleteAudioBySession(activeSessionId);
-      await deleteClassBySession(activeSessionId);
-      // watch-class.tsx's download checkpoint is keyed by session and lives
-      // in localStorage, untouched by the IndexedDB clears above — leaving it
-      // behind meant a "redownload" could look at stale progress bookkeeping
-      // for this exact session on the next visit to /watch.
-      localStorage.removeItem(`replay.download.checkpoint.${activeSessionId}`);
+      // lesson on the device too. activeSessionId can be null on the bare
+      // /replay debug route (no sessionId prop, nothing cached to match against
+      // yet) — there's no specific session to scope a delete to in that case.
+      if (activeSessionId) {
+        await deleteAudioBySession(activeSessionId);
+        await deleteClassBySession(activeSessionId);
+        // watch-class.tsx's download checkpoint is keyed by session and lives
+        // in localStorage, untouched by the IndexedDB clears above — leaving it
+        // behind meant a "redownload" could look at stale progress bookkeeping
+        // for this exact session on the next visit to /watch.
+        localStorage.removeItem(`replay.download.checkpoint.${activeSessionId}`);
+      }
       localStorage.removeItem('currentBatches');
       localStorage.removeItem('recordingStartTimerMs');
       localStorage.removeItem('recordingStartSessionId');
@@ -1760,7 +1764,15 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
                       key={stroke.id}
                       points={stroke.points}
                       stroke={stroke.type === 'eraser' ? 'white' : stroke.color}
-                      strokeWidth={stroke.type === 'eraser' ? 20 : 4}
+                      // Use the actual recorded width, not a hardcoded guess — the
+                      // teacher board writes 2 (pen) / 30 (eraser) at capture time
+                      // (class.tsx), and this Layer is already scaled via
+                      // scaleX/scaleY below, which proportionally scales strokeWidth
+                      // too. Rendering at a fixed 4/20 regardless of the real value
+                      // made every pen stroke render at double its actual thickness,
+                      // which can visually merge/obscure adjacent strokes (e.g. tight
+                      // cursive letters) that were never actually missing from the data.
+                      strokeWidth={stroke.width || (stroke.type === 'eraser' ? 30 : 2)}
                       lineCap="round"
                       lineJoin="round"
                       tension={0.4}

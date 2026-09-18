@@ -1,69 +1,127 @@
-import Cube from "@/assets/svg/cube.svg?react";
-import my_course from "@/assets/svg/scourses.svg?react";
-import { cn } from "@/lib/utils";
+import { isStudentRoleData, useAuthContext } from "@/contexts/auth-context";
+import { useEffect, useState } from "react";
+import {
+  BookOpen, FlaskConical, Calculator, Globe, Music,
+  Palette, Dumbbell, Code, BookMarked, Microscope,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+
+interface ISubject {
+  subjectId: string,
+  subjectName: string,
+  subjectCategory: string
+}
 
 const CourseList = () => {
-  const courses = [
-    { subject: "Mathematics", progress: 85, displayImage: Cube },
-    { subject: "English", progress: 65, displayImage: my_course },
-    { subject: "Basic Science", progress: 30, displayImage: my_course },
+  const { user } = useAuthContext();
+  const navigate = useNavigate()
+  const [subject, setSubject] = useState<ISubject[]>()
+
+  useEffect(() => {
+    const roleData = user?.roleData
+    if (!roleData) return
+    if (!isStudentRoleData(roleData)) return
+    const student = roleData
+    const mergedSubject = [
+      ...(student.majorSubjects ?? []),
+      ...(student.minorSubjects ?? []),
+    ]
+    setSubject(mergedSubject)
+  }, [user])
+
+
+
+
+  // ── Map subject category/name → icon ──────────────────────
+  function getSubjectIcon(name: string, category: string) {
+    const key = (category || name).toLowerCase();
+    if (key.includes("math")) return Calculator;
+    if (key.includes("science") || key.includes("bio")) return Microscope;
+    if (key.includes("chem") || key.includes("lab")) return FlaskConical;
+    if (key.includes("english") || key.includes("lit")) return BookOpen;
+    if (key.includes("history") || key.includes("geo")) return Globe;
+    if (key.includes("music")) return Music;
+    if (key.includes("art") || key.includes("creative")) return Palette;
+    if (key.includes("sport") || key.includes("pe")) return Dumbbell;
+    if (key.includes("tech") || key.includes("comput")) return Code;
+    return BookMarked; // default
+  }
+
+  // ── Initials avatar fallback ──────────────────────────────
+  function getInitials(name: string) {
+    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  }
+
+  const ICON_COLORS = [
+    "bg-violet-50 text-violet-500 ring-violet-100",
+    "bg-blue-50   text-blue-500   ring-blue-100",
+    "bg-emerald-50 text-emerald-500 ring-emerald-100",
+    "bg-amber-50  text-amber-500  ring-amber-100",
+    "bg-rose-50   text-rose-500   ring-rose-100",
+    "bg-cyan-50   text-cyan-500   ring-cyan-100",
   ];
 
+  function getIconColor(id: string) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    return ICON_COLORS[Math.abs(hash) % ICON_COLORS.length];
+  }
+
   // function to get gradient color based on progress %
-  const getProgressColor = (progress: number) => {
-    if (progress <= 40) return { start: "#EF4444", end: "#FCA5A5" }; // red
-    if (progress <= 70) return { start: "#FBBF24", end: "#FDE68A" }; // yellow
-    return { start: "#4F61E8", end: "#B8CBF8" }; // green
-  };
+  // const getProgressColor = (progress: number) => {
+  //   if (progress <= 40) return { start: "#EF4444", end: "#FCA5A5" }; // red
+  //   if (progress <= 70) return { start: "#FBBF24", end: "#FDE68A" }; // yellow
+  //   return { start: "#4F61E8", end: "#B8CBF8" }; // green
+  // };
 
   return (
-    <div className="space-y-2">
-      {courses.map((course, idx) => {
-        const Icon = course.displayImage;
-        const { start, end } = getProgressColor(course.progress);
+    <div className="space-y-2 font-poppins">
+      {subject?.slice(0, 3).map((course: ISubject) => {
+        const SubjectIcon = getSubjectIcon(course.subjectName, course.subjectCategory);
+        const iconColor = getIconColor(course.subjectId);
 
         return (
           <div
-            key={idx}
-            className="flex flex-col gap-2 rounded-[16px] border border-slate-100 bg-[linear-gradient(180deg,_rgba(255,255,255,0.95),_rgba(243,246,255,0.95))] px-3 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_30px_-24px_rgba(79,97,232,0.7)] sm:flex-row sm:items-center sm:justify-between"
+            key={course.subjectId}
+            onClick={() => navigate(`my-course/${course.subjectId}`)}
+            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-b from-white to-[#f3f6ff]/95 px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_30px_-24px_rgba(79,97,232,0.5)]"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 ring-1 ring-slate-100">
-                <Icon className="h-7 w-7" />
-              </div>
-
-              <div>
-                <h3 className="font-poppins text-xs font-semibold text-slate-900">
-                  {course.subject}
-                </h3>
-                <p className="font-poppins text-[10px] font-medium text-slate-500">
-                  Progress: {course.progress}%
-                </p>
-              </div>
+            {/* Icon */}
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${iconColor}`}>
+              <SubjectIcon className="h-5 w-5" />
             </div>
 
-            <div className="w-full sm:max-w-[180px]">
-              <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                <span>Completion</span>
-                <span className={cn(
-                  course.progress <= 40 && "text-rose-500",
-                  course.progress > 40 && course.progress <= 70 && "text-amber-500",
-                  course.progress > 70 && "text-[#4F61E8]"
-                )}>{course.progress}%</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${course.progress}%`,
-                    background: `linear-gradient(to right, ${start}, ${end})`,
-                  }}
-                ></div>
-              </div>
+            {/* Name + category */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-poppins text-[13px] font-semibold text-slate-900 truncate">
+                {course.subjectName}
+              </h3>
+              {course.subjectCategory && (
+                <p className="font-poppins text-[10.5px] text-slate-400 mt-0.5 truncate">
+                  {course.subjectCategory === "1" ? "major subject" : "minor subject"}
+                </p>
+              )}
+            </div>
+
+            {/* Initials badge */}
+            <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold ring-1 ${iconColor}`}>
+              {getInitials(course.subjectName)}
             </div>
           </div>
         );
       })}
+
+      {/* Empty state */}
+      {(!subject || subject.length === 0) && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+            <BookMarked className="w-5 h-5 text-slate-300" />
+          </div>
+          <p className="text-[13px] font-medium text-slate-400">No subjects assigned</p>
+          <p className="text-[11px] text-slate-300 mt-0.5">Subjects will appear here once assigned</p>
+        </div>
+      )}
     </div>
   );
 };

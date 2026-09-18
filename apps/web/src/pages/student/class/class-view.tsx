@@ -32,13 +32,13 @@ const ClassView = ({ lessons, loading, selectedSubjectLabel, selectedTopicLabel,
                     </div>
                 </div>
 
-                {summary && (
+                {/* {summary && (
                     <div className="mt-3 flex flex-wrap gap-2">
                         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Approved: {summary.approved}</span>
                         <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Pending: {summary.pendingApproval}</span>
                         <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Published: {summary.published}</span>
                     </div>
-                )}
+                )} */}
             </section>
 
             <div className="h-[calc(100vh-360px)] sm:h-[calc(100vh-300px)] lg:h-[calc(100vh-260px)] overflow-y-auto pb-7 [&::-webkit-scrollbar]:w-1.5

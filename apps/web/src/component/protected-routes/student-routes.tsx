@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
 const StudentProtectedRoute = ({ children }: { children: ReactNode }) => {
-    const { isLoading, user, isAuthenticated } = useAuthContext();
+    const { isLoading, user, isAuthenticated, OfflineUser } = useAuthContext();
     const offlineUser = getOfflineUser();
     const isOffline = isOfflineAuthenticated();
 
@@ -50,7 +50,9 @@ const StudentProtectedRoute = ({ children }: { children: ReactNode }) => {
     if (effectiveUser.roleName && effectiveUser.roleName !== 'Student') {
         return <Navigate to="/auth" replace />;
     }
-
+    if(!OfflineUser  && offlineUser?.OfflineUser) {
+        
+    }
     return <>{children}</>;
 };
 
