@@ -5,6 +5,7 @@ import {
   DB_NAME, DB_VERSION, STORE_STROKE_BATCHES,
   type LocalStrokeBatch,
 } from '@/utils/constant';
+import { upgradeBluethubClassroomDb } from '@/utils/db-schema';
 
 type StrokePayload = {
   id: string;
@@ -155,7 +156,12 @@ self.onmessage = async (event: MessageEvent<ToWorkerMessage>) => {
 
     try {
       // Open IDB and load pending stroke batches
-      const db = await openDB(DB_NAME, DB_VERSION);
+      const db = await openDB(DB_NAME, DB_VERSION, { upgrade: upgradeBluethubClassroomDb });
+      // This connection is never explicitly closed below, so without this it
+      // would sit open for the rest of the tab's lifetime — silently
+      // blocking any later deleteDatabase() call (e.g. the recovery flow for
+      // a schema-drift "object store not found" error) from ever completing.
+      db.onversionchange = () => db.close();
       const allBatches = await db.getAll(STORE_STROKE_BATCHES);
       
       // Filter for the session and convert to upload format

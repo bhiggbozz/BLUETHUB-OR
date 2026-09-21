@@ -1,11 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { Button } from "@bluethub/ui-kit";
 import { ArrowLeft, Loader2, Menu, PlayCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { markLessonWatched } from "@/utils/watched-lessons";
 import boardSessionService from "@/services/board-session";
-import { addAudio, addStrokes, getAudioBySession, getClassBySession } from "@/utils/db";
+import { addAudio, addStrokes, getAudioBySession, getClassBySession, deleteBluethubClassroomDb } from "@/utils/db";
 import type { AudioBatch, IActions, IBatch } from "@/utils/constant";
 import type { MediaType } from "@/utils/constant";
 import { LESSON_MEDIA_CACHE, buildLessonScopedCacheKey } from "@/utils/lesson-media-cache";
@@ -221,6 +221,11 @@ const WatchClass = () => {
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  // React state isn't visible synchronously across closures, so a second
+  // near-simultaneous call (e.g. a rapid double-click before the button
+  // re-renders to hidden) could otherwise start a second concurrent
+  // download+IndexedDB-write pass for the same session.
+  const isRunningRef = useRef(false);
 
   const checkpoint = useMemo<ReplayCheckpoint | null>(() => {
     if (!sessionId) return null;
@@ -240,6 +245,8 @@ const WatchClass = () => {
     if (!sessionId || !lessonId) {
       throw new Error("Missing lesson/session id for replay.");
     }
+    if (isRunningRef.current) return;
+    isRunningRef.current = true;
 
     setIsRunning(true);
     setProgress(0);
@@ -516,11 +523,27 @@ const WatchClass = () => {
       // Keep the real reason in the console for support; show only a friendly
       // message in the UI.
       console.error(error);
+
+      // A missing-object-store error means the local database's schema
+      // itself is incomplete (created by an old/inconsistent app version) —
+      // no per-session data clear can fix that, only a full delete+recreate.
+      // Do it automatically so the next tap of this same button just works,
+      // instead of leaving the student permanently stuck.
+      const isMissingStore =
+        error instanceof Error &&
+        (error.name === 'NotFoundError' || error.message.toLowerCase().includes('object store'));
+      if (isMissingStore) {
+        await deleteBluethubClassroomDb();
+      }
+
       setErrorMessage(
-        "We couldn't prepare this class just now. Please check your internet connection and try again."
+        isMissingStore
+          ? "We had to reset some local storage. Please tap \"Download & Watch\" again."
+          : "We couldn't prepare this class just now. Please check your internet connection and try again."
       );
       toast.error("Couldn't prepare this class. Please try again.");
     } finally {
+      isRunningRef.current = false;
       setIsRunning(false);
     }
   }, [ensureReplayData, lessonId, navigate, sessionId]);

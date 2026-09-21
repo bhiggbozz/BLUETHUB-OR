@@ -10,6 +10,7 @@ import {
   type LocalAttendanceSession, type AttendanceScanRecord,
   STORE_OFFLINE_LEARNERS,
 } from './constant';
+import { upgradeBluethubClassroomDb } from './db-schema';
 
 // ── DB singleton ──────────────────────────────────────────────────────────────
 
@@ -18,58 +19,16 @@ let _db: IDBPDatabase | null = null;
 async function getDb(): Promise<IDBPDatabase> {
   if (_db) return _db;
   _db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(STORE_CLASS)) {
-        db.createObjectStore(STORE_CLASS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORE_AUDIO)) {
-        db.createObjectStore(STORE_AUDIO, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORE_SESSIONS)) {
-        const s = db.createObjectStore(STORE_SESSIONS, { keyPath: 'id' });
-        s.createIndex('lessonId', 'lessonId', { unique: false });
-        s.createIndex('status', 'status', { unique: false });
-      }
-      if (!db.objectStoreNames.contains(STORE_AUDIO_CHUNKS)) {
-        const s = db.createObjectStore(STORE_AUDIO_CHUNKS, { keyPath: 'id' });
-        s.createIndex('sessionId', 'sessionId', { unique: false });
-        s.createIndex('lessonId', 'lessonId', { unique: false });
-        s.createIndex('syncStatus', 'syncStatus', { unique: false });
-        s.createIndex('sessionId_chunkIndex', ['sessionId', 'chunkIndex'], { unique: true });
-      }
-      if (!db.objectStoreNames.contains(STORE_STROKE_BATCHES)) {
-        const s = db.createObjectStore(STORE_STROKE_BATCHES, { keyPath: 'id' });
-        s.createIndex('sessionId', 'sessionId', { unique: false });
-        s.createIndex('lessonId', 'lessonId', { unique: false });
-        s.createIndex('syncStatus', 'syncStatus', { unique: false });
-        s.createIndex('sessionId_batchIndex', ['sessionId', 'batchIndex'], { unique: true });
-      }
-      if (!db.objectStoreNames.contains(STORE_REPLAY_CACHE)) {
-        db.createObjectStore(STORE_REPLAY_CACHE, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORE_STUDENT_BOARDS)) {
-        db.createObjectStore(STORE_STUDENT_BOARDS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORE_ATTENDANCE_SESSIONS)) {
-        const s = db.createObjectStore(STORE_ATTENDANCE_SESSIONS, { keyPath: 'id' });
-        s.createIndex('dateKey', 'dateKey', { unique: false });
-        s.createIndex('scopeKey', 'scopeKey', { unique: false });
-        s.createIndex('status', 'status', { unique: false });
-      }
-      if (!db.objectStoreNames.contains(STORE_ATTENDANCE)) {
-        const s = db.createObjectStore(STORE_ATTENDANCE, { keyPath: 'id' });
-        s.createIndex('sessionId', 'sessionId', { unique: false });
-        s.createIndex('syncStatus', 'syncStatus', { unique: false });
-        s.createIndex('dedupeKey', 'dedupeKey', { unique: true });
-        s.createIndex('dateKey', 'dateKey', { unique: false });
-      }
-      if (!db.objectStoreNames.contains(STORE_OFFLINE_LEARNERS)) {
-        const s = db.createObjectStore(STORE_OFFLINE_LEARNERS, { keyPath: 'id' });
-        s.createIndex('username', 'username', { unique: true });
-        s.createIndex('hashPassword', 'hashPassword', { unique: true });
-      }
-    },
+    upgrade: upgradeBluethubClassroomDb,
   });
+  // If this connection is ever closed out from under us — another tab
+  // requesting a version upgrade, the browser reclaiming resources, or (in
+  // dev) a Vite HMR reload leaving a stale connection behind — invalidate the
+  // cached singleton so the next getDb() call transparently reopens a fresh
+  // connection, instead of forever handing back a dead one that throws
+  // "The database connection is closing" on every future call.
+  _db.onclose = () => { _db = null; };
+  _db.onversionchange = () => { _db?.close(); _db = null; };
   return _db;
 }
 
@@ -464,6 +423,59 @@ export function isStorageFullError(err: unknown): boolean {
     err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
     err.message.toLowerCase().includes('quota')
   );
+}
+
+/**
+ * Returns true when the error is IndexedDB refusing a transaction because a
+ * store it expects doesn't exist on this connection. This means the local
+ * database's schema itself is incomplete — usually because it was created
+ * or last upgraded by an older/inconsistent version of the app before this
+ * store existed. Clearing a store's *contents* can never fix this, since the
+ * store isn't there to clear; only deleteBluethubClassroomDb() (a full
+ * delete + recreate) resolves it.
+ */
+export function isMissingObjectStoreError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return err.name === 'NotFoundError' || err.message.toLowerCase().includes('object store');
+}
+
+/**
+ * Deletes the entire local database so the next getDb() call recreates it
+ * from scratch with the current, complete schema (db-schema.ts). This is the
+ * only real fix for isMissingObjectStoreError() — IndexedDB only runs its
+ * upgrade callback when opening at a higher version than what's already
+ * stored, so a database that's missing a store because of a past schema
+ * inconsistency will never pick up that store on its own, no matter how
+ * many times individual stores' contents are cleared.
+ */
+export async function deleteBluethubClassroomDb(): Promise<void> {
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = (reason: string) => {
+      if (settled) return;
+      settled = true;
+      console.log(`[db] deleteBluethubClassroomDb: ${reason}`);
+      resolve();
+    };
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = () => finish('deleted successfully');
+    req.onerror = () => finish(`error — ${req.error?.message ?? 'unknown'}`);
+    req.onblocked = () => {
+      // Another open connection (a stray tab, or a worker whose own
+      // singleton hasn't reacted to the version-change yet) is holding the
+      // database open — the delete stays PENDING, not failed. Don't resolve
+      // yet: onsuccess can still fire once that connection closes on its
+      // own (every connection now registers onversionchange for exactly
+      // this). Give it a few seconds before giving up, so the UI doesn't
+      // hang forever if something truly never releases it.
+      console.warn('[db] deleteBluethubClassroomDb: BLOCKED by another open connection — waiting up to 3s for it to close...');
+    };
+    setTimeout(() => finish('timed out waiting for a blocked delete — proceeding anyway'), 3000);
+  });
 }
 
 

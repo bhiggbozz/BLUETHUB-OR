@@ -12,6 +12,7 @@
  */
 
 import { openDB, type IDBPDatabase } from 'idb';
+import { upgradeBluethubClassroomDb } from '@/utils/db-schema';
 import {
   DB_NAME, DB_VERSION,
   STORE_SESSIONS, STORE_AUDIO_CHUNKS, STORE_STROKE_BATCHES,
@@ -83,7 +84,11 @@ let currentConfig: {
 
 async function getDb(): Promise<IDBPDatabase> {
   if (db) return db;
-  db = await openDB(DB_NAME, DB_VERSION);
+  db = await openDB(DB_NAME, DB_VERSION, { upgrade: upgradeBluethubClassroomDb });
+  // Self-close on a version-change request from elsewhere (e.g. a recovery
+  // delete after a schema-drift error) so this connection never blocks it.
+  db.onclose = () => { db = null; };
+  db.onversionchange = () => { db?.close(); db = null; };
   return db;
 }
 
