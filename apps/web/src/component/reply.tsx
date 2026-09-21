@@ -4,6 +4,7 @@ import { Stage, Layer, Line, Rect } from 'react-konva';
 // import type Konva from 'konva';
 import {
   PlayCircle,
+  PauseCircle,
   StopCircle,
   Trash,
   Edit3,
@@ -91,6 +92,28 @@ const resolvePdfScrollRatio = (media: IActiveMedia, sessionMs: number): number |
   }
 
   return ratio;
+};
+
+// A locally-stored session anchor (sessionStartSessionId/sessionStartWallMs
+// in localStorage) is only trustworthy if it places the first audio batch at
+// a small, plausible session-relative offset. Audio written by the
+// teacher's own live-recording code path (session.worker.ts) uses real
+// Date.now() wall-clock timestamps, while a downloaded student replay's
+// sessionStartWallMs is deliberately 0 (the manifest never provides
+// session.recordedAt — see student-replay.tsx). If both ever coexist for the
+// same sessionId in the same browser's IndexedDB — e.g. testing both the
+// teacher and student flow on one machine, where the student "fast path"
+// skips re-downloading audio that's already present locally — a stored
+// anchor of 0 gets wrongly applied to still-real-epoch timestamps, and
+// "planned start" ends up decades in the future (audio effectively never
+// plays). Treat the stored anchor as unusable once the implied offset is
+// wildly implausible for any real recording, and fall back to reconstructing
+// it from the actual audio instead.
+const MAX_PLAUSIBLE_SESSION_MS = 24 * 60 * 60 * 1000; // 24h
+const isAnchorPlausible = (anchor: number, firstBatchTimestamp: number | undefined): boolean => {
+  if (firstBatchTimestamp === undefined) return true;
+  const impliedOffset = firstBatchTimestamp - anchor;
+  return impliedOffset >= 0 && impliedOffset <= MAX_PLAUSIBLE_SESSION_MS;
 };
 
 const resolveVideoPlaybackState = (media: IActiveMedia, sessionMs: number): 'play' | 'pause' => {
@@ -210,6 +233,19 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  // Distinct from isPlaying/stop: pause() reuses the existing stop() primitive
+  // (which fully tears down the AudioContext/RAF loop) but records the exact
+  // position first and restores it into startFromSessionMsRef, so a
+  // subsequent play() resumes from there instead of restarting at 0 — the
+  // same seek pattern commitSeek() already uses for scrubbing during playback.
+  const [isPaused, setIsPaused] = useState(false);
+  // React state updates (setIsPlaying) aren't visible synchronously across
+  // closures, so two near-simultaneous play() calls (e.g. rapid re-seeking via
+  // commitSeek's stop()+setTimeout(play) pattern) can both read stale
+  // isPlaying=false and both proceed, starting two concurrent RAF/audio loops
+  // that replay the same event timeline independently — this ref is the
+  // synchronous lock that actually prevents that.
+  const isPlayingRef = useRef(false);
   const [isPreloading, setIsPreloading] = useState(false);
   const [strokesList, setStrokesList] = useState<CompressedStroke[]>([]);
   const [audioList, setAudioList] = useState<AudioBatch[]>([]);
@@ -337,6 +373,10 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
   const batchStartMsRef = useRef<number>(0);
 
   const stopRef = useRef(false);
+  // Measures real wall-clock gaps between consecutive frame() ticks, to
+  // directly confirm/measure main-thread stalls (RAF starvation) instead of
+  // inferring them indirectly from bursts of stroke/board-switch timestamps.
+  const lastFrameWallMsRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentBlobUrlRef = useRef<string | null>(null);
   // AudioContext used to schedule all batches at once so audio.currentTime
@@ -350,7 +390,10 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
   // Number of batches that failed to decode (0 = all OK, >0 = possible Cloudinary issue).
   const decodeFailureCountRef = useRef(0);
   const playedSessionMsRef = useRef<number>(0);
-  const audioAnchorWallMsRef = useRef<number>(0);
+  // null = no anchor available (never derived a session-time origin at all);
+  // distinct from a legitimate anchor of exactly 0, which is now the normal
+  // case (see the hasAnchor/hasStoredAnchor comments below).
+  const audioAnchorWallMsRef = useRef<number | null>(null);
   const replayDisplayOffsetMsRef = useRef<number>(0);
   const startFromSessionMsRef = useRef<number>(0);
   const parentRef = useRef<HTMLDivElement>(null);
@@ -436,14 +479,22 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
 
     const sortedAudio = [...sessionAudioList].sort((a, b) => a.batchId - b.batchId);
     const anchorSessionId = localStorage.getItem('sessionStartSessionId') ?? '';
-    const storedAnchor = anchorSessionId === activeSessionId
+    const hasStoredAnchor = anchorSessionId === activeSessionId;
+    const storedAnchor = hasStoredAnchor
       ? parseInt(localStorage.getItem('sessionStartWallMs') ?? '0', 10)
       : 0;
     const firstAudioBatch = sortedAudio[0];
     const reconstructedAnchor = firstAudioBatch
       ? firstAudioBatch.timestamp - Math.max(1, Math.round((firstAudioBatch.duration ?? 10) * 1000))
       : 0;
-    const anchor = storedAnchor || reconstructedAnchor || 0;
+    // See the matching comment in startRaf/play — a legitimately-stored
+    // anchor of 0 must not be discarded in favor of the reconstructed
+    // approximation, UNLESS it's implausible for this actual audio (see
+    // isAnchorPlausible's comment — stale teacher-time-written audio mixed
+    // with a student-side zero anchor).
+    const anchor = hasStoredAnchor && isAnchorPlausible(storedAnchor, firstAudioBatch?.timestamp)
+      ? storedAnchor
+      : (reconstructedAnchor || 0);
     const audioDurationMs = sortedAudio.length > 0
       ? Math.max(...sortedAudio.map((b) => Math.max(0, b.timestamp - anchor)))
       : 0;
@@ -692,7 +743,8 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     // chunk timeline. This keeps board time physically tied to audio time.
     // Fallbacks remain for older data that may not have enough metadata.
     const storedSessionId = localStorage.getItem('sessionStartSessionId') ?? '';
-    const stored = storedSessionId === activeSessionId
+    const hasStoredAnchor = storedSessionId === activeSessionId;
+    const stored = hasStoredAnchor
       ? parseInt(localStorage.getItem('sessionStartWallMs') ?? '0', 10)
       : 0;
     const sortedAudio = [...sessionAudioList].sort((a, b) => a.batchId - b.batchId);
@@ -705,8 +757,21 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       ? parseInt(localStorage.getItem('recordingStartTimerMs') ?? '0', 10)
       : 0;
 
-    const sessionStartWallMs = stored || reconstructed || 0;
-    audioAnchorWallMsRef.current = sessionStartWallMs;
+    // A legitimately-stored anchor of exactly 0 (the normal case now — every
+    // manifest lacks session.recordedAt, so watch-class.tsx/student-replay.tsx
+    // always write 0) must win over the reconstructed fallback. `stored ||
+    // reconstructed` treated 0 as "unset" and silently replaced it with a
+    // separately-derived approximation on every single playback, which is
+    // exactly the kind of small, per-batch imprecision that shows up as
+    // audio/board drift that grows chunk over chunk. BUT a stored anchor is
+    // only trustworthy for the audio actually loaded right now — see
+    // isAnchorPlausible's comment for when it isn't (stale teacher-time
+    // audio records, real epoch timestamps, coexisting with a student-side
+    // zero anchor for the same sessionId).
+    const trustStoredAnchor = hasStoredAnchor && isAnchorPlausible(stored, firstBatch?.timestamp);
+    const hasAnchor = trustStoredAnchor || !!firstBatch;
+    const sessionStartWallMs = trustStoredAnchor ? stored : reconstructed;
+    audioAnchorWallMsRef.current = hasAnchor ? sessionStartWallMs : null;
 
     let accumulatedMs = 0;
     const audioRanges = sortedAudio.map((batch) => {
@@ -718,7 +783,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       // The old cumulative `accumulatedMs` diverges when batch.duration > the actual
       // chunk window (e.g. chunk.audio.durationMs > chunk.endMs - chunk.startMs),
       // which pushes later batches' startMs forward past where audio actually plays.
-      const startMs = sessionStartWallMs > 0
+      const startMs = hasAnchor
         ? Math.max(0, startWallMs - sessionStartWallMs)
         : accumulatedMs;
       const endMs = startMs + durationMs;
@@ -758,54 +823,81 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       (min, s) => (s.timestamp && s.timestamp < min ? s.timestamp : min),
       Infinity
     );
-    const effectiveAnchor =
-      sessionStartWallMs > 0
+    // number | null, not a bare number — 0 is a legitimate anchor value now,
+    // so "no anchor available" must be its own distinct state (null), never
+    // collapsed into 0 and then re-checked with a truthy/`> 0` test below.
+    const effectiveAnchor: number | null =
+      hasAnchor
         ? sessionStartWallMs
-        : (Number.isFinite(minStrokeTs) ? minStrokeTs : 0);
+        : (Number.isFinite(minStrokeTs) ? minStrokeTs : null);
 
     const timelines = allStrokes.map(s => {
       const clockStartMs = Math.max(0, timeToMs(s.startTime) - timerOffset);
       const TIMELINE_AGREEMENT_TOLERANCE_MS = 7000;
 
       let startMs: number;
+      let source: string; // which branch decided startMs — for tracing only
       if (s.timestamp && audioRanges.length > 0) {
         const mapped = mapWallTsToAudioMs(s.timestamp);
         if (mapped !== null) {
           // Use wall-clock mapping only when it broadly agrees with the stroke's
           // own timeline clock. This prevents a subset of strokes from collapsing
           // near t=0 and appearing all at once.
-          startMs = Math.abs(mapped - clockStartMs) <= TIMELINE_AGREEMENT_TOLERANCE_MS
-            ? mapped
-            : clockStartMs;
-        } else if (effectiveAnchor) {
+          const agree = Math.abs(mapped - clockStartMs) <= TIMELINE_AGREEMENT_TOLERANCE_MS;
+          startMs = agree ? mapped : clockStartMs;
+          source = agree ? 'audio-mapped' : `audio-mapped-DISAGREED(mapped=${Math.round(mapped)},clock=${Math.round(clockStartMs)})→clock`;
+        } else if (effectiveAnchor !== null) {
           const wallMs = s.timestamp - effectiveAnchor;
           if (wallMs > 0) {
-            startMs = Math.abs(wallMs - clockStartMs) <= TIMELINE_AGREEMENT_TOLERANCE_MS
-              ? wallMs
-              : clockStartMs;
+            const agree = Math.abs(wallMs - clockStartMs) <= TIMELINE_AGREEMENT_TOLERANCE_MS;
+            startMs = agree ? wallMs : clockStartMs;
+            source = agree ? 'anchor-wall' : `anchor-wall-DISAGREED(wall=${Math.round(wallMs)},clock=${Math.round(clockStartMs)})→clock`;
           } else {
             startMs = clockStartMs;
+            source = 'anchor-wall-negative→clock';
           }
         } else {
           startMs = clockStartMs;
+          source = 'no-anchor→clock';
         }
-      } else if (effectiveAnchor && s.timestamp) {
+      } else if (effectiveAnchor !== null && s.timestamp) {
         const wallMs = s.timestamp - effectiveAnchor;
         if (wallMs > 0) {
-          startMs = Math.abs(wallMs - clockStartMs) <= TIMELINE_AGREEMENT_TOLERANCE_MS
-            ? wallMs
-            : clockStartMs;
+          const agree = Math.abs(wallMs - clockStartMs) <= TIMELINE_AGREEMENT_TOLERANCE_MS;
+          startMs = agree ? wallMs : clockStartMs;
+          source = agree ? 'anchor-wall(no-audio)' : `anchor-wall(no-audio)-DISAGREED→clock`;
         } else {
           // timestamp pre-dates anchor — use the recorded timer string as fallback
           // so the stroke still appears at roughly the right moment rather than t=0
           startMs = clockStartMs;
+          source = 'anchor-wall(no-audio)-negative→clock';
         }
       } else {
         // fallback: timerDisplay "MM:SS" minus stored offset
         startMs = clockStartMs;
+        source = 'clock-only(no-timestamp-or-anchor)';
       }
       // Preserve captured draw duration so stroke END timing matches audio/time.
       const drawWindow = Math.max(50, s.duration ?? 0);
+      // Cross-check against the manifest's OWN independent board:switch
+      // timeline (captured separately from strokes, via BOARD_SWITCH worker
+      // messages during recording) — if this stroke's own currentBoard
+      // disagrees with what the manifest says was active at this stroke's
+      // computed startMs, the discrepancy was very likely baked in at
+      // RECORD time (wrong board tagged on the stroke, or a wrong/missing
+      // board:switch event), not introduced by replay's own computation.
+      let manifestBoardAtStart: number | null = null;
+      for (const ev of boardSwitchTimelineRef.current) {
+        if (ev.timestampMs <= startMs) manifestBoardAtStart = ev.toBoard;
+        else break;
+      }
+      const boardMismatch = manifestBoardAtStart !== null && manifestBoardAtStart !== s.currentBoard;
+      console.log(
+        `[Replay][trace] timeline: stroke ${s.id} (board ${s.currentBoard}, manifest board:switch says ${manifestBoardAtStart ?? 'n/a'}` +
+        `${boardMismatch ? ' ⚠️ MISMATCH — likely a recording-time capture issue, not replay' : ''}) ` +
+        `→ startMs=${Math.round(startMs)} via ${source} | ` +
+        `raw: timestamp=${s.timestamp}, startTime="${s.startTime}", clockStartMs=${Math.round(clockStartMs)}, duration=${drawWindow}`
+      );
       return {
         stroke: s,
         startMs,
@@ -849,6 +941,21 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     const frame = () => {
       if (stopRef.current) return;
 
+      const nowWallMs = performance.now();
+      if (lastFrameWallMsRef.current !== 0) {
+        const gapMs = nowWallMs - lastFrameWallMsRef.current;
+        // A healthy tick is ~16ms (60fps). Anything past a few hundred ms
+        // means the main thread was blocked/starved between these two RAF
+        // callbacks — this is the direct measurement of that stall.
+        if (gapMs > 200) {
+          console.warn(
+            `[Replay][trace] ⏱️ STALL: ${Math.round(gapMs)}ms gap between frame() ticks ` +
+            `(main thread was blocked/starved) — document.hidden=${document.hidden}`
+          );
+        }
+      }
+      lastFrameWallMsRef.current = nowWallMs;
+
       // ✅ Session position: prefer AudioContext clock (continuous, no gaps)
       // Falls back to batchStartMsRef + audio.currentTime for teacher replay.
       const sessionMs = audioCtxRef.current
@@ -870,6 +977,10 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           const pdfPage = resolvePdfPage(event.media, sessionMs);
           const pdfScrollRatio = resolvePdfScrollRatio(event.media, sessionMs);
           const videoState = resolveVideoPlaybackState(event.media, sessionMs);
+          console.log(
+            `[Replay][trace] media SHOW "${event.media.name}" (${event.media.type}) ` +
+            `at sessionMs=${Math.round(sessionMs)} (event.atMs=${Math.round(event.atMs)})`
+          );
           activeFrameSigRef.current = `${event.media.id}:${pdfPage ?? ''}`;
           activeFrameRef.current = event.media;
           activePdfPageRef.current = pdfPage;
@@ -883,6 +994,10 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           setActivePdfPage(pdfPage);
           setActivePdfScrollRatio(pdfScrollRatio);
         } else if (activeFrameSigRef.current.startsWith(`${event.media.id}:`) || activeFrameSigRef.current === event.media.id) {
+          console.log(
+            `[Replay][trace] media HIDE "${event.media.name}" (${event.media.type}) ` +
+            `at sessionMs=${Math.round(sessionMs)} (event.atMs=${Math.round(event.atMs)})`
+          );
           activeFrameSigRef.current = '';
           activeFrameRef.current = null;
           activePdfPageRef.current = undefined;
@@ -895,6 +1010,15 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           setTargetVideoPlaybackState('pause');
           setActivePdfPage(undefined);
           setActivePdfScrollRatio(undefined);
+        } else {
+          // The hide event's media id didn't match what we think is
+          // currently showing — this event gets silently skipped without
+          // this log. If this ever fires, it's the smoking gun for a PDF/
+          // media that never closes.
+          console.warn(
+            `[Replay][trace] media HIDE event for "${event.media.name}" IGNORED — ` +
+            `activeFrameSigRef was "${activeFrameSigRef.current}", expected to start with "${event.media.id}:"`
+          );
         }
         mediaEventIndexRef.current += 1;
       }
@@ -924,6 +1048,11 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       }
 
       if (activeBoard !== currentBoardInReplayRef.current) {
+        console.log(
+          `[Replay][trace] board switched ${currentBoardInReplayRef.current} → ${activeBoard} ` +
+          `at sessionMs=${Math.round(sessionMs)}` +
+          (activeFrameRef.current ? ` (media "${activeFrameRef.current.name}" was active)` : '')
+        );
         currentBoardInReplayRef.current = activeBoard;
         setCurrentBoardInReplay(activeBoard);
       }
@@ -973,6 +1102,15 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
         );
 
         if (targetCursor > cursor) {
+          // Log only the moment a stroke first begins (cursor 0 → nonzero),
+          // not every frame of its progressive draw, to keep this readable.
+          if (cursor === 0) {
+            console.log(
+              `[Replay][trace] stroke ${stroke.id} (board ${stroke.currentBoard}) started drawing ` +
+              `at sessionMs=${Math.round(sessionMs)} (its computed startMs=${Math.round(startMs)})` +
+              (activeFrameRef.current ? ` (media "${activeFrameRef.current.name}" was active)` : '')
+            );
+          }
           strokeCursorsRef.current.set(stroke.id, targetCursor);
           drawnMapRef.current.set(stroke.id, {
             ...stroke,
@@ -1022,7 +1160,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     const anchorWallMs = audioAnchorWallMsRef.current;
     const batchDurationMs = Math.max(1, Math.round((batch.duration ?? 10) * 1000));
     const batchWallStartMs = batch.timestamp - batchDurationMs;
-    const plannedStartMs = anchorWallMs > 0
+    const plannedStartMs = anchorWallMs !== null
       ? Math.max(0, batchWallStartMs - anchorWallMs)
       : Math.max(0, playedSessionMsRef.current);
 
@@ -1061,7 +1199,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       const onEnded = () => {
         const playedMs = Math.max(0, (audioRef.current?.currentTime ?? batch.duration ?? 10) * 1000);
         const actualEndMs = batchStartMs + playedMs;
-        const plannedEndMs = anchorWallMs > 0
+        const plannedEndMs = anchorWallMs !== null
           ? Math.max(plannedStartMs, batch.timestamp - anchorWallMs)
           : actualEndMs;
         playedSessionMsRef.current = Math.max(actualEndMs, plannedEndMs);
@@ -1080,7 +1218,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
         // Cap real-time fill to 2 s so large gaps don't stall the viewer.
         let fillTargetMs = playedSessionMsRef.current; // fallback: within-batch
         const nextBatchInFill = sortedBatches[batchIndex + 1];
-        if (nextBatchInFill && anchorWallMs > 0) {
+        if (nextBatchInFill && anchorWallMs !== null) {
           const nextDurMs = Math.max(1, Math.round((nextBatchInFill.duration ?? 10) * 1000));
           const nextPlannedStart = Math.max(0, (nextBatchInFill.timestamp - nextDurMs) - anchorWallMs);
           fillTargetMs = Math.max(fillTargetMs, nextPlannedStart);
@@ -1141,15 +1279,20 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
   }, []);
   void _playAudioBatch; // retained for future batch-level playback — reference suppresses TS6133 ──────────────────────────────────────────────────────────────────
   const play = async () => {
-    if (isPlaying || isPreloading) return;
+    if (isPlayingRef.current || isPlaying || isPreloading) return;
+    isPlayingRef.current = true;
 
     const readyStrokes = preloadedStrokesRef.current;
     const hasStrokes = readyStrokes.length > 0;
     const hasAudio = sessionAudioList.length > 0;
     const hasMedia = mediaTimelineRef.current.length > 0;
-    if (!hasStrokes && !hasAudio && !hasMedia) return;
+    if (!hasStrokes && !hasAudio && !hasMedia) {
+      isPlayingRef.current = false;
+      return;
+    }
 
     stopRef.current = false;
+    lastFrameWallMsRef.current = 0;
     const timerOffsetSessionId = localStorage.getItem('recordingStartSessionId') ?? '';
     replayDisplayOffsetMsRef.current = timerOffsetSessionId === activeSessionId
       ? Math.max(0, parseInt(localStorage.getItem('recordingStartTimerMs') ?? '0', 10))
@@ -1178,14 +1321,25 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
 
     const sortedAudio = [...sessionAudioList].sort((a, b) => a.batchId - b.batchId);
     const anchorSessionId = localStorage.getItem('sessionStartSessionId') ?? '';
-    const storedAnchor = anchorSessionId === activeSessionId
+    const hasStoredAnchor = anchorSessionId === activeSessionId;
+    const storedAnchor = hasStoredAnchor
       ? parseInt(localStorage.getItem('sessionStartWallMs') ?? '0', 10)
       : 0;
     const firstAudioBatch = sortedAudio[0];
+    const hasAudioAnchor = hasStoredAnchor || !!firstAudioBatch;
     const reconstructedAnchor = firstAudioBatch
       ? firstAudioBatch.timestamp - Math.max(1, Math.round((firstAudioBatch.duration ?? 10) * 1000))
       : 0;
-    audioAnchorWallMsRef.current = storedAnchor || reconstructedAnchor || 0;
+    // See the matching comment in startRaf — a legitimately-stored anchor of
+    // 0 must not be discarded in favor of the reconstructed approximation,
+    // and "no anchor at all" must stay null, not collapse into 0 and get
+    // silently treated as a valid (everything-starts-at-zero) anchor by the
+    // `!== null` checks below. But a stored anchor is only trustworthy for
+    // the audio actually loaded now — see isAnchorPlausible's comment.
+    const trustStoredAudioAnchor = hasStoredAnchor && isAnchorPlausible(storedAnchor, firstAudioBatch?.timestamp);
+    audioAnchorWallMsRef.current = hasAudioAnchor
+      ? (trustStoredAudioAnchor ? storedAnchor : reconstructedAnchor)
+      : null;
 
     if (hasAudio && hasStrokes) {
       // Schedule every audio batch via AudioContext so audio.currentTime
@@ -1218,13 +1372,27 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           }
           const buffer = await audioCtx.decodeAudioData(ab);
           const batchDurationMs = Math.max(1, Math.round((batch.duration ?? 10) * 1000));
-          const plannedStartMs = anchorWallMs > 0
+          // anchorWallMs !== null, not > 0 — with 0 now a legitimate anchor
+          // value, `> 0` collapsed plannedStartMs to 0 for every single
+          // batch, scheduling all of them to start playing simultaneously.
+          const plannedStartMs = anchorWallMs !== null
             ? Math.max(0, (batch.timestamp - batchDurationMs) - anchorWallMs)
             : 0;
-          // console.log(`[Replay] batch ${batch.batchId}: decoded ${buffer.duration.toFixed(2)}s @ session ${Math.round(plannedStartMs/1000)}s`);
+          // Diagnostic: compares the MANIFEST-reported duration (batchDurationMs,
+          // what scheduling assumes) against the REAL decoded audio length
+          // (buffer.duration, what the browser actually plays) — a mismatch
+          // here means the gap is in the manifest's own duration data, not in
+          // the scheduling math.
+          const decodedMs = Math.round(buffer.duration * 1000);
+          const durationMismatchMs = decodedMs - batchDurationMs;
+          console.log(
+            `[Replay] batch ${batch.batchId}: planned start ${Math.round(plannedStartMs / 1000)}s, ` +
+            `manifest duration ${batchDurationMs}ms, decoded duration ${decodedMs}ms` +
+            (Math.abs(durationMismatchMs) > 100 ? ` ⚠️ mismatch ${durationMismatchMs}ms` : '')
+          );
           return { buffer, plannedStartMs };
         } catch (e) {
-          // console.warn(`[Replay] batch ${batch.batchId}: decodeAudioData failed — blob type=${batch.blob.type}, size=${batch.blob.size}`, e);
+          console.warn(`[Replay] batch ${batch.batchId}: decodeAudioData failed — blob type=${batch.blob.type}, size=${batch.blob.size}`, e);
           decodeFailureCountRef.current++;
           return null;
         }
@@ -1239,7 +1407,10 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       }
 
       if (stopRef.current) {
-        await audioCtx.close();
+        // stop() may have already closed this same context (audioCtxRef.current)
+        // if the user stopped playback while decode was still in flight —
+        // closing an already-closed AudioContext throws.
+        await audioCtx.close().catch(() => {/* ignore */});
         audioCtxRef.current = null;
         return;
       }
@@ -1285,20 +1456,31 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       const scheduleBase = audioCtx.currentTime + 0.1;
       audioCtxOffsetRef.current = scheduleBase - startFromSessionMs / 1000;
 
-      for (const item of decoded) {
+      for (let idx = 0; idx < decoded.length; idx++) {
+        const item = decoded[idx];
         if (!item || stopRef.current) continue;
         const src = audioCtx.createBufferSource();
         src.buffer = item.buffer;
         src.connect(audioCtx.destination);
+
+        // Cap playback so this buffer never plays into the next batch's slot.
+        // Older recordings (made before the upload pipeline stopped padding
+        // every batch to a flat 60s) can have a decoded buffer longer than
+        // its manifest-assigned window — without this cap that excess plays
+        // on top of the next batch's audio, audibly overlapping/garbling them.
+        const next = decoded.slice(idx + 1).find(Boolean);
+        const slotMs = next ? Math.max(0, next.plannedStartMs - item.plannedStartMs) : null;
+        const maxDurationSec = slotMs !== null ? slotMs / 1000 : item.buffer.duration;
+
         if (item.plannedStartMs < startFromSessionMs) {
           // Batch starts before seek position — play from the correct offset
           const playOffset = (startFromSessionMs - item.plannedStartMs) / 1000;
-          if (playOffset < item.buffer.duration) {
-            src.start(scheduleBase, playOffset);
+          if (playOffset < maxDurationSec) {
+            src.start(scheduleBase, playOffset, Math.max(0, maxDurationSec - playOffset));
           }
           // else: entire batch is before seek point, skip
         } else {
-          src.start(scheduleBase + (item.plannedStartMs - startFromSessionMs) / 1000);
+          src.start(scheduleBase + (item.plannedStartMs - startFromSessionMs) / 1000, 0, maxDurationSec);
         }
       }
 
@@ -1315,7 +1497,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
         }, 100);
       });
 
-      await audioCtx.close();
+      await audioCtx.close().catch(() => {/* ignore — may already be closed by stop() */});
       // Flush any media hide events that are still pending at session end.
       // The RAF runs at 60 fps and may have been cancelled just before sessionMs
       // reached closedMs, so we process remaining events explicitly here.
@@ -1352,7 +1534,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           const ab = await batch.blob.arrayBuffer();
           const buffer = await audioCtxAO.decodeAudioData(ab);
           const batchDurationMs = Math.max(1, Math.round((batch.duration ?? 10) * 1000));
-          const plannedStartMs = anchorWallMsAO > 0
+          const plannedStartMs = anchorWallMsAO !== null
             ? Math.max(0, (batch.timestamp - batchDurationMs) - anchorWallMsAO)
             : 0;
           return { buffer, plannedStartMs };
@@ -1363,7 +1545,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       }));
 
       if (stopRef.current) {
-        await audioCtxAO.close();
+        await audioCtxAO.close().catch(() => {/* ignore — may already be closed by stop() */});
         audioCtxRef.current = null;
         return;
       }
@@ -1371,16 +1553,27 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       const scheduleBaseAO = audioCtxAO.currentTime + 0.1;
       audioCtxOffsetRef.current = scheduleBaseAO - startFromSessionMs / 1000;
 
-      for (const item of decodedAO) {
+      for (let idx = 0; idx < decodedAO.length; idx++) {
+        const item = decodedAO[idx];
         if (!item || stopRef.current) continue;
         const src = audioCtxAO.createBufferSource();
         src.buffer = item.buffer;
         src.connect(audioCtxAO.destination);
+
+        // See the matching comment in the hasAudio && hasStrokes branch above —
+        // caps playback so an older, padded-longer-than-its-slot buffer can't
+        // overlap into the next batch's audio.
+        const nextAO = decodedAO.slice(idx + 1).find(Boolean);
+        const slotMsAO = nextAO ? Math.max(0, nextAO.plannedStartMs - item.plannedStartMs) : null;
+        const maxDurationSecAO = slotMsAO !== null ? slotMsAO / 1000 : item.buffer.duration;
+
         if (item.plannedStartMs < startFromSessionMs) {
           const playOffset = (startFromSessionMs - item.plannedStartMs) / 1000;
-          if (playOffset < item.buffer.duration) src.start(scheduleBaseAO, playOffset);
+          if (playOffset < maxDurationSecAO) {
+            src.start(scheduleBaseAO, playOffset, Math.max(0, maxDurationSecAO - playOffset));
+          }
         } else {
-          src.start(scheduleBaseAO + (item.plannedStartMs - startFromSessionMs) / 1000);
+          src.start(scheduleBaseAO + (item.plannedStartMs - startFromSessionMs) / 1000, 0, maxDurationSecAO);
         }
       }
 
@@ -1396,7 +1589,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
         }, 100);
       });
 
-      await audioCtxAO.close();
+      await audioCtxAO.close().catch(() => {/* ignore — may already be closed by stop() */});
       // Flush remaining media hide events before stopping the RAF.
       if (hasMedia) {
         const flushMs = replayDurationMs;
@@ -1451,6 +1644,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     }
 
     if (!stopRef.current) {
+      isPlayingRef.current = false;
       setIsPlaying(false);
       onFinished?.();
     }
@@ -1460,7 +1654,9 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
   const stop = () => {
     stopRef.current = true;
     stopRaf();
+    isPlayingRef.current = false;
     setIsPlaying(false);
+    setIsPaused(false);
     playedSessionMsRef.current = 0;
     startFromSessionMsRef.current = 0;
     activeFrameRef.current = null;
@@ -1494,6 +1690,47 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       currentBlobUrlRef.current = null;
     }
   };
+
+  // ── Pause / Resume ───────────────────────────────────────────────────────
+  const pause = () => {
+    if (!isPlayingRef.current) return;
+    // Same sessionMs formula the RAF loop and skipToNextAudio already use.
+    const currentSessionMs = audioCtxRef.current
+      ? Math.max(0, (audioCtxRef.current.currentTime - audioCtxOffsetRef.current) * 1000)
+      : batchStartMsRef.current + (audioRef.current?.currentTime ?? 0) * 1000;
+    stop();
+    startFromSessionMsRef.current = currentSessionMs;
+    setIsPaused(true);
+  };
+
+  const resume = () => {
+    setIsPaused(false);
+    void play();
+  };
+
+  // Auto-pause when the tab is backgrounded or the student switches away —
+  // AudioContext keeps playing audio even in a hidden/background tab (that's
+  // correct default browser behavior, same as a music player), so without
+  // this the class keeps playing with no visible player to stop it from.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden && isPlayingRef.current) pause();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Stop playback outright when this component unmounts (e.g. the student
+  // taps the browser/in-app back button) — otherwise the AudioContext and
+  // its already-scheduled audio nodes have no reason to stop and keep
+  // playing indefinitely after the player itself is gone.
+  useEffect(() => {
+    return () => {
+      if (isPlayingRef.current) stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const video = replayVideoRef.current;
@@ -1594,7 +1831,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
 
             <button
-              onClick={play}
+              onClick={isPaused ? resume : play}
               disabled={isPlaying || isPreloading}
               className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 isPlaying || isPreloading
@@ -1604,15 +1841,28 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
             >
               {isPreloading
                 ? <><Loader className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /><span className="text-xs sm:text-sm hidden xs:inline">Preparing...</span><span className="text-xs xs:hidden">...</span></>
-                : <><PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" /><span className="text-xs sm:text-sm">Play</span></>
+                : <><PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" /><span className="text-xs sm:text-sm">{isPaused ? 'Resume' : 'Play'}</span></>
               }
             </button>
 
             <button
-              onClick={stop}
+              onClick={pause}
               disabled={!isPlaying}
               className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 !isPlaying
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm active:scale-95'
+              }`}
+            >
+              <PauseCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-sm">Pause</span>
+            </button>
+
+            <button
+              onClick={stop}
+              disabled={!isPlaying && !isPaused}
+              className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                !isPlaying && !isPaused
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm active:scale-95'
               }`}

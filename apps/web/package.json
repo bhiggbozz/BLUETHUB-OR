@@ -35,7 +35,7 @@
     "katex": "^0.16.45",
     "konva": "^10.2.0",
     "lucide-react": "^0.562.0",
-    "pdfjs-dist": "^5.7.284",
+    "pdfjs-dist": "5.4.296",
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",

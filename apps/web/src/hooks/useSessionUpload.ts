@@ -154,15 +154,19 @@ async function mergeAudioBlobs(blobs: Blob[]): Promise<Blob> {
     sampleOff += buf.length;
   }
 
-  // Pad with silence to the full upload-batch duration so downstream
-  // consumers (AudioContext scheduling) see no gap at batch boundaries.
-  const targetSamples = Math.round((UPLOAD_BATCH_MS / 1000) * sampleRate);
-  if (merged.length < targetSamples) {
-    const padded = new AudioBuffer({ numberOfChannels: numCh, length: targetSamples, sampleRate });
-    for (let c = 0; c < numCh; c++) padded.copyToChannel(merged.getChannelData(c), c, 0);
-    return audioBufferToWavBlob(padded);
-  }
-
+  // Previously padded every merged batch with silence up to UPLOAD_BATCH_MS
+  // (60s) "so downstream consumers see no gap at batch boundaries" — but
+  // replay (reply.tsx) doesn't assume fixed 60s slots; it schedules each
+  // batch at the precise elapsed-time position tracked independently in the
+  // manifest (chunk.audio.durationMs, from local IndexedDB timing — see
+  // end-class.tsx's buildManifest). Padding the actual audio file to a flat
+  // 60000ms while the manifest kept reporting the true, variable duration
+  // (e.g. 57583ms for a shorter last batch) created a mismatch between what
+  // replay schedules and what the file actually contains at every single
+  // batch boundary — silence gaps when the manifest's slot was longer than
+  // 60s, overlapping audio when it was shorter. Uploading the true,
+  // unpadded duration keeps the file honest with what the manifest already
+  // (correctly) says about it.
   return audioBufferToWavBlob(merged);
 }
 
