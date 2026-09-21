@@ -21,6 +21,7 @@ import {
   deleteReplayDownloadCache,
   freeDiskSpace,
   isStorageFullError,
+  deleteBluethubClassroomDb,
 } from "@/utils/db";
 import type { AudioBatch, IActions, IBatch } from "@/utils/constant";
 import type { MediaType } from "@/utils/constant";
@@ -279,14 +280,22 @@ const StudentReplay = () => {
   const clearAllAndRetry = async () => {
     setIsClearing(true);
     try {
-      // Free Cache API space first (works even when IDB can't open due to full disk)
-      await freeDiskSpace();
-      // Then try to clean IDB data for this session
-      await Promise.allSettled([
-        deleteAudioBySession(sessionId),
-        deleteClassBySession(sessionId),
-        deleteReplayDownloadCache(sessionId),
-      ]);
+      // A missing-object-store error means the local database's schema
+      // itself is incomplete (created by an old/inconsistent app version) —
+      // no amount of clearing individual stores' contents can add a store
+      // that isn't there. Only a full delete+recreate fixes this.
+      if (error && error.toLowerCase().includes('object store')) {
+        await deleteBluethubClassroomDb();
+      } else {
+        // Free Cache API space first (works even when IDB can't open due to full disk)
+        await freeDiskSpace();
+        // Then try to clean IDB data for this session
+        await Promise.allSettled([
+          deleteAudioBySession(sessionId),
+          deleteClassBySession(sessionId),
+          deleteReplayDownloadCache(sessionId),
+        ]);
+      }
     } finally {
       setIsClearing(false);
       setError(null);
@@ -463,8 +472,21 @@ const StudentReplay = () => {
           const batch = await boardSessionService.getBatchByIndexKey(sessionId, batchRef.indexKey);
           if (!batch) {
             // Batch missing from server — skip without marking as done so it
-            // retries on the next visit.
+            // retries on the next visit. This used to fail silently, making
+            // "audio plays but no board updates show" indistinguishable from
+            // a rendering bug — it's actually the server having no data for
+            // this batch (e.g. from an interrupted upload).
+            console.warn(
+              `[StudentReplay] Stroke batch "${batchRef.indexKey}" (index ${batchRef.batchIndex}, ` +
+              `expected ${batchRef.strokeCount} strokes) returned no data from the server — skipping.`
+            );
             continue;
+          }
+          if (batch.strokes.length === 0 && batchRef.strokeCount > 0) {
+            console.warn(
+              `[StudentReplay] Stroke batch "${batchRef.indexKey}" (index ${batchRef.batchIndex}) ` +
+              `downloaded successfully but is empty — manifest expected ${batchRef.strokeCount} strokes.`
+            );
           }
 
           const batchStartMs = Math.max(0, batchRef.startMs ?? batch.startMs ?? 0);

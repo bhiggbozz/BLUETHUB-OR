@@ -56,6 +56,16 @@ const Class = ({ BottomBar = ClassBottom }: ClassProps = {}) => {
     const sessionIdRef = useSelector((state: RootState) => state.action.sessionIdRef);
     const timerElapsedSeconds = useSelector((state: RootState) => state.action.timerElapsedSeconds);
 
+    // Before recording starts, sessionIdRef is "" — strokes drawn while
+    // drafting still need a stable, unique key so switching boards can find
+    // them again. A shared null/"" bucket would leak one lesson's pre-recording
+    // strokes into a different lesson also drafted before recording (both would
+    // match the same sentinel), so this is generated fresh per page visit.
+    const draftSessionIdKeyRef = useRef<string | null>(null);
+    if (draftSessionIdKeyRef.current === null) {
+        draftSessionIdKeyRef.current = `draft-${crypto.randomUUID()}`;
+    }
+
     const [actions, setAction] = useState<string | null>(ACTIONS.SELECT);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [currentStroke, setCurrentStroke] = useState<number[]>([]);
@@ -304,17 +314,18 @@ const Class = ({ BottomBar = ClassBottom }: ClassProps = {}) => {
             clearBoardState();
 
             try {
-                // Use loadedSessionId (from draft continue) or sessionIdRef (from Redux)
-                const effectiveSessionId = loadedSessionId || sessionIdRef;
+                // Use loadedSessionId (from draft continue), sessionIdRef (once
+                // recording has started), or this mount's draft key (pre-recording) —
+                // always a real, unique value, so switching boards before recording
+                // starts can still find strokes drawn on a board just visited.
+                // Non-null: draftSessionIdKeyRef.current is assigned synchronously
+                // during render, before any effect can run.
+                const effectiveSessionId = loadedSessionId || sessionIdRef || draftSessionIdKeyRef.current!;
 
                 // Only load strokes for this specific session — never load by board alone
                 // (board-only fallback would show strokes from other lessons on the same board number)
-                let boardStrokes: CompressedStroke[];
-                if (effectiveSessionId) {
-                    boardStrokes = await getClassBySessionAndBoard(effectiveSessionId, currentBoard);
-                } else {
-                    boardStrokes = [];
-                }
+                const boardStrokes: CompressedStroke[] =
+                    await getClassBySessionAndBoard(effectiveSessionId, currentBoard);
                 const nextStrokes: Stroke[] = [];
                 const nextRectangles: rectangle[] = [];
                 const nextCircles: circle[] = [];
@@ -427,7 +438,7 @@ const Class = ({ BottomBar = ClassBottom }: ClassProps = {}) => {
 
         const compressedShape = {
             id: shape.id,
-            sessionId: sessionIdRef,
+            sessionId: sessionIdRef || draftSessionIdKeyRef.current,
             data: base64Data,
             color: shape.stroke || shape.fillColor || "#df4b26",
             width: shape.strokeWidth || 2,
@@ -485,7 +496,7 @@ const penDownEvent = useCallback(async (
     const duration = Math.max(50, wallDuration || timerDuration);
     const startTime = strokeTimesRef.current.start;
     const endTime = strokeTimesRef.current.end;
-    const strokeId = sessionIdRef || null;
+    const strokeId = sessionIdRef || draftSessionIdKeyRef.current;
 
     const smoothed = updatedStroke;
 

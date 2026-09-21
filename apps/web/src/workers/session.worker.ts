@@ -21,6 +21,7 @@ import {
   type CompressedStroke, type AudioBatch, type IBatch, type IActiveMedia,
   type LocalSession, type LocalAudioChunk, type LocalStrokeBatch,
 } from '@/utils/constant';
+import { upgradeBluethubClassroomDb } from '@/utils/db-schema';
 
 // ── Batch Configuration ───────────────────────────────────────────────────────
 // LOCAL_BATCH_MS: Granularity for local replay seeking (10s = fine-grained seek)
@@ -118,50 +119,15 @@ void 0; // uploadAudioBatchIndex reserved
 async function getDb(): Promise<IDBPDatabase> {
   if (_db) return _db;
   _db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(database, _oldVersion) {
-      //console.log('[Worker DB] Running upgrade handler...');
-
-      // Legacy stores
-      if (!database.objectStoreNames.contains(STORE_CLASS)) {
-        //console.log('[Worker DB] Creating store:', STORE_CLASS);
-        database.createObjectStore(STORE_CLASS, { keyPath: 'id' });
-      }
-      if (!database.objectStoreNames.contains(STORE_AUDIO)) {
-        //console.log('[Worker DB] Creating store:', STORE_AUDIO);
-        database.createObjectStore(STORE_AUDIO, { keyPath: 'id' });
-      }
-
-      // Sessions store - ALWAYS check and create if missing
-      if (!database.objectStoreNames.contains(STORE_SESSIONS)) {
-        //console.log('[Worker DB] Creating store:', STORE_SESSIONS);
-        const sessionsStore = database.createObjectStore(STORE_SESSIONS, { keyPath: 'id' });
-        sessionsStore.createIndex('lessonId', 'lessonId', { unique: false });
-        sessionsStore.createIndex('status', 'status', { unique: false });
-      }
-
-      // Audio chunks store - ALWAYS check and create if missing
-      if (!database.objectStoreNames.contains(STORE_AUDIO_CHUNKS)) {
-        //console.log('[Worker DB] Creating store:', STORE_AUDIO_CHUNKS);
-        const audioStore = database.createObjectStore(STORE_AUDIO_CHUNKS, { keyPath: 'id' });
-        audioStore.createIndex('sessionId', 'sessionId', { unique: false });
-        audioStore.createIndex('lessonId', 'lessonId', { unique: false });
-        audioStore.createIndex('syncStatus', 'syncStatus', { unique: false });
-        audioStore.createIndex('sessionId_chunkIndex', ['sessionId', 'chunkIndex'], { unique: true });
-      }
-
-      // Stroke batches store - ALWAYS check and create if missing
-      if (!database.objectStoreNames.contains(STORE_STROKE_BATCHES)) {
-        //console.log('[Worker DB] Creating store:', STORE_STROKE_BATCHES);
-        const strokesStore = database.createObjectStore(STORE_STROKE_BATCHES, { keyPath: 'id' });
-        strokesStore.createIndex('sessionId', 'sessionId', { unique: false });
-        strokesStore.createIndex('lessonId', 'lessonId', { unique: false });
-        strokesStore.createIndex('syncStatus', 'syncStatus', { unique: false });
-        strokesStore.createIndex('sessionId_batchIndex', ['sessionId', 'batchIndex'], { unique: true });
-      }
-
-      //console.log('[Worker DB] Upgrade complete. Stores:', Array.from(database.objectStoreNames));
-    },
+    upgrade: upgradeBluethubClassroomDb,
   });
+  // Self-close on a version-change request from elsewhere (e.g. the main
+  // thread's deleteBluethubClassroomDb() recovering from a schema-drift
+  // error) so this connection never blocks that delete indefinitely, and
+  // invalidate the cached singleton so the next getDb() call here reopens
+  // a fresh connection instead of reusing a dead one.
+  _db.onclose = () => { _db = null; };
+  _db.onversionchange = () => { _db?.close(); _db = null; };
   return _db;
 }
 
