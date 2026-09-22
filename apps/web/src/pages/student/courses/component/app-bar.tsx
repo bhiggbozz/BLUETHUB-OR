@@ -11,7 +11,7 @@ function MyCourseAppBar({title}: {title: string}) {
     <div className="bg-[#4F61E8] px-5 py-3 flex items-center justify-between">
       {/* Left */}
       <div className="flex items-center gap-3">
-        <button className="text-white" onClick={() => {}}>
+        <button className="text-white lg:hidden" onClick={() => {}}>
           <Menu size={22}  onClick={openMobileNav}/>
         </button>
         <button className="text-white lg:hidden" onClick={() => navigate(-1)}>
