@@ -19,6 +19,7 @@ import {
   LayoutList,
   Layers,
   Loader2,
+  Lock,
   Menu,
   Search,
   Star,
@@ -102,6 +103,9 @@ const ViewQuestions = () => {
   const PAGE_SIZE = 30;
   const [searchText, setSearchText] = useState("");
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionSummaryDto | null>(null);
+  // Admin-only question filter — ignored server-side for non-admins, so this
+  // control is never rendered for teachers (see isAdmin below).
+  const [adminOnly, setAdminOnly] = useState(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const searchRef = useRef<HTMLInputElement>(null);
@@ -236,6 +240,7 @@ const ViewQuestions = () => {
         topicId: topicIds.length === 1 ? topicIds[0] : undefined,
         subTopicIds: subtopicIds.length > 0 ? subtopicIds : undefined,
         searchText: searchText.trim() || undefined,
+        adminOnly: isAdmin && adminOnly ? true : undefined,
       })
       .then((res) => {
         const body = res.data as any;
@@ -245,7 +250,7 @@ const ViewQuestions = () => {
       })
       .catch(() => toast.error("Failed to load questions"))
       .finally(() => setQuestionsLoading(false));
-  }, [selectedClassId, selectedSubjectId, selectedTopicIds, selectedSubtopicIds, page, searchText]);
+  }, [selectedClassId, selectedSubjectId, selectedTopicIds, selectedSubtopicIds, page, searchText, isAdmin, adminOnly]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
@@ -269,7 +274,7 @@ const ViewQuestions = () => {
             <h2 className="font-semibold text-sm text-white leading-none">Question Bank</h2>
           </div>
           <button
-            onClick={() => navigate("/teacher/assessment")}
+            onClick={() => (isAdmin ? navigate(-1) : navigate("/teacher/assessment"))}
             className="text-white/80 hover:text-white text-sm font-medium transition-colors"
           >
           <ArrowLeft />
@@ -433,6 +438,20 @@ const ViewQuestions = () => {
                   )}
                 </div>
 
+                {isAdmin && (
+                  <button
+                    onClick={() => { setAdminOnly((v) => !v); setPage(1); }}
+                    className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-md border transition-all ${
+                      adminOnly
+                        ? "border-indigo-400 bg-indigo-50 text-indigo-600"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-indigo-300"
+                    }`}
+                  >
+                    <Lock size={13} />
+                    Admin-only questions
+                  </button>
+                )}
+
                 {(selectedTopicIds.size > 0 || selectedSubtopicIds.size > 0 || searchText) && (
                   <button
                     onClick={clearFilters}
@@ -511,9 +530,17 @@ const ViewQuestions = () => {
                                     </div>
                                   )}
                                   <div className="min-w-0">
-                                    <p className="text-sm font-medium text-slate-800 leading-snug line-clamp-1">
-                                      {q.title || "Untitled question"}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-sm font-medium text-slate-800 leading-snug line-clamp-1">
+                                        {q.title || "Untitled question"}
+                                      </p>
+                                      {q.isAdminOnly && (
+                                        <span className="flex items-center gap-1 shrink-0 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                                          <Lock size={9} />
+                                          Admin Only
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-[11px] text-slate-400 mt-0.5 truncate">
                                       {q.topicName || q.topic || "No topic"}
                                       {q.questionTypeName ? ` · ${q.questionTypeName}` : ""}
@@ -619,23 +646,35 @@ const ViewQuestions = () => {
                 <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600">
                   {selectedQuestion.creationDate}
                 </span>
+                {selectedQuestion.isAdminOnly && (
+                  <span className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-indigo-600 font-semibold flex items-center gap-1.5">
+                    <Lock size={11} />
+                    Admin Only
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setSelectedQuestion(null)} className="h-10 rounded-md px-4">
                   Close
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setSelectedQuestion(null);
-                    navigate(`/teacher/assessment/questionlist?subjectId=${selectedSubjectId}&topicId=${selectedQuestion.id}`);
-                  }}
-                  className="h-10 rounded-md bg-chestnut hover:bg-chestnut/90 text-white px-2 text-sm font-medium flex items-center gap-1.5"
-                >
-                  <Eye size={10} />
-                  View in List
-                </Button>
+                {/* Destination page (TopicQuestionList) is teacher-route-only
+                    with no admin-aware data fetching — out of scope for the
+                    admin-only question feature, so this is hidden for admins
+                    rather than linking to a page they can't use. */}
+                {!isAdmin && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setSelectedQuestion(null);
+                      navigate(`/teacher/assessment/questionlist?subjectId=${selectedSubjectId}&topicId=${selectedQuestion.id}`);
+                    }}
+                    className="h-10 rounded-md bg-chestnut hover:bg-chestnut/90 text-white px-2 text-sm font-medium flex items-center gap-1.5"
+                  >
+                    <Eye size={10} />
+                    View in List
+                  </Button>
+                )}
               </div>
             </div>
           )}

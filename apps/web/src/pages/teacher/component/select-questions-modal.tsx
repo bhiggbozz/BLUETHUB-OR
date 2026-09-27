@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ImageIcon,
   Loader2,
+  Lock,
   Search,
 } from "lucide-react";
 import { questionService, type QuestionSummaryDto } from "@/services/question";
@@ -205,6 +206,12 @@ const SelectQuestionsModal = ({
                         <Badge variant="outline" className="text-[11px] px-2 py-0.5 font-normal">
                           {TYPE_LABELS[q.questionType] ?? "Unknown"}
                         </Badge>
+                        {q.isAdminOnly && (
+                          <Badge className="text-[11px] px-2 py-0.5 font-normal gap-1 bg-indigo-50 text-indigo-600 border border-indigo-200">
+                            <Lock size={9} />
+                            Admin Only
+                          </Badge>
+                        )}
                         {q.difficultyLevel > 0 && (
                           <span
                             className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${

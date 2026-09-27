@@ -5,6 +5,7 @@ import { getParsedToken } from "@/utils/decode";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import {
+  OFFLINE_FEATURES_ENABLED,
   isNetworkFailure,
   isWithinOfflineGrace,
   markOnlineContact,
@@ -125,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // as we're still within the 3-day offline grace window. A real
       // rejection from the backend (bad/expired token) still throws through
       // to the caller, which logs out as before.
-      if (isNetworkFailure(error) && isWithinOfflineGrace()) {
+      if (OFFLINE_FEATURES_ENABLED && isNetworkFailure(error) && isWithinOfflineGrace()) {
         const cached = getCachedUser<IUser>();
         if (cached) {
           setUser(cached);

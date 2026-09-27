@@ -33,13 +33,13 @@ export const TACADEMIC_GROUPS = [
         icons: classIconIcon,
         name: "My Classroom",
         children: [
-          { name: "Students", path: "/teacher/module" },
+          { name: "Overview", path: "/teacher/module" },
           { name: "Quiz", path: "/teacher/module/quiz" },
           { name: "Topic", path: "/teacher/module/quiz?view=topic", roles: ["ClassTeacher", "HeadTeacher"] },
           { name: "Per Student", path: "/teacher/module/quiz?view=student", roles: ["ClassTeacher", "HeadTeacher"] },
           { name: "Classroom Assessment", path: "/teacher/module/assessment" },
           { name: "Subject", path: "/teacher/module/subject" },
-          { name: "Attendance Record", path: "/teacher/module/attendance" },
+          { name: "Attendance Records", path: "/teacher/module/attendance" },
         ],
       },
       {
@@ -49,7 +49,7 @@ export const TACADEMIC_GROUPS = [
       },
       {
         icons: AttendanceIcon,
-        name: "Attendance",
+        name: "Take Attendance",
         path: "/teacher/attendance",
       },
     ],
@@ -92,9 +92,9 @@ export const TACADEMIC_GROUPS = [
           { name: "Question Bank", path: "/teacher/question-bank", disabled: true },
           { name: "Browse Question Bank", path: "/teacher/assessment/view-questions" },
           { name: "Extract Question", path: "/teacher/assessment/upload-scan" },
-          { name: "Set Question", path: "/teacher/assessment/createQuiz" },
+          { name: "Create Question", path: "/teacher/assessment/createQuiz" },
           { name: "My Uploads", path: "/teacher/assessments/My-Uploads" },
-          { name: "View Existing Questions", path: "/teacher/assessment/questionlist" },
+          { name: "Browse by Topic", path: "/teacher/assessment/questionlist" },
         ],
       },
       {
@@ -110,7 +110,7 @@ export const TACADEMIC_GROUPS = [
         icons: AssignmentIcon,
         name: "Assessment",
         children: [
-          { name: "Assessment", path: "/teacher/assessment/config" },
+          { name: "Create Assessment", path: "/teacher/assessment/config" },
           { name: "Manage Assessments", path: "/teacher/assessment/manage" },
           { name: "Assign to Students", path: "/teacher/assessment/assign-student" },
           { name: "Assessment Grading", path: "/teacher/assessment/pending-grading" },

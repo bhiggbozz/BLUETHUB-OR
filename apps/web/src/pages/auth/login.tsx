@@ -13,6 +13,7 @@ import { loginSchema, TEACHER_ROLE_IDS, UserRole } from "@/utils/validate";
 import { API } from "@/services";
 import { getTenantFromUrl } from "@/utils/subdomain";
 import { offlineLogin, offlineRegister } from "@/utils/offline-learner";
+import { OFFLINE_FEATURES_ENABLED } from "@/utils/offline-session";
 
 
 export interface UserLoginInput {
@@ -151,7 +152,7 @@ function Login() {
       } else if (result.roleId === UserRole.Parent) {
         navigate("/parent");
       } else {
-        offlineRegister({ username: payload.username, hashPassword: hashedPassword })
+        if (OFFLINE_FEATURES_ENABLED) offlineRegister({ username: payload.username, hashPassword: hashedPassword });
         navigate("/student");
       }
     } catch (error) {
@@ -170,7 +171,7 @@ function Login() {
       //console.log("[error message]", friendlyMsg)
 
 
-      if (msg === 'Network Error') {
+      if (OFFLINE_FEATURES_ENABLED && msg === 'Network Error') {
         const result = await offlineLogin({
           username: payload.username,
           hashPassword: payload.hashPassword,
@@ -179,7 +180,6 @@ function Login() {
         if (result.success) {
           navigate('/offline/student');
         }
-        // surface this however you handle errors elsewhere — toast, form error, etc.
         setErrorMsg(result.error ?? 'Offline login failed');
       }
 

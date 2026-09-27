@@ -353,9 +353,12 @@ const PreviewModal = ({
 );
 
 // ── Main component ─────────────────────────────────────────────────────────
+const ADMIN_ROLES = ["SuperAdministrator", "Administrator"];
+
 const MyUploads = () => {
   const navigate= useNavigate()
   const { user, isLoading: authLoading } = useAuthContext();
+  const isAdmin = ADMIN_ROLES.includes(user?.roleName ?? "");
   const [jobs, setJobs] = useState<JobSummaryDto[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [summary, setSummary] = useState({ total: 0, pending: 0, processing: 0, completed: 0, failed: 0 });
@@ -365,6 +368,10 @@ const MyUploads = () => {
   const [isSavingEditedQuestions, setIsSavingEditedQuestions] = useState(false);
   const [previewScanSessionId, setPreviewScanSessionId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Applied to every question confirmed from this upload session — they all
+  // came from one scan the admin chose to mark, so this is a batch-level
+  // toggle rather than a per-question one.
+  const [isAdminOnly, setIsAdminOnly] = useState(false);
   const [editableQuestions, setEditableQuestions] = useState<EditableQuestion[]>([]);
   const [previewJob, setPreviewJob] = useState<JobSummaryDto | null>(null);
   const [classroomId, setClassroomId] = useState("");
@@ -823,6 +830,7 @@ const MyUploads = () => {
           aiConfidenceScore: null,
           imageUrl: typeof firstImageUrl === "string" ? firstImageUrl : null,
           imagePublicId: null,
+          isAdminOnly: isAdmin && isAdminOnly,
         };
       });
 
@@ -1103,6 +1111,17 @@ const MyUploads = () => {
                         {editableQuestions.length} question{editableQuestions.length !== 1 ? "s" : ""}
                       </p>
                       <div className="flex items-center gap-2">
+                        {isAdmin && (
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs font-medium text-slate-600">
+                            <input
+                              type="checkbox"
+                              checked={isAdminOnly}
+                              onChange={(e) => setIsAdminOnly(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded accent-indigo-600"
+                            />
+                            Mark all as admin-only
+                          </label>
+                        )}
                         {!isEditMode && (
                         <Button
                           type="button"

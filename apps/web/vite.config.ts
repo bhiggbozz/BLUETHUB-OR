@@ -23,10 +23,14 @@ export default defineConfig({
   ] as PluginOption[],
 
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@bluethub/ui-kit": path.resolve(__dirname, "../../packages/ui/src"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      { find: "@bluethub/ui-kit", replacement: path.resolve(__dirname, "../../packages/ui/src") },
+      // Modern pdf.js calls URL.parse / Promise.withResolvers unguarded, which
+      // breaks PDFs on older tablet browsers; legacy build polyfills them.
+      // Exact match only — must stay in lockstep with the worker in pdf-scroll-viewer.
+      { find: /^pdfjs-dist$/, replacement: "pdfjs-dist/legacy/build/pdf.mjs" },
+    ],
   },
 
   optimizeDeps: {

@@ -18,6 +18,7 @@ import {
   ImagePlus,
   Library,
   Loader2,
+  Lock,
   PenTool,
   Plus,
   Star,
@@ -73,6 +74,7 @@ interface QuestionDraft {
   boardData?: BoardQuestionResult | null;
   existingQuestionId?: string;
   existingData?: QuestionSummaryDto;
+  isAdminOnly?: boolean;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -112,6 +114,7 @@ const createDraft = (): QuestionDraft => ({
   isSubmitting: false,
   isPublished: false,
   boardData: null,
+  isAdminOnly: false,
 });
 
 // ── SelectDropdown ─────────────────────────────────────────────────────────
@@ -316,12 +319,14 @@ const QuestionCard = ({
   canDelete,
   onDelete,
   onUpdate,
+  isAdmin,
 }: {
   draft: QuestionDraft;
   index: number;
   canDelete: boolean;
   onDelete: () => void;
   onUpdate: (updates: Partial<QuestionDraft>) => void;
+  isAdmin: boolean;
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const showOptions = draft.questionType === "Multiple Choice" || draft.questionType === "Single Choice";
@@ -537,6 +542,31 @@ const QuestionCard = ({
             value={draft.difficultyLevel}
             onChange={(level) => onUpdate({ difficultyLevel: level })}
           />
+
+          {/* Admin-only tier — visible only to Administrator/SuperAdministrator.
+              Teachers never see this control; the server also enforces the
+              same rule independently, so this is purely UI gating. */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => onUpdate({ isAdminOnly: !draft.isAdminOnly })}
+              className={`flex items-center gap-2 self-start rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                draft.isAdminOnly
+                  ? "border-indigo-400 bg-indigo-50 text-indigo-600"
+                  : "border-black/10 bg-white text-slate-500 hover:border-indigo-300"
+              }`}
+            >
+              <span
+                className={`flex h-4 w-4 items-center justify-center rounded border-2 ${
+                  draft.isAdminOnly ? "border-indigo-500 bg-indigo-500" : "border-slate-300 bg-white"
+                }`}
+              >
+                {draft.isAdminOnly && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+              </span>
+              <Lock className="h-3.5 w-3.5" />
+              Mark as admin-only
+            </button>
+          )}
 
           {/* Options (optional for all types) */}
           {showOptions && (
@@ -1201,6 +1231,7 @@ const CreateQuizQuestion = () => {
             extractedQuestionIndex: null,
             aiConfidenceScore: null,
             classroomId: selectedClassId,
+            isAdminOnly: draft.isAdminOnly ?? false,
           };
         }
 
@@ -1231,6 +1262,7 @@ const CreateQuizQuestion = () => {
           classroomId: selectedClassId,
           imageUrl: imageUrls[draft.id] ?? null,
           imagePublicId: null,
+          isAdminOnly: draft.isAdminOnly ?? false,
         };
       });
 
@@ -1502,6 +1534,7 @@ const CreateQuizQuestion = () => {
                   canDelete={drafts.length > 1}
                   onDelete={() => deleteDraft(draft.id)}
                   onUpdate={(updates) => updateDraft(draft.id, updates)}
+                  isAdmin={isAdmin}
                 />
               )
             )}

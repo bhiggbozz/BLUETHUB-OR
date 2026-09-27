@@ -43,6 +43,7 @@ import ParentLayout from '@/layouts/parent';
 import ParentProtectedRoute from '@/component/protected-routes/parent-routes';
 import ParentDashboard from '@/pages/parent/dashboard';
 import ParentAttendance from '@/pages/parent/attendance';
+import ParentQuickAssessment from '@/pages/parent/quick-assessment';
 import StudentIndex from '@/pages/student/component/main';
 import StudyGroupsIndex from '@/pages/student/study-groups';
 import StudyGroupDetailPage from '@/pages/student/study-groups/group-detail';
@@ -384,11 +385,84 @@ const router = createBrowserRouter([
                         path: 'student',
                         element: <AssessmentByStudent />,
                     },
+                    {
+                        // Reuses the teacher-side question browse component —
+                        // it already branches on isAdmin (loads all classrooms,
+                        // shows the admin-only filter/badge) rather than being
+                        // a separate admin-specific copy.
+                        path: 'question-bank',
+                        element: <ViewQuestions />,
+                    },
+                    {
+                        // Same reuse pattern — CreateQuizQuestion already has
+                        // isAdmin-aware branching (Admin Context panel) and
+                        // the "Mark as admin-only" toggle only renders for admins.
+                        path: 'create-question',
+                        element: <CreateQuizQuestion />,
+                    },
+                    {
+                        // UploadScan's "Mark as admin-only" checkbox is also
+                        // isAdmin-gated.
+                        path: 'upload-scan',
+                        element: <UploadScan />,
+                    },
+                    {
+                        // MyUploads' "Mark all as admin-only" batch toggle is
+                        // also isAdmin-gated.
+                        path: 'my-uploads',
+                        element: <MyUploads />,
+                    },
+                    {
+                        // GenerateQuiz only ever uses navigate(-1) for back
+                        // navigation — safe to reuse with no fixes needed.
+                        path: 'generate-quiz',
+                        element: <GenerateQuiz />,
+                    },
+                    {
+                        // AssessmentSettings already had isAdmin-aware data
+                        // loading built in; its one cross-link to assign-student
+                        // is now role-aware too.
+                        path: 'config',
+                        element: <AssessmentSettings />,
+                    },
+                    {
+                        path: 'assign-student',
+                        element: <AssignAssessmentToStudent />,
+                    },
+                    {
+                        // ManageAssessments' cross-links to config/assign-student
+                        // are now role-aware via its new basePath.
+                        path: 'manage',
+                        element: <ManageAssessments />,
+                    },
+                    {
+                        // Only ever uses navigate(-1) — safe to reuse as-is.
+                        path: 'pending-grading',
+                        element: <PendingGrading />,
+                    },
+                    {
+                        // Only ever uses navigate(-1) — safe to reuse as-is.
+                        path: 'exam-focus',
+                        element: <ExamFocus />,
+                    },
                 ],
             },
             {
                 path: 'quiz',
                 children: [
+                    {
+                        // Mirrors the teacher /quiz index route. QuizIndex now
+                        // fetches its subject list school-wide via
+                        // schoolService.getAllSubject() when isAdmin, instead
+                        // of the teacher-only roleData.classrooms it otherwise
+                        // derives from.
+                        index: true,
+                        element: <QuizIndex />,
+                    },
+                    {
+                        path: ':quizCode',
+                        element: <QuizDetailView />,
+                    },
                     {
                         path: 'class',
                         element: <QuizByClass />,
@@ -480,6 +554,7 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <ParentDashboard /> },
             { path: "attendance", element: <ParentAttendance /> },
+            { path: "assessment", element: <ParentQuickAssessment /> },
         ],
     },
 

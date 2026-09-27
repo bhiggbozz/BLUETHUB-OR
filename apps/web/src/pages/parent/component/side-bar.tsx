@@ -1,7 +1,7 @@
 import { useAuthContext } from "@/contexts/auth-context";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
-import { CalendarCheck2, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { CalendarCheck2, ClipboardList, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import bluethub from "@/assets/png/bluethub.png";
 import { localData } from "@/utils";
 import type { schoolInfo } from "@/services";
@@ -16,6 +16,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { name: "Dashboard", path: "/parent", icon: LayoutDashboard, end: true },
   { name: "Attendance", path: "/parent/attendance", icon: CalendarCheck2 },
+  { name: "Quick Assessment", path: "/parent/assessment", icon: ClipboardList },
 ];
 
 function ParentNavContent({ onNavigate, onLogout }: { onNavigate?: () => void; onLogout: () => void }) {

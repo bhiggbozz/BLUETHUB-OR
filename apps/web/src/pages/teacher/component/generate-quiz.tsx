@@ -14,6 +14,7 @@ import {
   CheckSquare,
   ClipboardCopy,
   Loader2,
+  Lock,
   Settings2,
   Square,
   ChevronDown,
@@ -1029,9 +1030,17 @@ const GenerateQuiz = () => {
                           <p className="text-xs text-slate-400 font-medium">
                             #{idx + 1}
                           </p>
-                          <p className="text-sm font-semibold text-slate-700 leading-5 mt-0.5 line-clamp-2">
-                            {question.title || "Untitled question"}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-semibold text-slate-700 leading-5 mt-0.5 line-clamp-2">
+                              {question.title || "Untitled question"}
+                            </p>
+                            {question.isAdminOnly && (
+                              <span className="flex items-center gap-1 shrink-0 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                                <Lock size={9} />
+                                Admin Only
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400 mt-1 truncate">
                             {question.topicName || question.topic || "No topic"}
                           </p>
