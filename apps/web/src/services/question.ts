@@ -74,6 +74,10 @@ export interface CreateQuestionPayload {
   classroomId: string;
   imageUrl?: string | null;
   imagePublicId?: string | null;
+  // Admin-only question tier — server forces this back to false for any
+  // non-admin caller regardless of what's sent, so it's safe to omit for
+  // teacher-side create flows.
+  isAdminOnly?: boolean;
 }
 
 // POST /api/questions/batch's response — flat, not wrapped in TResponse<T>'s
@@ -221,6 +225,7 @@ export interface QuestionDto {
   canEdit: boolean;
   canDelete: boolean;
   canPublish: boolean;
+  isAdminOnly?: boolean;
 }
 
 export interface QuestionSummaryDto {
@@ -245,6 +250,7 @@ export interface QuestionSummaryDto {
   creationDate: string;
   imageUrl?: string | null;
   boardSnapshotUrl?: string | null;
+  isAdminOnly?: boolean;
 }
 
 export interface QuestionDetailResponseData {
@@ -381,6 +387,9 @@ export const questionService = {
       searchText?: string;
       includePendingReview?: boolean;
       scanSessionId?: string;
+      // Ignored server-side for non-admins. Omitted/false: admins get the
+      // combined shared + their-own-admin-only view. true: admin-only stash only.
+      adminOnly?: boolean;
     },
   ) =>
     API.post<TResponse<QuestionListResponseData>>(
@@ -401,6 +410,7 @@ export const questionService = {
       subTopicIds?: string[];
       status?: number;
       searchText?: string;
+      adminOnly?: boolean;
     },
   ) =>
     API.get<TResponse<QuestionListResponseData>>(
@@ -414,7 +424,7 @@ export const questionService = {
   getQuestionsByClassroomSubject: (
     classroomId: string,
     subjectId: string,
-    params?: { page?: number; pageSize?: number; questionType?: number; difficultyLevel?: number; searchText?: string },
+    params?: { page?: number; pageSize?: number; questionType?: number; difficultyLevel?: number; searchText?: string; adminOnly?: boolean },
   ) =>
     API.get<QuestionListResponse>(
       `api/questions/classroom/${classroomId}/subject/${subjectId}`,
@@ -425,7 +435,7 @@ export const questionService = {
     classroomId: string,
     subjectId: string,
     subTopicId: string,
-    params?: { page?: number; pageSize?: number; questionType?: number; difficultyLevel?: number; searchText?: string },
+    params?: { page?: number; pageSize?: number; questionType?: number; difficultyLevel?: number; searchText?: string; adminOnly?: boolean },
   ) =>
     API.get<QuestionListResponse>(
       `api/questions/classroom/${classroomId}/subject/${subjectId}/subtopic/${subTopicId}`,
@@ -435,7 +445,7 @@ export const questionService = {
   getQuestionsBySubjectSubTopic: (
     subjectId: string,
     subTopicId: string,
-    params?: { page?: number; pageSize?: number; questionType?: number; difficultyLevel?: number; searchText?: string },
+    params?: { page?: number; pageSize?: number; questionType?: number; difficultyLevel?: number; searchText?: string; adminOnly?: boolean },
   ) =>
     API.get<QuestionListResponse>(
       `api/questions/subject/${subjectId}/subtopic/${subTopicId}`,

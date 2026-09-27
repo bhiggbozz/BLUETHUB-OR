@@ -11,11 +11,17 @@ import {
 } from "lucide-react";
 import { Button } from "@bluethub/ui-kit";
 import { quizService, type StudentQuizDisplayDto, type SubjectQuizItemDto } from "@/services/quiz";
+import { useAuthContext } from "@/contexts/auth-context";
+
+const ADMIN_ROLES = ["SuperAdministrator", "Administrator"];
 
 const QuizDetail = () => {
   const { quizCode } = useParams<{ quizCode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthContext();
+  const isAdmin = ADMIN_ROLES.includes(user?.roleName ?? "");
+  const quizListPath = isAdmin ? "/admin/quiz" : "/teacher/quiz";
 
   const navState = location.state as { quiz?: SubjectQuizItemDto } | null;
 
@@ -66,7 +72,7 @@ const QuizDetail = () => {
           </div>
         )}
         <p className="text-slate-500">Quiz not found.</p>
-        <Button variant="outline" onClick={() => navigate("/teacher/quiz")} className="mt-4">
+        <Button variant="outline" onClick={() => navigate(quizListPath)} className="mt-4">
           Back to Quizzes
         </Button>
       </div>
@@ -87,7 +93,7 @@ const QuizDetail = () => {
     <div className="md:p-4 font-poppins">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate("/teacher/quiz")}
+          onClick={() => navigate(quizListPath)}
           className="flex mt-5 md:mt-0 items-center gap-1.5 text-sm text-chestnut font-semibold mb-4 hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />

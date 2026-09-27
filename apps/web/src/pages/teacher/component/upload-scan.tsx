@@ -67,10 +67,13 @@ const Sel = ({
 };
 
 // ── Main component ─────────────────────────────────────────────────────────
+const ADMIN_ROLES = ["SuperAdministrator", "Administrator"];
+
 const UploadScan = () => {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const { user, isLoading: authLoading, refreshUser } = useAuthContext();
+  const isAdmin = ADMIN_ROLES.includes(user?.roleName ?? "");
 
   // Cascade state
   const [classroomId, setClassroomId] = useState("");
@@ -90,6 +93,7 @@ const UploadScan = () => {
   const [questionType, setQuestionType] = useState<JobQuestionType>("Objective");
   const [hasImages, setHasImages] = useState(false);
   const [marksAllocation, setMarksAllocation] = useState(1);
+  const [isAdminOnly, setIsAdminOnly] = useState(false);
 
   // Image
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -314,6 +318,9 @@ const UploadScan = () => {
     form.append("QuestionType", questionType);
     form.append("HasImages", String(hasImages));
     form.append("MarksAllocation", String(marksAllocation));
+    // Server forces this back to false for any non-admin caller regardless
+    // of what's sent, so it's safe to only ever send it when isAdmin is true.
+    if (isAdmin && isAdminOnly) form.append("IsAdminOnly", "true");
 
     setSubmitting(true);
     try {
@@ -351,7 +358,7 @@ const UploadScan = () => {
                 Upload Another
               </button>
               <button
-                onClick={() => navigate("/teacher/assessments/My-Uploads")}
+                onClick={() => navigate(isAdmin ? "/admin/assessment/my-uploads" : "/teacher/assessments/My-Uploads")}
                 className="px-5 py-2.5 rounded-lg bg-chestnut text-white text-sm font-semibold hover:bg-chestnut/90 transition-colors"
               >
                 Check Processing Status →
@@ -523,6 +530,21 @@ const UploadScan = () => {
                   Question contains images / diagrams
                 </span>
               </label>
+
+              {/* Admin-only tier — visible only to Administrator/SuperAdministrator */}
+              {isAdmin && (
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isAdminOnly}
+                    onChange={e => setIsAdminOnly(e.target.checked)}
+                    className="w-4 h-4 rounded accent-indigo-600"
+                  />
+                  <span className="text-sm font-medium text-slate-600">
+                    Mark as admin-only
+                  </span>
+                </label>
+              )}
 
               {/* Submit */}
               <button

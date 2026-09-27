@@ -116,6 +116,54 @@ const isAnchorPlausible = (anchor: number, firstBatchTimestamp: number | undefin
   return impliedOffset >= 0 && impliedOffset <= MAX_PLAUSIBLE_SESSION_MS;
 };
 
+// Gaps below this are inaudible / within AudioBufferSourceNode's own
+// scheduling precision — not worth the buffer copy or a log line.
+const AUDIO_PAD_MIN_GAP_SEC = 0.02; // 20ms
+
+// Never pad a batch whose decoded audio is less than half its planned
+// slot — that's the signature of genuine corruption (e.g. disk-full/
+// upload-failure batches elsewhere in this app's history), not normal
+// codec startup latency, and must not be inflated into fake silence.
+const AUDIO_PAD_MIN_DURATION_RATIO = 0.5;
+
+type DecodedAudioBatch = { buffer: AudioBuffer; plannedStartMs: number; batchId: number };
+
+// Pads each decoded batch's buffer with trailing silence up to its planned
+// slot length, eliminating audible gaps at batch transitions. MediaRecorder/
+// Opus encoder startup latency routinely makes a batch's real decoded audio
+// 100-900ms shorter than its manifest-assigned ~10s slot — with nothing to
+// fill that gap, playback goes silent for that stretch at every such batch
+// boundary. Mutates `buffer` on each item in place. Shared by both the
+// synced (hasStrokes) and audio-only scheduling branches in play().
+function padDecodedAudioBatches(
+  audioCtx: AudioContext,
+  decoded: (DecodedAudioBatch | null)[],
+  logLabel: string,
+): void {
+  for (let i = 0; i < decoded.length; i++) {
+    const item = decoded[i];
+    if (!item) continue;
+    const next = decoded.slice(i + 1).find(Boolean);
+    const plannedEndMs = next
+      ? next.plannedStartMs
+      : item.plannedStartMs + Math.round(item.buffer.duration * 1000) + 2000;
+    const plannedSec = Math.max(0, plannedEndMs - item.plannedStartMs) / 1000;
+    const gapSec = plannedSec - item.buffer.duration;
+    if (gapSec > AUDIO_PAD_MIN_GAP_SEC && item.buffer.duration >= plannedSec * AUDIO_PAD_MIN_DURATION_RATIO) {
+      const targetLen = Math.ceil(plannedSec * item.buffer.sampleRate);
+      const padded = audioCtx.createBuffer(item.buffer.numberOfChannels, targetLen, item.buffer.sampleRate);
+      for (let c = 0; c < item.buffer.numberOfChannels; c++) {
+        padded.copyToChannel(item.buffer.getChannelData(c), c, 0);
+      }
+      item.buffer = padded;
+      console.log(
+        `[Replay] ${logLabel} batch ${item.batchId}: padded ${Math.round(gapSec * 1000)}ms silence ` +
+        `(decoded ${Math.round((plannedSec - gapSec) * 1000)}ms → ${Math.round(plannedSec * 1000)}ms slot)`
+      );
+    }
+  }
+}
+
 const resolveVideoPlaybackState = (media: IActiveMedia, sessionMs: number): 'play' | 'pause' => {
   if (media.type.toLowerCase() !== 'video' || !media.playbackEvents || media.playbackEvents.length === 0) {
     return 'pause';
@@ -590,8 +638,8 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
     const update = () => {
       const r = el.getBoundingClientRect();
       setDimensions({
-        width: Math.max(r.width - 14, 400),
-        height: Math.max(r.height - 14, 400),
+        width: Math.max(r.width - 14, 200),
+        height: Math.max(r.height - 14, 200),
       });
     };
     update();
@@ -1390,7 +1438,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
             `manifest duration ${batchDurationMs}ms, decoded duration ${decodedMs}ms` +
             (Math.abs(durationMismatchMs) > 100 ? ` ⚠️ mismatch ${durationMismatchMs}ms` : '')
           );
-          return { buffer, plannedStartMs };
+          return { buffer, plannedStartMs, batchId: batch.batchId };
         } catch (e) {
           console.warn(`[Replay] batch ${batch.batchId}: decodeAudioData failed — blob type=${batch.blob.type}, size=${batch.blob.size}`, e);
           decodeFailureCountRef.current++;
@@ -1416,31 +1464,9 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
       }
 
       // Pad each decoded buffer to its planned duration to eliminate audible
-      // silence gaps at batch transitions. If the WAV is more than 500ms
-      // shorter than the scheduled time window, append silence so the next
-      // batch starts exactly on schedule.
-      // Guard: only pad when the buffer is at least 50% of the planned duration
-      // (avoids inflating pre-WAV-fix batches that are genuinely short).
-      for (let _pi = 0; _pi < decoded.length; _pi++) {
-        const _item = decoded[_pi];
-        if (!_item) continue;
-        const _next = decoded.slice(_pi + 1).find(Boolean);
-        const _plannedEndMs = _next
-          ? _next.plannedStartMs
-          : _item.plannedStartMs + Math.round(_item.buffer.duration * 1000) + 2000;
-        const _plannedSec = Math.max(0, _plannedEndMs - _item.plannedStartMs) / 1000;
-        const _gapSec = _plannedSec - _item.buffer.duration;
-        if (_gapSec > 0.5 && _item.buffer.duration >= _plannedSec * 0.5) {
-          const _targetLen = Math.ceil(_plannedSec * _item.buffer.sampleRate);
-          const _padded = audioCtx.createBuffer(
-            _item.buffer.numberOfChannels, _targetLen, _item.buffer.sampleRate
-          );
-          for (let _c = 0; _c < _item.buffer.numberOfChannels; _c++) {
-            _padded.copyToChannel(_item.buffer.getChannelData(_c), _c, 0);
-          }
-          _item.buffer = _padded;
-        }
-      }
+      // silence gaps at batch transitions caused by MediaRecorder/Opus
+      // encoder startup latency (see padDecodedAudioBatches).
+      padDecodedAudioBatches(audioCtx, decoded, 'sync');
 
       // Build audio-period map so the interval can light up the silence indicator.
       audioPeriodsRef.current = decoded
@@ -1537,7 +1563,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
           const plannedStartMs = anchorWallMsAO !== null
             ? Math.max(0, (batch.timestamp - batchDurationMs) - anchorWallMsAO)
             : 0;
-          return { buffer, plannedStartMs };
+          return { buffer, plannedStartMs, batchId: batch.batchId };
         } catch (e) {
           console.warn('[Replay] failed to decode batch (ao)', batch.batchId, e);
           return null;
@@ -1549,6 +1575,11 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
         audioCtxRef.current = null;
         return;
       }
+
+      // See the matching comment in the hasAudio && hasStrokes branch above —
+      // pads short-decoded batches with trailing silence so audio-only replay
+      // doesn't go silent at every batch boundary.
+      padDecodedAudioBatches(audioCtxAO, decodedAO, 'ao');
 
       const scheduleBaseAO = audioCtxAO.currentTime + 0.1;
       audioCtxOffsetRef.current = scheduleBaseAO - startFromSessionMs / 1000;
@@ -1823,7 +1854,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
   );
 
   return (
-    <div className="h-screen flex flex-col bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
+    <div className="h-screen supports-[height:100dvh]:h-dvh flex flex-col bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
 
       {/* ── Header ── */}
       <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
@@ -1833,48 +1864,56 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
             <button
               onClick={isPaused ? resume : play}
               disabled={isPlaying || isPreloading}
-              className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+              title={isPreloading ? 'Preparing...' : isPaused ? 'Resume' : 'Play'}
+              aria-label={isPreloading ? 'Preparing...' : isPaused ? 'Resume' : 'Play'}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 isPlaying || isPreloading
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : 'bg-student-chestnut hover:bg-[#4052D6] text-white shadow-sm active:scale-95'
               }`}
             >
               {isPreloading
-                ? <><Loader className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /><span className="text-xs sm:text-sm hidden xs:inline">Preparing...</span><span className="text-xs xs:hidden">...</span></>
-                : <><PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" /><span className="text-xs sm:text-sm">{isPaused ? 'Resume' : 'Play'}</span></>
+                ? <><Loader className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /><span className="hidden sm:inline text-sm">Preparing...</span></>
+                : <><PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" /><span className="hidden sm:inline text-sm">{isPaused ? 'Resume' : 'Play'}</span></>
               }
             </button>
 
             <button
               onClick={pause}
               disabled={!isPlaying}
-              className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+              title="Pause"
+              aria-label="Pause"
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 !isPlaying
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm active:scale-95'
               }`}
             >
               <PauseCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-xs sm:text-sm">Pause</span>
+              <span className="hidden sm:inline text-sm">Pause</span>
             </button>
 
             <button
               onClick={stop}
               disabled={!isPlaying && !isPaused}
-              className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+              title="Stop"
+              aria-label="Stop"
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 !isPlaying && !isPaused
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm active:scale-95'
               }`}
             >
               <StopCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-xs sm:text-sm">Stop</span>
+              <span className="hidden sm:inline text-sm">Stop</span>
             </button>
 
             <button
               disabled={isPlaying || isClearing || isPreloading}
               onClick={Cleardata}
-              className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+              title="Remove from device"
+              aria-label="Remove from device"
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 isPlaying || isClearing || isPreloading
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm active:scale-95'
@@ -1885,15 +1924,15 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-student-chestnut/10 border border-student-chestnut/20 rounded-full">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-student-chestnut/10 border border-student-chestnut/20 rounded-full">
             <Edit3 className="w-3 h-3 sm:w-4 sm:h-4 text-student-chestnut" />
             <div className="text-xs sm:text-sm font-semibold text-student-chestnut">
-              Board {Math.min(currentBoardInReplay, totalBoards)}/{totalBoards}
+              <span className="hidden sm:inline">Board </span>{Math.min(currentBoardInReplay, totalBoards)}/{totalBoards}
             </div>
           </div>
 
           {isPlaying && (
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors duration-300 ${
+            <div className={`flex items-center gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-colors duration-300 ${
               isSilentGap
                 ? 'bg-amber-50 border-amber-300'
                 : 'bg-blue-50 border-blue-200'
@@ -1903,7 +1942,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
               ) : (
                 <Circle className="w-2 h-2 fill-blue-500 text-blue-500 animate-pulse" />
               )}
-              <div className={`text-sm font-medium ${isSilentGap ? 'text-amber-700' : 'text-blue-700'}`}>
+              <div className={`hidden sm:block text-sm font-medium ${isSilentGap ? 'text-amber-700' : 'text-blue-700'}`}>
                 {isSilentGap
                   ? decodeFailureCountRef.current > 0
                     ? 'Audio unavailable (load error)'
@@ -1921,9 +1960,9 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
             </div>
           )}
 
-          <div className="flex items-center gap-2 px-4 py-1.5 sm:px-5 sm:py-2 bg-slate-100 border border-slate-200 rounded-full">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />
-            <div className="font-mono text-lg sm:text-2xl font-bold text-slate-800 tabular-nums">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-5 sm:py-2 bg-slate-100 border border-slate-200 rounded-full">
+            <Clock className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-slate-600" />
+            <div className="font-mono text-sm sm:text-2xl font-bold text-slate-800 tabular-nums">
               {formatReplayMs(replayMs)}
             </div>
           </div>
@@ -2039,7 +2078,7 @@ export default function Replay({ sessionId, onFinished, lessonId }: ReplayProps 
 
           {activeFrame && (
             <div className={`pointer-events-none absolute inset-0 flex justify-center p-2 sm:p-4 ${activeFrame.type.toLowerCase().includes('pdf') ? 'items-start' : 'items-center'}`}>
-              <div className={`pointer-events-auto relative overflow-hidden border border-slate-200 bg-white shadow-2xl rounded-xl ${getReplayFrameClassByType(activeFrame.type)}`}>
+              <div className={`pointer-events-auto relative overflow-hidden border border-slate-200 bg-white shadow-2xl rounded-xl max-h-full max-w-full ${getReplayFrameClassByType(activeFrame.type)}`}>
                 <div className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-1 text-xs text-white">
                   Frame 1
                 </div>

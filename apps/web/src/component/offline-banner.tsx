@@ -1,11 +1,12 @@
 import { WifiOff } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { OFFLINE_FEATURES_ENABLED } from "@/utils/offline-session";
 
 // Shown only while the device has no network at all (see useOnlineStatus —
 // a slow/flaky connection still reads as "online" and renders nothing here).
 const OfflineBanner = () => {
   const isOnline = useOnlineStatus();
-  if (isOnline) return null;
+  if (!OFFLINE_FEATURES_ENABLED || isOnline) return null;
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border-b border-amber-200 text-amber-700 text-xs font-medium">

@@ -1,3 +1,7 @@
+// Set to true to re-enable the offline feature set (banner, grace window,
+// offline login/register, offline student route).
+export const OFFLINE_FEATURES_ENABLED = false;
+
 // Tracks whether the app has had confirmed contact with the backend recently,
 // so a student can keep using already-cached lessons for a bounded window
 // after going offline instead of being logged out the moment a network call
