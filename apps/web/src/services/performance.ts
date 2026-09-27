@@ -1,6 +1,24 @@
 import { getTenantFromUrl } from "@/utils/subdomain";
 import { API, type TResponse } from ".";
-import type { MyCourseCurriculumDto } from "@/pages/student/courses/component/subject-list";
+
+export interface MyCourseCurriculumDto {
+  subjectId: string;
+  subjectName: string;
+  category: string;
+  classCategory: string;
+  classroomId: string;
+  topics: {
+    id: string;
+    name: string;
+    subjectId: string;
+    subTopics: {
+      id: string;
+      name: string;
+      topicId: string;
+      isActive: boolean;
+    }[];
+  }[];
+}
 
 const headers = { "X-Tenant-ID": getTenantFromUrl() };
 
