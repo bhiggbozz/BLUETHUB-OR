@@ -7,6 +7,7 @@ export * from "./components/ui/popover";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 export const PopoverClose = PopoverPrimitive.Close;
 export * from "./components/ui/color-picker";
+export * from "./components/ui/progress";
 
 export { Slider } from "./components/ui/slider"
 export * from "./components/ui/switch"

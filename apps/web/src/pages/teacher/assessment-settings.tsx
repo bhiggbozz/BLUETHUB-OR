@@ -1140,7 +1140,11 @@ const AssessmentConfigPage = () => {
                 </Button>
                   <Button
                     type="button"
-                    onClick={() => navigate(`/teacher/assessment/assign-student?code=${createdCode ?? ""}`)}
+                    onClick={() => navigate(
+                      isAdmin
+                        ? `/admin/assessment/assign-student?code=${createdCode ?? ""}`
+                        : `/teacher/assessment/assign-student?code=${createdCode ?? ""}`
+                    )}
                     className="w-full h-10 rounded-xl border border-chestnut text-chestnut bg-white hover:bg-chestnut/5 font-semibold text-sm flex items-center justify-center gap-2"
                   >
                   <UserPlus className="w-4 h-4" />

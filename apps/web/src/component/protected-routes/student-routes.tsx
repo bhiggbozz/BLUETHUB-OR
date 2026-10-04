@@ -1,12 +1,13 @@
 import { useAuthContext } from "@/contexts/auth-context";
 import { getOfflineUser, isOfflineAuthenticated } from "@/utils/offline-learner";
+import { OFFLINE_FEATURES_ENABLED } from "@/utils/offline-session";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
 const StudentProtectedRoute = ({ children }: { children: ReactNode }) => {
     const { isLoading, user, isAuthenticated, OfflineUser } = useAuthContext();
-    const offlineUser = getOfflineUser();
-    const isOffline = isOfflineAuthenticated();
+    const offlineUser = OFFLINE_FEATURES_ENABLED ? getOfflineUser() : null;
+    const isOffline = OFFLINE_FEATURES_ENABLED && isOfflineAuthenticated();
 
     const authed = isAuthenticated || isOffline;
     const effectiveUser = user ?? offlineUser;

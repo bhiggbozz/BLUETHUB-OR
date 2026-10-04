@@ -16,15 +16,20 @@ import Card from "./card";
 import { isTeacherRoleData, useAuthContext } from "@/contexts/auth-context";
 import { quizService, type SubjectQuizItemDto } from "@/services/quiz";
 import studentService, { type StudentPublishedLesson } from "@/services/student";
+import { schoolService } from "@/services/school";
 
 interface SubtopicInfo {
   name: string;
   topicName: string;
 }
 
+const ADMIN_ROLES = ["SuperAdministrator", "Administrator"];
+
 const QuizIndex = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const isAdmin = ADMIN_ROLES.includes(user?.roleName ?? "");
+  const basePath = isAdmin ? "/admin" : "/teacher";
   const { openMobileNav } = useOutletContext<{ openMobileNav: () => void }>();
 
   const [quizzes, setQuizzes] = useState<SubjectQuizItemDto[]>([]);
@@ -36,7 +41,7 @@ const QuizIndex = () => {
   const teacherRoleData =
     user?.roleData && isTeacherRoleData(user.roleData) ? user.roleData : null;
 
-  const allSubjects = useMemo(() => {
+  const teacherSubjects = useMemo(() => {
     const seen = new Set<string>();
     const list: { subjectId: string; subjectName: string }[] = [];
     for (const cls of teacherRoleData?.classrooms ?? []) {
@@ -49,6 +54,23 @@ const QuizIndex = () => {
     }
     return list;
   }, [teacherRoleData]);
+
+  // Admins have no classroom/subject assignments of their own (teacherRoleData
+  // is null for them), so their subject list comes from the whole school
+  // instead — same reason view-questions.tsx/create-quiz.tsx branch on isAdmin.
+  const [adminSubjects, setAdminSubjects] = useState<{ subjectId: string; subjectName: string }[]>([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    schoolService
+      .getAllSubject()
+      .then((res) => {
+        const raw: { id: string; name: string }[] = (res.data as any)?.data?.subjects ?? [];
+        setAdminSubjects(raw.map((s) => ({ subjectId: s.id, subjectName: s.name })));
+      })
+      .catch(() => {/* leave empty — subject dropdown just shows nothing to pick */});
+  }, [isAdmin]);
+
+  const allSubjects = isAdmin ? adminSubjects : teacherSubjects;
 
   // Load quizzes + lessons when subject changes
   useEffect(() => {
@@ -170,7 +192,7 @@ const QuizIndex = () => {
                 </p>
               </div>
               <Button
-                onClick={() => navigate("/teacher/assessment/generate-quiz")}
+                onClick={() => navigate(`${basePath}/assessment/generate-quiz`)}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-white text-xs font-semibold bg-chestnut shrink-0 transition-opacity hover:opacity-90"
               >
                 <PlusIcon />
@@ -287,7 +309,7 @@ const QuizIndex = () => {
                     key={q.quizCode}
                     quiz={q}
                     subtopic={quizSubtopicMap[q.quizCode]}
-                    onViewDetails={(code, quizData) => navigate(`/teacher/quiz/${code}`, { state: { quiz: quizData } })}
+                    onViewDetails={(code, quizData) => navigate(`${basePath}/quiz/${code}`, { state: { quiz: quizData } })}
                   />
                 ))}
               </div>

@@ -30,6 +30,7 @@ import logoutIcon from "@/assets/svg/logout.svg";
 import AttendanceIcon from "@/assets/svg/attendance.svg";
 import assignmentIcon from "@/assets/svg/assignment.svg";
 import AssessmentIcon from "@/assets/svg/assessment.svg";
+import QuestionBankIcon from "@/assets/svg/question-bank.svg";
 import ModuletIcon from "@/assets/svg/module.svg";
 import PeopleIcon from "@/assets/svg/people.svg";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -78,7 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
                 children: [
                     { name: "Student", path: "/admin/registration/student" },
                     { name: "Unlock User", path: "/admin/registration/student/unlock-user" },
-                    { name: "User", path: "/admin/registration/Teacher" },
+                    { name: "Teacher", path: "/admin/registration/Teacher" },
                     { name: "Subject", path: "/admin/registration/courses" },
                     { name: "Class", path: "/admin/registration/class" },
                 ],
@@ -110,21 +111,38 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Performance",
         items: [
             {
-                name: "Assessment",
-                icons: AssessmentIcon,
+                name: "Question Bank",
+                icons: QuestionBankIcon,
                 children: [
-                    { name: "By Class", path: "/admin/assessment/class" },
-                    { name: "By Subject", path: "/admin/assessment/subject" },
-                    { name: "By Student", path: "/admin/assessment/student" },
+                    { name: "Browse Question Bank", path: "/admin/assessment/question-bank" },
+                    { name: "Create Question", path: "/admin/assessment/create-question" },
+                    { name: "Extract Question", path: "/admin/assessment/upload-scan" },
+                    { name: "My Uploads", path: "/admin/assessment/my-uploads" },
                 ],
             },
             {
                 name: "Quiz",
                 icons: assignmentIcon,
                 children: [
+                    { name: "Create Quiz", path: "/admin/assessment/generate-quiz" },
+                    { name: "My Quizzes", path: "/admin/quiz" },
                     { name: "By Class", path: "/admin/quiz/class" },
                     { name: "By Subject", path: "/admin/quiz/subject" },
                     { name: "By Student", path: "/admin/quiz/student" },
+                ],
+            },
+            {
+                name: "Assessment",
+                icons: AssessmentIcon,
+                children: [
+                    { name: "Create Assessment", path: "/admin/assessment/config" },
+                    { name: "Manage Assessments", path: "/admin/assessment/manage" },
+                    { name: "Assign to Students", path: "/admin/assessment/assign-student" },
+                    { name: "Assessment Grading", path: "/admin/assessment/pending-grading" },
+                    { name: "Exam Focus", path: "/admin/assessment/exam-focus" },
+                    { name: "By Class", path: "/admin/assessment/class" },
+                    { name: "By Subject", path: "/admin/assessment/subject" },
+                    { name: "By Student", path: "/admin/assessment/student" },
                 ],
             },
         ],

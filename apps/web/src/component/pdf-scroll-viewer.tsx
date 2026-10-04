@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface PdfScrollViewerProps {
@@ -38,6 +38,7 @@ export default function PdfScrollViewer({
   const [containerHeight, setContainerHeight] = useState(0);
   const [pageAspectRatio, setPageAspectRatio] = useState<number | null>(null); // width / height
   const [useIframeFallback, setUseIframeFallback] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const isReplay = mode === 'replay';
   const pageNumbers = Array.from({ length: renderedPages }, (_, i) => i + 1);
@@ -134,6 +135,7 @@ export default function PdfScrollViewer({
     setRenderedPages(0);
     setPageAspectRatio(null);
     setUseIframeFallback(preferIframe);
+    setLoadError(null);
     lastPageRef.current = 1;
   }, [fileUrl, preferIframe]);
 
@@ -166,7 +168,14 @@ export default function PdfScrollViewer({
     return (
       <div className={`h-full w-full bg-white ${className ?? ''}`}>
         <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-          <p className="text-xs text-slate-500">Using PDF fallback viewer</p>
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">Using PDF fallback viewer</p>
+            {loadError && (
+              <p className="break-all text-[10px] leading-tight text-slate-400">
+                {loadError} · {navigator.userAgent}
+              </p>
+            )}
+          </div>
           <a
             href={fileUrl}
             target="_blank"
@@ -222,6 +231,12 @@ export default function PdfScrollViewer({
         }}
         onLoadError={(err) => {
           console.error('PDF.js load error:', err);
+          setLoadError(`${err.name}: ${err.message}`);
+          setUseIframeFallback(true);
+        }}
+        onSourceError={(err) => {
+          console.error('PDF.js source error:', err);
+          setLoadError(`${err.name}: ${err.message}`);
           setUseIframeFallback(true);
         }}
       >

@@ -225,7 +225,7 @@ span {
 }
 
 #stage-container {
-  background-image: url('../assets/School.png');
+  background-image: url('../src/assets/png/School.png');
   background-size: cover;
 }
 
