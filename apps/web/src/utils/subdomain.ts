@@ -23,8 +23,8 @@ export function getTenantFromUrl(): string {
   const isNetlify = hostname.endsWith('.netlify.app');
 
   if (isLocal || isNetlify) {
-    // add VITE_TENANT_ID to evn file no need to change the code for each tenant, just add the tenant id to the env file and it will be used as fallback if no subdomain is found
-    const tenant = (import.meta.env.VITE_TENANT_ID as string) || 'westfield';
+    const tenant = (import.meta.env.VITE_TENANT_ID as string) || 'green';
+    // console.log('[getTenantFromUrl] dev/staging → using env fallback:', tenant);
     return tenant;
   }
 
@@ -34,7 +34,8 @@ export function getTenantFromUrl(): string {
     const subdomain = parts[0];
     return subdomain;
   }
-   // add VITE_TENANT_ID to evn file no need to change the code for each tenant, just add the tenant id to the env file and it will be used as fallback if no subdomain is found
-  const fallback = (import.meta.env.VITE_TENANT_ID as string) || 'westfield';
+
+  const fallback = (import.meta.env.VITE_TENANT_ID as string) || 'green';
+  // console.log('[getTenantFromUrl] fallback → no subdomain found, using:', fallback);
   return fallback;
 }
