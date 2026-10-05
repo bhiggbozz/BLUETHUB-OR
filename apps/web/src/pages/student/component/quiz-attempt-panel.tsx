@@ -24,6 +24,7 @@ import {
   type StudentQuizQuestionDto,
 } from "@/services/quiz";
 import toast from "react-hot-toast";
+import { AxiosError } from "axios";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Quiz Timer Hook
@@ -144,8 +145,13 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
         if (!data.attemptStatus.canStart) {
           setPhase("blocked");
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to load quiz preview.";
+      } catch (error) {
+        const msg =
+          error instanceof AxiosError
+            ? error.response?.data?.responseMessage ??
+            error.response?.data?.message ??
+            error.message
+            : (error as Error).message;
         setError(msg);
         toast.error(msg);
       }
@@ -420,8 +426,8 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
               {status.maxAttemptsReached
                 ? "Maximum attempts reached. You cannot retake this quiz."
                 : status.hasInProgressAttempt
-                ? "You have an in-progress attempt. Resume to continue."
-                : "You are not allowed to start this quiz right now."}
+                  ? "You have an in-progress attempt. Resume to continue."
+                  : "You are not allowed to start this quiz right now."}
             </div>
 
             {status.hasInProgressAttempt && !status.maxAttemptsReached && (
@@ -672,18 +678,16 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
                             ? handleTextChange(question.questionId, option.optionText)
                             : handleSelectOption(question.questionId, option.optionId)
                         }
-                        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                          selected
-                            ? "border-[#4255db] bg-[#eef2ff] font-semibold text-[#4255db]"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
-                        }`}
+                        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${selected
+                          ? "border-[#4255db] bg-[#eef2ff] font-semibold text-[#4255db]"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                          }`}
                       >
                         <span
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
-                            selected
-                              ? "border-[#4255db] bg-[#4255db] text-white"
-                              : "border-slate-300 bg-white text-slate-500"
-                          }`}
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${selected
+                            ? "border-[#4255db] bg-[#4255db] text-white"
+                            : "border-slate-300 bg-white text-slate-500"
+                            }`}
                         >
                           {option.optionLabel}
                         </span>
