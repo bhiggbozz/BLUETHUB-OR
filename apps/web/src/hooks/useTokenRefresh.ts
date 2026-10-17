@@ -18,6 +18,12 @@ const isIdle = (): boolean => {
 };
 
 const logOutAndRedirect = () => {
+  // A restricted first-time-login token's refresh is expected to be
+  // rejected by the backend while the user is still on the forced
+  // password-change page (see services/auth.ts) — don't wipe storage and
+  // bounce them out from under an in-progress form over that.
+  if (window.location.pathname === '/auth/new-password') return;
+
   localStorage.clear();
   if (window.location.pathname !== '/auth') {
     window.location.href = '/auth';

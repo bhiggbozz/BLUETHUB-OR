@@ -101,16 +101,33 @@ function Login() {
       // First-time login → force password change
       if (result.firstTimeLogin) {
 
-        // ✅ Store tokens before navigating
         localStorage.setItem("username", data.userName);
         localStorage.setItem("roleId", result.roleId.toString());
-        localStorage.setItem("token", result.token);
-        localStorage.setItem("refreshToken", result.refreshToken);
-        localStorage.setItem("accessTokenExpiresAt", String(Date.now() + result.tokenExpiresIn * 1000));
         localData.save("schoolInfo", result.schoolInfo);
 
-        // Set auth header for subsequent requests
-        API.defaults.headers.common.Authorization = `Bearer ${result.token}`;
+        // The backend intentionally returns no real session yet for a
+        // first-time login (token/refreshToken: null, tokenExpiresIn: 0) —
+        // update-password/newUser is designed to be called with no auth
+        // header at all. Storing JS `null` via localStorage.setItem
+        // previously coerced it to the literal string "null", which reads
+        // as truthy everywhere (token.getToken(), useTokenRefresh's
+        // !refreshToken guard). That let the background token-refresh
+        // interval (already running since app boot) fire within ~60s,
+        // get a real 401 "Invalid refresh token" from the backend, and
+        // force-logout the user while they were still on the new-password
+        // page. Clear any stale real tokens instead of writing garbage ones.
+        if (result.token) {
+          localStorage.setItem("token", result.token);
+          localStorage.setItem("refreshToken", result.refreshToken);
+          localStorage.setItem("accessTokenExpiresAt", String(Date.now() + result.tokenExpiresIn * 1000));
+          API.defaults.headers.common.Authorization = `Bearer ${result.token}`;
+        } else {
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("accessTokenExpiresAt");
+          delete API.defaults.headers.common.Authorization;
+        }
+
         navigate("/auth/new-password");
         return;
       }
