@@ -1,0 +1,370 @@
+/*
+ * Parent portal design tokens + surfaces.
+ * Everything is scoped to `.parent-ui` so the rest of the app is untouched.
+ * Rules here are intentionally unlayered: the global stylesheet forces Poppins
+ * on bare elements with unlayered selectors, so scoped selectors must out-rank them.
+ */
+
+.parent-ui {
+  /* ── Ink & neutrals ─────────────────────────────── */
+  --pp-ink: #0b0d1f;
+  --pp-ink-2: #14172e;
+  --pp-ink-line: rgba(255, 255, 255, 0.08);
+  --pp-text: #10122b;
+  --pp-muted: #5b6078;
+  --pp-subtle: #6e738c;
+  --pp-faint: #a3a7bb;
+  --pp-canvas: #f4f5fa;
+  --pp-surface: #ffffff;
+  --pp-sunken: #f7f8fc;
+  --pp-line: #e5e7f0;
+  --pp-line-strong: #d4d7e4;
+
+  /* ── Brand & accents ────────────────────────────── */
+  --pp-brand: #292382;
+  --pp-iris: #4b44e0;
+  --pp-iris-soft: #eeedfd;
+  --pp-glow: #7c83ff;
+  --pp-cyan: #1fb6d9;
+
+  /* ── Signals ────────────────────────────────────── */
+  --pp-present: #0c8f63;
+  --pp-present-soft: #e7f6f0;
+  --pp-absent: #d61f4b;
+  --pp-absent-soft: #fdecf0;
+  --pp-warn: #b45309;
+  --pp-warn-soft: #fef4e6;
+
+  /* ── Radii & elevation ──────────────────────────── */
+  --pp-radius: 20px;
+  --pp-radius-sm: 12px;
+  --pp-shadow-sm: 0 1px 2px rgba(16, 18, 43, 0.04);
+  --pp-shadow: 0 1px 2px rgba(16, 18, 43, 0.04), 0 10px 30px -14px rgba(16, 18, 43, 0.14);
+  --pp-shadow-lg: 0 2px 4px rgba(16, 18, 43, 0.05), 0 24px 60px -20px rgba(16, 18, 43, 0.28);
+
+  /* ── Solid fill for primary buttons, active pills and chips ── */
+  --pp-solid: var(--pp-ink);
+  --pp-solid-hover: var(--pp-ink-2);
+  --pp-solid-fg: #ffffff;
+
+  /* ── Texture ─────────────────────────────────────── */
+  --pp-dot: rgba(16, 18, 43, 0.07);
+  --pp-skeleton: #eceef5;
+  --pp-shimmer: rgba(255, 255, 255, 0.7);
+  --pp-thumb-shadow: 0 1px 2px rgba(16, 18, 43, 0.08), 0 2px 8px -2px rgba(16, 18, 43, 0.08);
+  --pp-spotlight-edge: transparent;
+
+  color-scheme: light;
+
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  color: var(--pp-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Dark theme. The same hues, re-balanced for a dark canvas: neutrals invert,
+ * brand and signal colours are lifted so they keep their contrast.
+ * The attribute sits on <html> so portalled dialogs and menus pick it up too.
+ */
+:root[data-pp-theme="dark"] .parent-ui {
+  --pp-ink: #070816;
+  --pp-ink-2: #11132a;
+  --pp-ink-line: rgba(255, 255, 255, 0.07);
+  --pp-text: #eceefb;
+  --pp-muted: #a7abc6;
+  --pp-subtle: #8c91ae;
+  --pp-faint: #5d6282;
+  --pp-canvas: #0a0b1a;
+  --pp-surface: #121429;
+  --pp-sunken: #0e1022;
+  --pp-line: #232645;
+  --pp-line-strong: #33375e;
+
+  --pp-iris: #8a85ff;
+  --pp-iris-soft: #1e1f4a;
+  --pp-glow: #8f95ff;
+  --pp-cyan: #3cc8e8;
+
+  --pp-present: #34c28f;
+  --pp-present-soft: #0f2e27;
+  --pp-absent: #f45d80;
+  --pp-absent-soft: #36152a;
+  --pp-warn: #f2a53f;
+  --pp-warn-soft: #33250f;
+
+  --pp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --pp-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  --pp-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 28px 70px -20px rgba(0, 0, 0, 0.85);
+
+  --pp-solid: #5b55ec;
+  --pp-solid-hover: #6a64f2;
+  --pp-solid-fg: #ffffff;
+
+  --pp-dot: rgba(255, 255, 255, 0.045);
+  --pp-skeleton: #1b1e3a;
+  --pp-shimmer: rgba(255, 255, 255, 0.06);
+  --pp-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --pp-spotlight-edge: rgba(143, 149, 255, 0.16);
+
+  color-scheme: dark;
+}
+
+/* Out-rank the global `p, span, h1… { font-family: Poppins }` rule. */
+.parent-ui :is(p, span, a, h1, h2, h3, h4, h5, h6, label, button, input, select, textarea, li, div, td, th, kbd, small, strong) {
+  font-family: inherit;
+}
+
+.parent-ui .pp-display,
+.parent-ui.pp-display {
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+.parent-ui .pp-num {
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.parent-ui .pp-mono {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+/* Base layer: above the element defaults Tailwind ships, below every utility class.
+   (The components layer is declared first in this app's bundle, so it sits under base.) */
+@layer base {
+.parent-ui .pp-eyebrow {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-subtle);
+}
+
+/* ── Canvas: soft aurora at the top + faint dot grid that fades out ───── */
+.parent-ui .pp-canvas {
+  background-color: var(--pp-canvas);
+  background-image:
+    radial-gradient(60rem 22rem at 85% -6rem, rgba(124, 131, 255, 0.16), transparent 70%),
+    radial-gradient(40rem 18rem at 10% -8rem, rgba(31, 182, 217, 0.08), transparent 70%);
+}
+
+.parent-ui .pp-grid-fade {
+  background-image: radial-gradient(var(--pp-dot) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black, transparent 22rem);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 22rem);
+}
+
+/* ── Surfaces ─────────────────────────────────────── */
+.parent-ui .pp-surface {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius);
+  box-shadow: var(--pp-shadow);
+}
+
+.parent-ui .pp-surface-flat {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius);
+  box-shadow: var(--pp-shadow-sm);
+}
+
+/* The dark "spotlight" surface used once per page for the most important thing. */
+.parent-ui .pp-spotlight {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #fff;
+  border-radius: var(--pp-radius);
+  background:
+    radial-gradient(28rem 16rem at 100% 0%, rgba(124, 131, 255, 0.45), transparent 60%),
+    radial-gradient(22rem 14rem at 0% 120%, rgba(31, 182, 217, 0.22), transparent 60%),
+    linear-gradient(160deg, #1a1d3d 0%, var(--pp-ink) 70%);
+  box-shadow: var(--pp-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px var(--pp-spotlight-edge);
+}
+
+.parent-ui .pp-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(120deg, transparent 30%, black);
+  -webkit-mask-image: linear-gradient(120deg, transparent 30%, black);
+}
+
+/* ── Navigation rail ─────────────────────────────── */
+.parent-ui .pp-rail {
+  background:
+    radial-gradient(18rem 14rem at 0% 0%, rgba(124, 131, 255, 0.22), transparent 70%),
+    radial-gradient(16rem 12rem at 100% 100%, rgba(31, 182, 217, 0.1), transparent 70%),
+    var(--pp-ink);
+  color: #e8e9f3;
+}
+
+/* ── Focus: one consistent, visible ring ─────────── */
+.parent-ui :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--pp-iris);
+  outline-offset: 2px;
+}
+
+.parent-ui .pp-rail :is(button, a):focus-visible,
+.parent-ui .pp-spotlight :is(button, a):focus-visible {
+  outline-color: var(--pp-glow);
+}
+
+/* ── Inputs ─────────────────────────────────────── */
+.parent-ui .pp-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--pp-radius-sm);
+  border: 1px solid var(--pp-line);
+  background: var(--pp-surface);
+  color: var(--pp-text);
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.parent-ui .pp-input:hover {
+  border-color: var(--pp-line-strong);
+}
+
+.parent-ui .pp-input:focus,
+.parent-ui .pp-input:focus-visible {
+  outline: none;
+  border-color: var(--pp-iris);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pp-iris) 18%, transparent);
+}
+
+.parent-ui .pp-input[aria-invalid="true"] {
+  border-color: var(--pp-absent);
+  box-shadow: 0 0 0 4px rgba(214, 31, 75, 0.1);
+}
+
+.parent-ui .pp-input:disabled {
+  background: var(--pp-sunken);
+  color: var(--pp-faint);
+  cursor: not-allowed;
+}
+
+/* ── Range slider: global styles strip the native track, so draw our own ── */
+.parent-ui .pp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+}
+.parent-ui .pp-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--pp-iris) var(--pp-fill, 50%), var(--pp-line) var(--pp-fill, 50%));
+}
+.parent-ui .pp-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--pp-line);
+}
+.parent-ui .pp-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--pp-iris);
+}
+.parent-ui .pp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--pp-surface);
+  border: 2px solid var(--pp-iris);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--pp-iris) 40%, transparent);
+}
+.parent-ui .pp-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--pp-surface);
+  border: 2px solid var(--pp-iris);
+}
+
+/* ── Skeleton shimmer ────────────────────────────── */
+.parent-ui .pp-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--pp-skeleton);
+  border-radius: 8px;
+}
+
+.parent-ui .pp-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--pp-shimmer), transparent);
+  animation: pp-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes pp-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Glowing status dot — used sparingly for "live" or "today" markers. */
+.parent-ui .pp-pulse {
+  position: relative;
+}
+
+.parent-ui .pp-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  opacity: 0;
+  animation: pp-pulse 2.4s ease-out infinite;
+}
+
+@keyframes pp-pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.parent-ui .pp-scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pp-line-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parent-ui .pp-skeleton::after,
+  .parent-ui .pp-pulse::after {
+    animation: none;
+  }
+}
+
+/* The command palette input has its own focus treatment (the whole dialog). */
+.parent-ui [cmdk-input]:focus-visible {
+  outline: none;
+}
+}
+
+/* Dark theme: the rail and canvas are close in tone, so separate them with a hairline. */
+:root[data-pp-theme="dark"] .parent-ui .pp-rail {
+  box-shadow: inset -1px 0 0 var(--pp-ink-line);
+}
