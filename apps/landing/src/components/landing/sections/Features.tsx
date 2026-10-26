@@ -21,7 +21,7 @@ const MOCKUP: Record<RoleId, React.ComponentType<{ className?: string }>> = {
 /** Features by role, on the shared shadcn Tabs (keyboard: arrow keys move between roles). */
 export function Features() {
   return (
-    <Section id="features" labelledBy="features-title">
+    <Section id="features" tone="tint" labelledBy="features-title">
       <SectionHeader
         id="features-title"
         eyebrow={FEATURES_INTRO.eyebrow}
@@ -37,12 +37,12 @@ export function Features() {
       <Reveal>
         <Tabs defaultValue="leaders" className="gap-10">
           <div>
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-lg bg-tint p-1 group-data-[orientation=horizontal]/tabs:h-auto sm:inline-flex sm:w-fit">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1 group-data-[orientation=horizontal]/tabs:h-auto sm:inline-flex sm:w-fit">
               {ROLES.map((r) => (
                 <TabsTrigger
                   key={r.id}
                   value={r.id}
-                  className="h-10 rounded-md px-4 text-[0.9375rem] font-semibold data-[state=active]:bg-card data-[state=active]:text-heading data-[state=active]:shadow-soft"
+                  className="h-10 rounded-md px-4 text-[0.9375rem] font-semibold data-[state=active]:bg-card data-[state=active]:text-heading data-[state=active]:shadow-soft dark:data-[state=active]:bg-accent"
                 >
                   {r.tab}
                 </TabsTrigger>

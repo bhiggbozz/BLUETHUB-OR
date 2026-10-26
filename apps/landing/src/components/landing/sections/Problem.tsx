@@ -6,7 +6,7 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 
 export function Problem() {
   return (
-    <Section id="problem" labelledBy="problem-title">
+    <Section id="problem" tone="tint" labelledBy="problem-title">
       <SectionHeader
         id="problem-title"
         eyebrow={PROBLEM.eyebrow}

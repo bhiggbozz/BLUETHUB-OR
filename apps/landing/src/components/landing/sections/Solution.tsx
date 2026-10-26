@@ -7,7 +7,7 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 
 export function Solution() {
   return (
-    <Section id="solution" tone="tint" labelledBy="solution-title">
+    <Section id="solution" labelledBy="solution-title">
       {/* Rhythm: a centred statement here breaks the run of split headers. */}
       <SectionHeader
         align="center"

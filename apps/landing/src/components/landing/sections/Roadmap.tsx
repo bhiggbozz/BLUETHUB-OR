@@ -103,7 +103,7 @@ export function Roadmap() {
   const mailto = `mailto:${SITE.email}?subject=${encodeURIComponent(ROADMAP.cta.subject)}`;
 
   return (
-    <Section id="roadmap" labelledBy="roadmap-title" className="bg-gradient-to-b from-tint to-background">
+    <Section id="roadmap" labelledBy="roadmap-title">
       <div aria-hidden className="bg-grain pointer-events-none absolute inset-0" />
       <SectionHeader
         id="roadmap-title"
