@@ -1,13 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { ArrowUpRight, Eye } from "lucide-react";
 import { Card } from "@bluethub/ui-kit/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@bluethub/ui-kit/components/ui/dialog";
 import { ROADMAP, type RoadmapGroup, type RoadmapItem } from "@/data/home";
 import { SITE } from "@/data/site";
 import { Confirm } from "@/components/common/Confirm";
@@ -17,15 +10,8 @@ import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { cn } from "@/lib/utils";
 
-// Concept previews load only when someone opens one.
-const PreviewBody = lazy(() =>
-  import("../mockups/RoadmapPreviews").then((m) => ({
-    default: ({ id }: { id: RoadmapItem["id"] }) => {
-      const P = m.ROADMAP_PREVIEWS[id];
-      return <P />;
-    },
-  })),
-);
+// The dialog and its concept mockups load only when someone first opens a preview.
+const RoadmapPreviewDialog = lazy(() => import("./RoadmapPreviewDialog"));
 
 /** One status system for the whole section: filled dot = next up, ring = later. */
 function StatusDot({ group, className }: { group: RoadmapGroup["id"]; className?: string }) {
@@ -100,6 +86,8 @@ function RoadmapCard({ item, group, onPreview }: { item: RoadmapItem; group: Roa
 
 export function Roadmap() {
   const [open, setOpen] = useState<RoadmapItem | null>(null);
+  // Stays true after the first open so the dialog can animate out and restore focus.
+  const [everOpened, setEverOpened] = useState(false);
   const mailto = `mailto:${SITE.email}?subject=${encodeURIComponent(ROADMAP.cta.subject)}`;
 
   return (
@@ -134,7 +122,10 @@ export function Roadmap() {
               <Stagger>
                 {group.items.map((item) => (
                   <Reveal as="li" key={item.id} className="sm:last:col-span-2 lg:last:col-span-1">
-                    <RoadmapCard item={item} group={group.id} onPreview={() => setOpen(item)} />
+                    <RoadmapCard item={item} group={group.id} onPreview={() => {
+                        setEverOpened(true);
+                        setOpen(item);
+                      }} />
                   </Reveal>
                 ))}
               </Stagger>
@@ -156,25 +147,11 @@ export function Roadmap() {
         </a>
       </Reveal>
 
-      <Dialog open={open !== null} onOpenChange={(v) => !v && setOpen(null)}>
-        <DialogContent className="max-h-[90dvh] gap-5 overflow-y-auto rounded-xl border-border bg-card p-5 sm:max-w-xl md:p-6">
-          {open && (
-            <>
-              <DialogHeader className="text-left">
-                <p className="eyebrow">Concept preview · not available yet</p>
-                <DialogTitle className="text-h3">{open.name}</DialogTitle>
-                <DialogDescription className="text-[0.9375rem] text-muted-foreground">{open.line}</DialogDescription>
-              </DialogHeader>
-              <Suspense fallback={<div className="aspect-[16/10] w-full animate-pulse rounded-lg bg-muted" />}>
-                <PreviewBody id={open.id} />
-              </Suspense>
-              <p className="text-caption">
-                An early concept to show the direction. The final design will be shaped with pilot schools.
-              </p>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {everOpened && (
+        <Suspense fallback={null}>
+          <RoadmapPreviewDialog item={open} onClose={() => setOpen(null)} />
+        </Suspense>
+      )}
     </Section>
   );
 }
