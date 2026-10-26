@@ -8,7 +8,9 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 export function Solution() {
   return (
     <Section id="solution" tone="tint" labelledBy="solution-title">
+      {/* Rhythm: a centred statement here breaks the run of split headers. */}
       <SectionHeader
+        align="center"
         id="solution-title"
         eyebrow={SOLUTION.eyebrow}
         title={SOLUTION.title}
@@ -19,20 +21,20 @@ export function Solution() {
           </Cta>
         }
       />
-      <ol className="divide-y divide-border rounded-lg border border-border bg-card shadow-soft">
+      <ol className="mx-auto max-w-4xl divide-y divide-border rounded-lg border border-border bg-card shadow-soft">
         <Stagger>
           {BEFORE_AFTER.map((row) => (
             <Reveal
               as="li"
               key={row.before}
-              className="grid items-center gap-2 px-5 py-5 sm:grid-cols-[1fr_auto_1.6fr] sm:gap-6 md:px-8"
+              className="grid items-center gap-2 px-5 py-5 sm:grid-cols-[minmax(0,11rem)_auto_1fr] sm:gap-6 md:px-8"
             >
               <span className="text-[0.9375rem] text-muted-foreground line-through decoration-border-strong decoration-1">
                 {row.before}
               </span>
               <ArrowRight aria-hidden className="size-4 text-primary max-sm:hidden" />
               <span className="flex items-start gap-3 font-medium text-heading">
-                <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
+                <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
                   <Check aria-hidden className="icon-bold size-3" />
                 </span>
                 <span>
