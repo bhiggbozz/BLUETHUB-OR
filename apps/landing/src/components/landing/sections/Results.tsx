@@ -11,13 +11,29 @@ export function Results() {
     <Section id="results" labelledBy="results-title">
       <SectionHeader id="results-title" eyebrow={RESULTS.eyebrow} title={RESULTS.title} lede={RESULTS.lede} />
 
+      {/* Proof first: true product facts, counted up once on view. */}
+      <dl className="mb-12 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3 md:mb-16">
+        {FACTS.map((f) => (
+          // Number reads first visually; the label stays the <dt> for assistive tech.
+          <div key={f.label} className="flex flex-col-reverse bg-card p-6 md:p-8">
+            <dt className="mt-3">
+              <span className="block font-medium text-heading">{f.label}</span>
+              <span className="text-caption mt-1 block">{f.detail}</span>
+            </dt>
+            <dd>
+              <CountUp to={f.value} className="font-serif text-6xl leading-none text-primary" />
+            </dd>
+          </div>
+        ))}
+      </dl>
+
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Stagger>
           {BENEFITS.map((b) => (
             <Reveal as="li" key={b.title}>
-              <Card className="group h-full gap-0 rounded-lg border-border p-6 shadow-soft transition-shadow duration-200 hover:shadow-lift md:p-7">
+              <Card className="card-lift group h-full gap-0 rounded-lg border-border p-6 shadow-soft md:p-8">
                 <span className="inline-flex size-11 items-center justify-center rounded-md bg-primary-soft text-primary">
-                  <b.icon aria-hidden className="rotate-on-hover size-5" />
+                  <b.icon aria-hidden className="icon-spring size-5" />
                 </span>
                 <h3 className="text-h4 mt-5">{b.title}</h3>
                 <p className="mt-2 text-[0.9375rem] text-muted-foreground">{b.line}</p>
@@ -27,21 +43,8 @@ export function Results() {
         </Stagger>
       </ul>
 
-      {/* True product facts, counted up once on view. */}
-      <dl className="mt-16 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3 md:mt-20">
-        {FACTS.map((f) => (
-          <div key={f.label} className="bg-card p-6 md:p-8">
-            <dt className="text-[0.9375rem] text-muted-foreground">{f.label}</dt>
-            <dd className="mt-3 flex items-baseline gap-3">
-              <CountUp to={f.value} className="font-serif text-6xl leading-none text-heading" />
-              <span className="text-caption">{f.detail}</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
-
       {/* Outcomes Bluethub will measure during pilots: labelled, never faked. */}
-      <div className="mt-12 grid gap-8 lg:grid-cols-12">
+      <div className="mt-16 grid gap-8 md:mt-20 lg:grid-cols-12">
         <Reveal className="lg:col-span-4">
           <h3 className="text-h3">Results from our pilots</h3>
           <p className="text-caption mt-2">We'll publish these once our first pilot schools report back.</p>
