@@ -1,16 +1,20 @@
-@import "tailwindcss";
-
 /* ──────────────────────────────────────────────
-   Bluetthub Landing — Design Tokens
-   Tailwind v4: CSS-first configuration
+   Bluethub — Design Tokens (Tailwind v4, CSS-first)
+   "Freshly classic": the original palette, re-balanced.
+   Lora (serif) for display & section headings, Sora for everything else.
    ────────────────────────────────────────────── */
+
+/* `dark:` utilities follow the site toggle (data-theme), not the OS setting.
+   Without this, Tailwind v4 keys `dark:` off prefers-color-scheme and the
+   toggle only half-applied. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
   /* ── Typography ── */
-  --font-sans: "Sora", system-ui, -apple-system, sans-serif;
+  --font-sans: "Sora", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif: "Lora", Georgia, "Times New Roman", serif;
 
-  /* ── Brand Palette ── */
+  /* ── Brand palette (unchanged values, kept for compatibility) ── */
   --color-blue-50: #eff6ff;
   --color-blue-100: #dbeafe;
   --color-blue-200: #bfdbfe;
@@ -43,82 +47,92 @@
   --color-surface-200: #f8faff;
   --color-surface-white: #ffffff;
 
-  /* ── Semantic Tokens ── */
-  --color-background: #f0f4ff;
+  /* ── Semantic tokens (light) ── */
+  --color-background: #f7f8fc; /* was #f0f4ff: calmer neutral so blue reads as the accent */
+  --color-tint: #eef2fb; /* alternating section surface */
   --color-foreground: #1e293b;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
+  --color-heading: #0a1628;
+  --color-muted: #526077; /* was #64748b: now passes WCAG AA on every light surface */
+  --color-subtle: #6b7891; /* captions on white only */
+  --color-border: #e3e8f2;
+  --color-border-strong: #cfd7e6;
 
   --color-card: #ffffff;
   --color-card-foreground: #1e293b;
 
   --color-primary: #1a4fd6;
+  --color-primary-strong: #1643b8;
+  --color-primary-soft: #e9efff;
   --color-primary-foreground: #ffffff;
 
-  --color-secondary: #f0f4ff;
+  /* Accent is a highlight, not a second brand colour. Text-safe shade for light surfaces. */
+  --color-accent: #f59e0b;
+  --color-accent-text: #a16207;
+
+  --color-success: #0f8a5f;
+  --color-danger: #c42b3c;
+
+  --color-ink: #0a1628; /* dark band (CTA, footer) */
+  --color-ink-foreground: #f5f7fb;
+  --color-ink-muted: #aeb8cc; /* was white/40: passes AA on ink */
+
+  --color-secondary: #eef2fb;
   --color-secondary-foreground: #1e293b;
 
-  /* ── Spacing scale ── */
-  --spacing-section: 100px;
+  /* ── Radius: one consistent set ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  /* legacy names, mapped onto the new set */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+  --radius-button: 12px;
 
-  /* ── Radius ── */
-  --radius-card: 14px;
-  --radius-pill: 20px;
-  --radius-button: 10px;
+  /* ── Elevation: soft, layered, never heavy ── */
+  --shadow-soft: 0 1px 2px rgb(10 22 40 / 0.04), 0 4px 16px -8px rgb(10 22 40 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(10 22 40 / 0.05), 0 18px 40px -20px rgb(10 22 40 / 0.22);
+
+  /* ── Motion ── */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Dark Theme Override ── */
+/* ── Dark theme: same hues, lifted for a dark canvas ── */
 [data-theme="dark"] {
   --color-background: #0d1117;
-  --color-foreground: #e2e8f0;
-  --color-muted: #8b9ab5;
-  --color-border: #2d3748;
+  --color-tint: #121925;
+  --color-foreground: #dfe5ef;
+  --color-heading: #f5f7fb;
+  --color-muted: #9ba8bf;
+  --color-subtle: #8693ab;
+  --color-border: #222b3a;
+  --color-border-strong: #313c50;
 
-  --color-card: #1c2333;
-  --color-card-foreground: #e2e8f0;
+  --color-card: #141b27;
+  --color-card-foreground: #dfe5ef;
 
   --color-primary: #5b9aff;
+  --color-primary-strong: #82b2ff;
+  --color-primary-soft: #14223d;
   --color-primary-foreground: #0d1117;
 
-  --color-secondary: #161b22;
-  --color-secondary-foreground: #e2e8f0;
+  --color-accent-text: #fbbf24;
+  --color-success: #34d399;
+  --color-danger: #f87183;
+
+  --color-ink: #070b14;
+  --color-ink-foreground: #f5f7fb;
+  --color-ink-muted: #a3aec3;
+
+  --color-secondary: #121925;
+  --color-secondary-foreground: #dfe5ef;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 6px 18px -10px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 20px 44px -20px rgb(0 0 0 / 0.75);
+
+  color-scheme: dark;
 }
 
-/* ── Base styles (inside @layer so they don't override utilities) ── */
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    font-family: var(--font-sans);
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    line-height: 1.6;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  ::selection {
-    background-color: var(--color-primary);
-    color: var(--color-primary-foreground);
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--color-background);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-muted);
-  }
+:root {
+  color-scheme: light;
 }
