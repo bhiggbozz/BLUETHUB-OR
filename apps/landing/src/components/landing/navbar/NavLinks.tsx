@@ -8,7 +8,7 @@ export function NavLinks() {
           <li key={link.href}>
             <a
               href={link.href}
-              className="rounded-md px-3 py-2 text-[0.9375rem] font-medium text-muted transition-colors hover:text-heading"
+              className="rounded-md px-3 py-2 text-[0.9375rem] font-medium text-muted-foreground transition-colors duration-200 hover:text-heading"
             >
               {link.label}
             </a>

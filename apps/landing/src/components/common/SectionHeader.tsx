@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
-import { Reveal } from "./Reveal";
+import { Reveal } from "./motion";
 
 interface SectionHeaderProps {
   id: string;
   eyebrow: string;
   title: React.ReactNode;
   lede?: React.ReactNode;
-  /** Optional next step shown under the lede (or beside it on wide screens). */
+  /** Optional next step under the lede (or beside it on wide screens). */
   action?: React.ReactNode;
   align?: "start" | "center";
   onInk?: boolean;
@@ -42,7 +42,7 @@ export function SectionHeader({ id, eyebrow, title, lede, action, align = "start
       {(lede || action) && (
         <div className="lg:col-span-5 lg:col-start-8">
           {lede && <p className={cn("text-lede", onInk && "text-ink-muted")}>{lede}</p>}
-          {action && <div className="mt-6 flex flex-wrap gap-3">{action}</div>}
+          {action && <div className="mt-6 flex flex-wrap items-center gap-4">{action}</div>}
         </div>
       )}
     </Reveal>

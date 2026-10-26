@@ -1,25 +1,17 @@
 /**
- * Site-wide copy and configuration for the Bluethub company site.
- *
- * Anything marked `confirm` is an assumption that needs sign-off before launch.
- * In development builds those spots show a small [CONFIRM] marker; production
- * builds hide the marker (see components/common/Confirm.tsx).
+ * Site-wide configuration and copy for the Bluethub product site.
+ * Copy deck: apps/landing/docs/copy-deck.md. Assumptions carry a [CONFIRM] note
+ * and render a marker in development builds only.
  */
 
 export const SITE = {
   name: "Bluethub",
-  /** Footer line and default social description. */
-  tagline: "Software that works where you work.",
-  /** Default meta description. [CONFIRM] */
-  description:
-    "Bluethub designs, builds and runs software for schools, financial services and growing brands. We're the team behind Skoolhub, QueensMoni, SABI and Cerebre Plus.",
+  tagline: "One place to teach, test and track your school.",
   /** Canonical origin. [CONFIRM] */
   url: "https://bluethub.com",
   /** Public contact email. [CONFIRM] */
   email: "hello@bluethub.com",
-  /** Where the team is based. [CONFIRM] */
-  location: "Lagos, Nigeria",
-  /** Typical reply time shown next to the contact form. [CONFIRM] */
+  /** Reply-time promise. [CONFIRM] */
   replyTime: "We reply within two working days.",
 } as const;
 
@@ -29,21 +21,22 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { label: "Services", href: "/#services" },
-  { label: "Products", href: "/#products" },
-  { label: "How we work", href: "/#process" },
-  { label: "About", href: "/#about" },
+  { label: "Features", href: "/#features" },
+  { label: "How it works", href: "/#how" },
+  { label: "Security", href: "/#security" },
+  { label: "Pilot", href: "/#pilot" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
-export const PRIMARY_CTA = { label: "Start a project", href: "/#contact" } as const;
+export const PRIMARY_CTA = { label: "Book a demo", href: "/#demo" } as const;
 
-export interface SocialLink {
+export interface ExternalLink {
   label: string;
-  /** Empty until supplied; empty links are not rendered in production. [CONFIRM] */
+  /** Empty until supplied; empty links render as text, never as dead links. [CONFIRM] */
   href: string;
 }
 
-export const SOCIAL_LINKS: SocialLink[] = [
+export const SOCIAL_LINKS: ExternalLink[] = [
   { label: "LinkedIn", href: "" },
   { label: "X (Twitter)", href: "" },
   { label: "Instagram", href: "" },
@@ -51,27 +44,26 @@ export const SOCIAL_LINKS: SocialLink[] = [
 
 export const FOOTER_GROUPS: { title: string; links: NavLink[] }[] = [
   {
-    title: "Company",
+    title: "Product",
     links: [
-      { label: "What we do", href: "/#services" },
-      { label: "How we work", href: "/#process" },
-      { label: "About us", href: "/#about" },
-      { label: "Contact", href: "/#contact" },
+      { label: "Features", href: "/#features" },
+      { label: "How it works", href: "/#how" },
+      { label: "Security", href: "/#security" },
+      { label: "Pilot", href: "/#pilot" },
+      { label: "FAQ", href: "/#faq" },
     ],
   },
   {
-    title: "Products",
+    title: "Get started",
     links: [
-      { label: "Skoolhub", href: "/#product-skoolhub" },
-      { label: "QueensMoni", href: "/#product-queensmoni" },
-      { label: "SABI", href: "/#product-sabi" },
-      { label: "Cerebre Plus", href: "/#product-cerebre-plus" },
+      { label: "Book a demo", href: "/#demo" },
+      { label: "Start your pilot", href: "/#pilot" },
+      { label: "Email us", href: `mailto:${SITE.email}` },
     ],
   },
 ];
 
-/** Legal pages don't exist yet; they render as plain text until a URL is set. [CONFIRM] */
-export const LEGAL_LINKS: SocialLink[] = [
+export const LEGAL_LINKS: ExternalLink[] = [
   { label: "Privacy policy", href: "" },
   { label: "Terms of service", href: "" },
 ];

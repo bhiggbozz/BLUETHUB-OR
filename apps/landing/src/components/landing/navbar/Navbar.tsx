@@ -1,12 +1,24 @@
 import { useCallback, useId, useState } from "react";
-import { Menu, X } from "lucide-react";
 import { PRIMARY_CTA } from "@/data/site";
-import { ButtonLink } from "@/components/common/Button";
+import { Cta } from "@/components/common/Cta";
 import { Container } from "@/components/common/Container";
+import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 import { NavLinks } from "./NavLinks";
 import { ThemeToggle } from "./ThemeToggle";
 import { MobileMenu } from "./MobileMenu";
+
+/** Three bars that morph into an X. Transform-only, 300ms, shared easing. */
+function MenuIcon({ open }: { open: boolean }) {
+  const bar = "absolute left-0 h-[2px] w-5 rounded-full bg-current transition-[transform,opacity] duration-300 ease-[var(--ease-out-soft)]";
+  return (
+    <span aria-hidden className="relative block h-3.5 w-5">
+      <span className={cn(bar, "top-0", open && "translate-y-[6px] rotate-45")} />
+      <span className={cn(bar, "top-[6px]", open && "scale-x-0 opacity-0")} />
+      <span className={cn(bar, "top-[12px]", open && "-translate-y-[6px] -rotate-45")} />
+    </span>
+  );
+}
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,18 +38,18 @@ export function Navbar() {
         <NavLinks />
         <div className="flex items-center gap-2">
           <ThemeToggle className="max-lg:hidden" />
-          <ButtonLink href={PRIMARY_CTA.href} className="max-sm:hidden">
+          <Cta href={PRIMARY_CTA.href} className="max-sm:hidden">
             {PRIMARY_CTA.label}
-          </ButtonLink>
+          </Cta>
           <button
             type="button"
             onClick={() => setIsOpen((v) => !v)}
             aria-label={isOpen ? "Close menu" : "Open menu"}
             aria-expanded={isOpen}
             aria-controls={menuId}
-            className="inline-flex size-10 items-center justify-center rounded-md text-heading hover:bg-tint lg:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-md text-heading hover:bg-accent lg:hidden"
           >
-            {isOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+            <MenuIcon open={isOpen} />
           </button>
         </div>
       </Container>
