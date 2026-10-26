@@ -9,7 +9,7 @@ export function PlaceholderTag({ children = "Placeholder", className }: { childr
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-muted uppercase",
+        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-border-strong px-2.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-muted uppercase",
         className,
       )}
     >

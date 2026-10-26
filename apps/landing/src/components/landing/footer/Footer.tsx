@@ -12,8 +12,8 @@ export function Footer() {
   return (
     <footer className="bg-ink pt-16 pb-10 text-ink-muted md:pt-24">
       <Container>
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
-          <div className="lg:col-span-5">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-12 lg:grid-cols-12">
+          <div className="col-span-2 lg:col-span-5">
             <Logo onInk />
             <p className="mt-6 max-w-sm font-serif text-2xl leading-snug text-white">{SITE.tagline}</p>
             <p className="mt-4 text-[0.9375rem]">
@@ -43,7 +43,7 @@ export function Footer() {
             </nav>
           ))}
 
-          <div className="lg:col-span-3">
+          <div className="col-span-2 lg:col-span-3">
             <h2 className="text-xs font-semibold tracking-[0.14em] text-white uppercase">Follow</h2>
             {socials.length > 0 ? (
               <ul className="mt-5 space-y-3">

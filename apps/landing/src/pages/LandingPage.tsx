@@ -1,34 +1,31 @@
-import { PageTransition } from "@/components/common/PageTransition";
 import { Navbar } from "@/components/landing/navbar/Navbar";
-import { ComingSoonBand } from "@/components/landing/coming-soon/ComingSoonBand";
 import { Hero } from "@/components/landing/hero/Hero";
-import { TrustBar } from "@/components/landing/trust/TrustBar";
-import { Features } from "@/components/landing/features/Features";
-import { Roles } from "@/components/landing/roles/Roles";
+import { Services } from "@/components/landing/services/Services";
+import { Products } from "@/components/landing/products/Products";
 import { HowItWorks } from "@/components/landing/how-it-works/HowItWorks";
-import { StatsBand } from "@/components/landing/stats/StatsBand";
-import { Testimonials } from "@/components/landing/testimonials/Testimonials";
-import { FAQ } from "@/components/landing/faq/FAQ";
-import { CTABanner } from "@/components/landing/cta/CTABanner";
+import { Proof } from "@/components/landing/proof/Proof";
+import { About } from "@/components/landing/about/About";
+import { Contact } from "@/components/landing/contact/Contact";
 import { Footer } from "@/components/landing/footer/Footer";
+// Pricing is parked for now. To bring it back, uncomment the import and the
+// <Pricing /> line below, then add { label: "Pricing", href: "#pricing" } to NAV_LINKS.
+// import { Pricing } from "@/components/landing/pricing/Pricing";
 
 export default function LandingPage() {
   return (
-    <PageTransition>
-      <div className="min-h-screen">
-        <Navbar />
-        <ComingSoonBand />
+    <>
+      <Navbar />
+      <main id="main" tabIndex={-1} className="outline-none">
         <Hero />
-        <TrustBar />
-        <Features />
-        <Roles />
+        <Services />
+        <Products />
         <HowItWorks />
-        <StatsBand />
-        <Testimonials />
-        <FAQ />
-        <CTABanner />
-        <Footer />
-      </div>
-    </PageTransition>
+        <Proof />
+        <About />
+        {/* <Pricing /> */}
+        <Contact />
+      </main>
+      <Footer />
+    </>
   );
 }
