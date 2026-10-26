@@ -11,7 +11,7 @@ export function WhiteboardMock({ className }: { className?: string }) {
             Mathematics · Quadratic equations
           </span>
           <span className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-semibold text-red-600">
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-semibold text-red-700">
               <span className="size-1.5 rounded-full bg-red-500" /> Live
             </span>
             <span className="font-mono text-slate-600 tabular-nums">12:48</span>
@@ -63,12 +63,12 @@ export function WhiteboardMock({ className }: { className?: string }) {
               <span
                 key={b}
                 className="rounded-md px-2 py-1 font-semibold"
-                style={on ? { background: APP.indigo, color: "white" } : { color: "#64748b" }}
+                style={on ? { background: APP.indigo, color: "white" } : { color: "#475569" }}
               >
                 {b}
               </span>
             ))}
-            <span className="inline-flex size-5 items-center justify-center rounded-md text-slate-500">
+            <span className="inline-flex size-5 items-center justify-center rounded-md text-slate-600">
               <Plus className="size-3" />
             </span>
           </div>
@@ -77,7 +77,7 @@ export function WhiteboardMock({ className }: { className?: string }) {
               <span
                 key={i}
                 className="inline-flex size-5 items-center justify-center rounded-md"
-                style={i === 1 ? { background: `${APP.indigo}18`, color: APP.indigo } : { color: "#64748b" }}
+                style={i === 1 ? { background: `${APP.indigo}18`, color: APP.indigo } : { color: "#475569" }}
               >
                 <Icon className="size-3" />
               </span>

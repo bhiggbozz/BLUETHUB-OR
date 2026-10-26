@@ -11,13 +11,13 @@ export function AttendanceScanMock({ className }: { className?: string }) {
         <p className="text-[13px] font-bold" style={{ color: APP.ink }}>
           Attendance
         </p>
-        <p className="mt-2 text-[9px] font-semibold text-slate-500">1 · Choose attendance type</p>
+        <p className="mt-2 text-[9px] font-semibold text-slate-600">1 · Choose attendance type</p>
         <div className="mt-1.5 flex gap-1">
           {["Class", "Subject", "Topic"].map((t, i) => (
             <span
               key={t}
               className="rounded-full px-2 py-1 text-[9px] font-semibold"
-              style={i === 0 ? { background: APP.indigo, color: "white" } : { background: "#f1f5f9", color: "#64748b" }}
+              style={i === 0 ? { background: APP.indigo, color: "white" } : { background: "#f1f5f9", color: "#475569" }}
             >
               {t}
             </span>
@@ -45,14 +45,14 @@ export function AttendanceScanMock({ className }: { className?: string }) {
           <p className="font-semibold" style={{ color: APP.ink }}>
             Scanned
           </p>
-          <p className="text-[9px] text-slate-500">18 of 24</p>
+          <p className="text-[9px] text-slate-600">18 of 24</p>
         </div>
         <ul className="mt-1.5 space-y-1">
           {SCANNED.map((n) => (
             <li key={n} className="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1.5">
               <span className="font-medium">{n}</span>
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <Check className="size-2.5" strokeWidth={3} />
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <Check className="icon-bold size-2.5" />
               </span>
             </li>
           ))}

@@ -60,7 +60,7 @@ export function Features() {
                     {r.points.map((pt) => (
                       <li key={pt} className="flex gap-3">
                         <span className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-                          <Check aria-hidden className="size-3" strokeWidth={3} />
+                          <Check aria-hidden className="icon-bold size-3" />
                         </span>
                         <span>{pt}</span>
                       </li>

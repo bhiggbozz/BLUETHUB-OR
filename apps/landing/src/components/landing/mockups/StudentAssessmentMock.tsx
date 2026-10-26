@@ -8,7 +8,7 @@ export function StudentAssessmentMock({ className }: { className?: string }) {
       <div className="bg-[#f8f9fc] p-4 text-[10px]">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[9px] font-semibold tracking-wide text-slate-500 uppercase">Mathematics · Mid-term assessment</p>
+            <p className="text-[9px] font-semibold tracking-wide text-slate-600 uppercase">Mathematics · Mid-term assessment</p>
             <p className="mt-0.5 text-[12px] font-bold" style={{ color: APP.ink }}>
               Question 3 of 10
             </p>
@@ -35,7 +35,7 @@ export function StudentAssessmentMock({ className }: { className?: string }) {
               <span
                 key={label}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-semibold"
-                style={on ? { background: APP.indigo, color: "white" } : { background: "#f1f5f9", color: "#64748b" }}
+                style={on ? { background: APP.indigo, color: "white" } : { background: "#f1f5f9", color: "#475569" }}
               >
                 <Icon className="size-3" /> {label}
               </span>
@@ -53,7 +53,7 @@ export function StudentAssessmentMock({ className }: { className?: string }) {
         </div>
 
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-slate-500">Saved on this device</span>
+          <span className="text-slate-600">Saved on this device</span>
           <span className="rounded-md px-3 py-1.5 font-semibold text-white" style={{ background: APP.indigo }}>
             Submit all
           </span>

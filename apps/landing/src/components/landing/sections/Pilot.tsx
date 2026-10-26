@@ -41,7 +41,7 @@ export function Pilot() {
             {PILOT.included.map((item) => (
               <li key={item} className="flex gap-3">
                 <span className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Check aria-hidden className="size-3" strokeWidth={3} />
+                  <Check aria-hidden className="icon-bold size-3" />
                 </span>
                 {item}
               </li>

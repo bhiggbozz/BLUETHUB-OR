@@ -152,6 +152,15 @@
     border-radius: 4px;
   }
 
+  /* One icon style: every lucide icon shares a stroke weight; .icon-bold for tiny checks. */
+  .lucide {
+    stroke-width: var(--icon-stroke, 1.75);
+  }
+
+  .icon-bold {
+    --icon-stroke: 2.75;
+  }
+
   img,
   svg,
   video {

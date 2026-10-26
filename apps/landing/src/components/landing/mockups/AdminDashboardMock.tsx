@@ -36,7 +36,7 @@ export function AdminDashboardMock({ className }: { className?: string }) {
               <li
                 key={n.label}
                 className="flex items-center gap-2 rounded-md px-2 py-1.5"
-                style={n.active ? { background: `${APP.indigo}14`, color: APP.indigo, fontWeight: 600 } : { color: "#64748b" }}
+                style={n.active ? { background: `${APP.indigo}14`, color: APP.indigo, fontWeight: 600 } : { color: "#475569" }}
               >
                 <n.icon className="size-3" />
                 {n.label}
@@ -50,7 +50,7 @@ export function AdminDashboardMock({ className }: { className?: string }) {
             <p className="text-[13px] font-bold" style={{ color: APP.ink }}>
               Dashboard
             </p>
-            <span className="rounded-full bg-white px-2 py-1 text-[9px] text-slate-500 ring-1 ring-black/5">This term</span>
+            <span className="rounded-full bg-white px-2 py-1 text-[9px] text-slate-600 ring-1 ring-black/5">This term</span>
           </div>
 
           <p className="mb-2 text-[10px] font-semibold text-slate-600">Performance by Classroom</p>
@@ -63,7 +63,7 @@ export function AdminDashboardMock({ className }: { className?: string }) {
                 <p className="mt-1 text-[15px] font-bold" style={{ color: APP.indigo }}>
                   {c.avg}%
                 </p>
-                <p className="text-[8.5px] text-slate-500">Avg score · {c.pass}% pass</p>
+                <p className="text-[8.5px] text-slate-600">Avg score · {c.pass}% pass</p>
                 <div className="mt-1.5 h-1 rounded-full bg-slate-100">
                   <div className="h-1 rounded-full" style={{ width: `${c.avg}%`, background: APP.indigo }} />
                 </div>
@@ -76,7 +76,7 @@ export function AdminDashboardMock({ className }: { className?: string }) {
               JSS 1 Gold : Quiz Breakdown
             </p>
             <table className="w-full text-left">
-              <thead className="text-[8.5px] text-slate-500 uppercase">
+              <thead className="text-[8.5px] text-slate-600 uppercase">
                 <tr>
                   <th className="px-3 py-1.5 font-medium">Quiz</th>
                   <th className="px-2 py-1.5 font-medium">Attempts</th>
@@ -92,7 +92,7 @@ export function AdminDashboardMock({ className }: { className?: string }) {
                     </td>
                     <td className="px-2 py-1.5 text-slate-600">{q.attempts}</td>
                     <td className="px-2 py-1.5 text-slate-600">{q.avg}</td>
-                    <td className="px-2 py-1.5 font-semibold text-emerald-600">{q.pass}</td>
+                    <td className="px-2 py-1.5 font-semibold text-emerald-700">{q.pass}</td>
                   </tr>
                 ))}
               </tbody>

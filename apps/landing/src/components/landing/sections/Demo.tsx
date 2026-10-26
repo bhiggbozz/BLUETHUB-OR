@@ -25,7 +25,7 @@ export function Demo() {
             {DEMO.points.map((p, i) => (
               <li key={p} className="flex gap-3 text-white">
                 <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-blue-200">
-                  <Check aria-hidden className="size-3" strokeWidth={3} />
+                  <Check aria-hidden className="icon-bold size-3" />
                 </span>
                 <span>
                   {p}

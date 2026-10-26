@@ -8,7 +8,7 @@ export function ParentOverviewMock({ className }: { className?: string }) {
   return (
     <BrowserFrame path="/parent" label="Preview of the parent overview showing a child's attendance this month" className={className}>
       <div className="bg-[#f4f5fa] p-4 text-[10px]">
-        <p className="text-[9px] font-semibold tracking-[0.1em] text-slate-500 uppercase">Good afternoon</p>
+        <p className="text-[9px] font-semibold tracking-[0.1em] text-slate-600 uppercase">Good afternoon</p>
         <p className="mt-0.5 font-serif text-[15px] text-[#10122b]">Here's how things are going at school</p>
 
         <div className="mt-3 grid gap-2.5 sm:grid-cols-[1.35fr_1fr]">
@@ -49,24 +49,24 @@ export function ParentOverviewMock({ className }: { className?: string }) {
           </div>
 
           <div className="rounded-xl bg-white p-3 ring-1 ring-black/[0.05]">
-            <p className="text-[8px] font-semibold tracking-[0.1em] text-slate-500 uppercase">What stands out</p>
+            <p className="text-[8px] font-semibold tracking-[0.1em] text-slate-600 uppercase">What stands out</p>
             <ul className="mt-2 space-y-2.5">
               <li className="flex gap-2">
-                <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
                   <TrendingUp className="size-3" />
                 </span>
                 <span>
                   <span className="block font-semibold text-[#10122b]">Present for the last 12 sessions in a row</span>
-                  <span className="text-[9px] text-slate-500">A steady run.</span>
+                  <span className="text-[9px] text-slate-600">A steady run.</span>
                 </span>
               </li>
               <li className="flex gap-2">
-                <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-600">
+                <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-700">
                   <TrendingDown className="size-3" />
                 </span>
                 <span>
                   <span className="block font-semibold text-[#10122b]">Basic Science has the lowest attendance at 67%</span>
-                  <span className="text-[9px] text-slate-500">Present for 6 of 9 sessions.</span>
+                  <span className="text-[9px] text-slate-600">Present for 6 of 9 sessions.</span>
                 </span>
               </li>
             </ul>

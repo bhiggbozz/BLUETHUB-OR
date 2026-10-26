@@ -59,6 +59,32 @@ export function useInView<T extends Element>(options: { once?: boolean; rootMarg
 
 type RevealTag = "div" | "li" | "section" | "article" | "p" | "figure";
 
+/*
+ * One IntersectionObserver for every reveal on the page. It adds the `is-in`
+ * class straight to the element and stops watching it: no React state, so a
+ * reveal never re-renders anything.
+ */
+let sharedObserver: IntersectionObserver | null = null;
+function observeReveal(el: Element) {
+  if (typeof IntersectionObserver === "undefined") {
+    el.classList.add("is-in");
+    return () => {};
+  }
+  sharedObserver ??= new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-in");
+          sharedObserver?.unobserve(entry.target);
+        }
+      }
+    },
+    { rootMargin: "0px 0px -10% 0px" },
+  );
+  sharedObserver.observe(el);
+  return () => sharedObserver?.unobserve(el);
+}
+
 interface RevealProps {
   children: ReactNode;
   className?: string;
@@ -71,14 +97,15 @@ interface RevealProps {
 
 /** Fades and rises 16px the first time it scrolls into view. Plays once. */
 export function Reveal({ children, className, delay = 0, as = "div", style, id }: RevealProps) {
-  const { ref, inView } = useInView<HTMLElement>();
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => (ref.current ? observeReveal(ref.current) : undefined), []);
   const Tag = as as "div";
   return (
     <Tag
       id={id}
       ref={ref as React.RefObject<HTMLDivElement>}
       data-reveal=""
-      className={cn(inView && "is-in", className)}
+      className={className}
       style={{ ...style, ...(delay ? ({ "--delay": `${delay}ms` } as CSSProperties) : null) }}
     >
       {children}

@@ -33,7 +33,7 @@ export function Solution() {
               <ArrowRight aria-hidden className="size-4 text-primary max-sm:hidden" />
               <span className="flex items-start gap-3 font-medium text-heading">
                 <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
-                  <Check aria-hidden className="size-3" strokeWidth={3} />
+                  <Check aria-hidden className="icon-bold size-3" />
                 </span>
                 <span>
                   <span className="sr-only">Now: </span>
