@@ -6,6 +6,7 @@ import { Cta } from "@/components/common/Cta";
 import { Reveal, Rotate } from "@/components/common/motion";
 import { AdminDashboardMock } from "../mockups/AdminDashboardMock";
 import { AttendanceScanMock } from "../mockups/AttendanceScanMock";
+import { MockupViewport } from "../mockups/MockupViewport";
 
 /** Slow ambient orbit behind the product shots: one full turn every 26s, paused off-screen. */
 function Orbit() {
@@ -29,8 +30,10 @@ export function Hero() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(60rem_28rem_at_80%_-10%,var(--color-primary-soft),transparent_70%)]"
       />
-      <Container className="relative grid gap-14 pt-14 pb-16 md:pt-20 md:pb-24 lg:grid-cols-12 lg:items-center lg:gap-8 lg:pt-24 lg:pb-28">
-        <div className="lg:col-span-6">
+      {/* Columns are top-aligned: when web fonts swap in and the headline reflows,
+          the product visual stays put (no layout shift). */}
+      <Container className="relative grid gap-14 pt-14 pb-16 md:pt-20 md:pb-24 lg:grid-cols-12 lg:items-start lg:gap-8 lg:pt-24 lg:pb-28">
+        <div className="lg:col-span-6 xl:col-span-5">
           <Reveal as="p" className="eyebrow">
             {HERO.eyebrow}
             <Confirm note={HERO.eyebrowConfirm} />
@@ -44,27 +47,29 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={160} className="mt-10 flex flex-wrap items-center gap-3">
-            <Cta href={HERO.primary.href} size="lg" arrow className="max-sm:w-full">
+            <Cta href={HERO.primary.href} size="lg" arrow className="max-sm:w-full xl:h-11 xl:px-5 xl:text-[0.9375rem]">
               {HERO.primary.label}
             </Cta>
-            <Cta href={HERO.secondary.href} size="lg" tone="secondary" className="max-sm:w-full">
+            <Cta href={HERO.secondary.href} size="lg" tone="secondary" className="max-sm:w-full xl:h-11 xl:px-5 xl:text-[0.9375rem]">
               {HERO.secondary.label}
             </Cta>
-            <CircularBadge text={HERO.badge} href="#pilot" label="About the 3-month pilot" className="ml-3 max-lg:hidden" />
+            <CircularBadge text={HERO.badge} href="#pilot" label="About the 3-month pilot" className="ml-2 size-24 max-lg:hidden" />
           </Reveal>
 
-          <Reveal as="p" delay={240} className="text-caption mt-10 flex items-center gap-3">
+          <Reveal as="p" delay={240} className="text-caption mt-8 flex items-center gap-3">
             <span aria-hidden className="h-px w-8 bg-border-strong" />
             {HERO.trust}
           </Reveal>
         </div>
 
-        <div className="relative lg:col-span-6">
+        <div className="relative lg:col-span-6 lg:mt-24 xl:col-span-7">
           <Orbit />
           <Reveal delay={120} className="relative">
-            <AdminDashboardMock className="lg:mr-32" />
+            <MockupViewport>
+              <AdminDashboardMock className="xl:mr-36" />
+            </MockupViewport>
           </Reveal>
-          <Reveal delay={320} className="absolute -right-4 -bottom-14 max-lg:hidden">
+          <Reveal delay={320} className="absolute -right-4 -bottom-14 max-xl:hidden">
             <AttendanceScanMock className="w-[172px] rotate-[4deg]" />
           </Reveal>
         </div>
