@@ -62,7 +62,7 @@ export function Hero() {
           </Reveal>
         </div>
 
-        <div className="relative lg:col-span-6 lg:mt-24 xl:col-span-7">
+        <div className="relative min-w-0 lg:col-span-6 lg:mt-24 xl:col-span-7">
           <Orbit />
           <Reveal delay={120} className="relative">
             <MockupViewport>

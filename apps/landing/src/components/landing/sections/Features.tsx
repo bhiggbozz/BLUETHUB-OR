@@ -9,6 +9,7 @@ import { AdminDashboardMock } from "../mockups/AdminDashboardMock";
 import { ParentOverviewMock } from "../mockups/ParentOverviewMock";
 import { StudentAssessmentMock } from "../mockups/StudentAssessmentMock";
 import { WhiteboardMock } from "../mockups/WhiteboardMock";
+import { MockupViewport } from "../mockups/MockupViewport";
 
 const MOCKUP: Record<RoleId, React.ComponentType<{ className?: string }>> = {
   leaders: AdminDashboardMock,
@@ -53,7 +54,7 @@ export function Features() {
             const Mock = MOCKUP[r.id];
             return (
               <TabsContent key={r.id} value={r.id} className="grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-8">
-                <div className="lg:col-span-5">
+                <div className="min-w-0 lg:col-span-5">
                   <p className="text-caption font-medium">{r.who}</p>
                   <h3 className="text-h2 mt-3">{r.title}</h3>
                   <ul className="mt-8 space-y-3.5">
@@ -68,8 +69,10 @@ export function Features() {
                   </ul>
                   {r.note && <p className="text-caption mt-6 border-l-2 border-primary pl-3">{r.note}</p>}
                 </div>
-                <div className="lg:col-span-7">
-                  <Mock />
+                <div className="min-w-0 lg:col-span-7">
+                  <MockupViewport>
+                    <Mock />
+                  </MockupViewport>
                 </div>
               </TabsContent>
             );

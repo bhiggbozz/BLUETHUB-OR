@@ -5,12 +5,14 @@ import { cn } from "@/lib/utils";
  * designed width (so its text stays legible) and is cropped on the right with a
  * soft fade, like a peek at the real screen. From 640px up it simply fills the
  * column.
+ * Parents in a grid must allow shrinking (min-w-0), or the 34rem inner width
+ * would widen the grid track and the page.
  */
 export function MockupViewport({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div
       className={cn(
-        "max-sm:-mr-4 max-sm:overflow-hidden max-sm:pr-0",
+        "min-w-0 max-sm:-mr-4 max-sm:overflow-hidden max-sm:pr-0",
         "max-sm:[mask-image:linear-gradient(to_right,black_78%,transparent)]",
         className,
       )}
