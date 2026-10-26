@@ -237,14 +237,15 @@
   animation-play-state: paused;
 }
 
-/* Small rotate on hover for icons inside a .group card. */
+/* Small rotate on hover for icons inside a .group (same spec as .icon-spring:
+   one icon motion across the site). */
 .rotate-on-hover {
-  transition: transform var(--motion-hover) var(--ease-out-soft);
+  transition: transform 450ms var(--ease-spring);
 }
 
 .group:hover .rotate-on-hover,
 .group:focus-visible .rotate-on-hover {
-  transform: rotate(-12deg) scale(1.06);
+  transform: rotate(10deg) scale(1.06);
 }
 
 /* Scroll-linked rotation for one or two decorative shapes.

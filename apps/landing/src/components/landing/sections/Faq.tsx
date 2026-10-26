@@ -31,8 +31,8 @@ export function Faq() {
             {FAQ.map((item) => (
               <li key={item.q}>
                 <details className="group/faq">
-                  <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-6 text-left [&::-webkit-details-marker]:hidden">
-                    <span className="text-h4">
+                  <summary className="group/q flex cursor-pointer list-none items-start justify-between gap-6 rounded-md py-6 text-left transition-colors duration-200 hover:text-primary [&::-webkit-details-marker]:hidden">
+                    <span className="text-h4 transition-colors duration-200 group-hover/q:text-primary">
                       {item.q}
                       {item.confirm && <Confirm note={item.confirm} />}
                     </span>
