@@ -62,9 +62,9 @@ export function Hero() {
         <div className="relative lg:col-span-6">
           <Orbit />
           <Reveal delay={120} className="relative">
-            <AdminDashboardMock className="lg:mr-24" />
+            <AdminDashboardMock className="lg:mr-32" />
           </Reveal>
-          <Reveal delay={320} className="absolute -right-2 -bottom-14 max-sm:hidden lg:-right-4">
+          <Reveal delay={320} className="absolute -right-4 -bottom-14 max-lg:hidden">
             <AttendanceScanMock className="w-[172px] rotate-[4deg]" />
           </Reveal>
         </div>

@@ -35,7 +35,7 @@ export function Problem() {
       <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-5">
         <Stagger>
           {PAINS.map((p) => (
-            <Reveal as="li" key={p.title} className="group flex flex-col bg-card p-6">
+            <Reveal as="li" key={p.title} className="group flex flex-col bg-card p-6 sm:last:col-span-2 lg:last:col-span-1">
               <span className="inline-flex size-10 items-center justify-center rounded-md bg-destructive/10 text-destructive">
                 <p.icon aria-hidden className="rotate-on-hover size-5" />
               </span>
