@@ -29,13 +29,13 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { label: "Services", href: "#services" },
-  { label: "Products", href: "#products" },
-  { label: "How we work", href: "#process" },
-  { label: "About", href: "#about" },
+  { label: "Services", href: "/#services" },
+  { label: "Products", href: "/#products" },
+  { label: "How we work", href: "/#process" },
+  { label: "About", href: "/#about" },
 ];
 
-export const PRIMARY_CTA = { label: "Start a project", href: "#contact" } as const;
+export const PRIMARY_CTA = { label: "Start a project", href: "/#contact" } as const;
 
 export interface SocialLink {
   label: string;
@@ -53,19 +53,19 @@ export const FOOTER_GROUPS: { title: string; links: NavLink[] }[] = [
   {
     title: "Company",
     links: [
-      { label: "What we do", href: "#services" },
-      { label: "How we work", href: "#process" },
-      { label: "About us", href: "#about" },
-      { label: "Contact", href: "#contact" },
+      { label: "What we do", href: "/#services" },
+      { label: "How we work", href: "/#process" },
+      { label: "About us", href: "/#about" },
+      { label: "Contact", href: "/#contact" },
     ],
   },
   {
     title: "Products",
     links: [
-      { label: "Skoolhub", href: "#product-skoolhub" },
-      { label: "QueensMoni", href: "#product-queensmoni" },
-      { label: "SABI", href: "#product-sabi" },
-      { label: "Cerebre Plus", href: "#product-cerebre-plus" },
+      { label: "Skoolhub", href: "/#product-skoolhub" },
+      { label: "QueensMoni", href: "/#product-queensmoni" },
+      { label: "SABI", href: "/#product-sabi" },
+      { label: "Cerebre Plus", href: "/#product-cerebre-plus" },
     ],
   },
 ];
