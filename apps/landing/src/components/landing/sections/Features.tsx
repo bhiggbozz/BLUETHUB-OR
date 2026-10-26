@@ -1,7 +1,6 @@
 import { Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bluethub/ui-kit/components/ui/tabs";
-import { COMING_SOON, FEATURES_INTRO, ROLES, type RoleId } from "@/data/home";
-import { ComingSoon } from "@/components/common/ComingSoon";
+import { FEATURES_INTRO, ROLES, type RoleId } from "@/data/home";
 import { Cta } from "@/components/common/Cta";
 import { Reveal } from "@/components/common/motion";
 import { Section } from "@/components/common/Section";
@@ -78,17 +77,6 @@ export function Features() {
         </Tabs>
       </Reveal>
 
-      <Reveal className="mt-16 flex flex-col gap-4 rounded-lg border border-dashed border-border-strong p-5 md:flex-row md:items-center md:justify-between md:p-6">
-        <p className="text-h4 shrink-0 whitespace-nowrap">On the way</p>
-        <ul className="flex flex-wrap gap-2 md:justify-end">
-          {COMING_SOON.map((f) => (
-            <li key={f} className="inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pr-1 pl-3 text-sm font-medium text-heading">
-              {f}
-              <ComingSoon />
-            </li>
-          ))}
-        </ul>
-      </Reveal>
     </Section>
   );
 }

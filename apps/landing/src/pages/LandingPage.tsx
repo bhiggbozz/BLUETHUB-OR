@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/sections/Hero";
 import { Problem } from "@/components/landing/sections/Problem";
 import { Solution } from "@/components/landing/sections/Solution";
 import { Features } from "@/components/landing/sections/Features";
+import { Roadmap } from "@/components/landing/sections/Roadmap";
 import { HowItWorks } from "@/components/landing/sections/HowItWorks";
 import { Results } from "@/components/landing/sections/Results";
 import { Security } from "@/components/landing/sections/Security";
@@ -22,6 +23,7 @@ export default function LandingPage() {
         <Problem />
         <Solution />
         <Features />
+        <Roadmap />
         <HowItWorks />
         <Results />
         <Security />

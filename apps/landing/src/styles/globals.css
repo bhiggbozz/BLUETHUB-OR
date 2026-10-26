@@ -68,9 +68,13 @@
   --shadow-soft: 0 1px 2px rgb(10 22 40 / 0.04), 0 4px 16px -8px rgb(10 22 40 / 0.08);
   --shadow-lift: 0 2px 4px rgb(10 22 40 / 0.05), 0 18px 40px -20px rgb(10 22 40 / 0.22);
   --shadow-float: 0 4px 8px rgb(10 22 40 / 0.06), 0 30px 60px -24px rgb(10 22 40 / 0.35);
+  /* hover state for interactive cards (faded in via opacity, never animated directly) */
+  --shadow-hover: 0 2px 4px rgb(10 22 40 / 0.05), 0 24px 48px -18px rgb(26 79 214 / 0.28);
 
   /* ── Motion: one easing language for the whole site ── */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* small overshoot, used only for icon nudges */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 :root {
@@ -80,6 +84,8 @@
   --motion-stagger: 80ms;
   --motion-ambient: 26s; /* one full turn */
   --motion-badge: 20s;
+  --motion-draw: 900ms; /* connector lines drawing in */
+  --motion-lift: -4px; /* card hover lift */
 }
 
 [data-theme="dark"] {
@@ -119,6 +125,7 @@
   --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 6px 18px -10px rgb(0 0 0 / 0.6);
   --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 20px 44px -20px rgb(0 0 0 / 0.75);
   --shadow-float: 0 4px 8px rgb(0 0 0 / 0.4), 0 30px 60px -24px rgb(0 0 0 / 0.8);
+  --shadow-hover: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -18px rgb(91 154 255 / 0.25);
 
   color-scheme: dark;
 }

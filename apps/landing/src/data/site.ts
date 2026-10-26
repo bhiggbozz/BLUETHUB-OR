@@ -48,6 +48,7 @@ export const FOOTER_GROUPS: { title: string; links: NavLink[] }[] = [
     links: [
       { label: "Features", href: "/#features" },
       { label: "How it works", href: "/#how" },
+      { label: "Roadmap", href: "/#roadmap" },
       { label: "Security", href: "/#security" },
       { label: "Pilot", href: "/#pilot" },
       { label: "FAQ", href: "/#faq" },

@@ -1,10 +1,15 @@
 /**
  * Home page copy, mirroring docs/copy-deck.md.
  * Every product claim maps to a feature in apps/web. Unbuilt features are
- * listed under COMING_SOON. `confirm` notes render as markers in dev only.
+ * listed under ROADMAP. `confirm` notes render as markers in dev only.
  */
 import {
   BookOpenCheck,
+  CalendarClock,
+  CalendarDays,
+  FileText,
+  LibraryBig,
+  MessageSquareText,
   CalendarX2,
   ClipboardCheck,
   Clock4,
@@ -19,6 +24,7 @@ import {
   SlidersHorizontal,
   Target,
   Users,
+  Wallet,
   WifiOff,
   type LucideIcon,
 } from "lucide-react";
@@ -143,7 +149,53 @@ export const ROLES: RoleFeature[] = [
   },
 ];
 
-export const COMING_SOON = ["Fee tracking", "Report cards", "Timetables", "SMS alerts", "Library", "School calendar"];
+export type RoadmapPreviewId = "fees" | "reports" | "sms" | "timetable" | "calendar" | "library";
+
+export interface RoadmapItem {
+  id: RoadmapPreviewId;
+  name: string;
+  line: string;
+  icon: LucideIcon;
+  confirm?: string;
+}
+
+export interface RoadmapGroup {
+  id: "next" | "later";
+  label: string;
+  when: string;
+  items: RoadmapItem[];
+}
+
+/** Ordered by priority, not alphabetically. Order and timing are [CONFIRM]. */
+export const ROADMAP = {
+  eyebrow: "Roadmap",
+  title: "Built for today. Growing with your school.",
+  lede: "Everything above is live now. Here's what we're building next, in the order school leaders ask for it.",
+  cta: { label: "Request a feature", subject: "Feature request for Bluethub" },
+  timingConfirm: "Priority order and timing for each group.",
+  groups: [
+    {
+      id: "next",
+      label: "Next up",
+      when: "Early 2027",
+      items: [
+        { id: "fees", icon: Wallet, name: "Fee tracking", line: "See who has paid, who owes and what's overdue, without chasing receipts." },
+        { id: "reports", icon: FileText, name: "Report cards", line: "Turn the scores already in Bluethub into end-of-term reports in minutes." },
+        { id: "sms", icon: MessageSquareText, name: "SMS alerts", line: "Reach parents without data or a smartphone, for absences, results and notices." },
+      ],
+    },
+    {
+      id: "later",
+      label: "Later",
+      when: "2027",
+      items: [
+        { id: "timetable", icon: CalendarClock, name: "Timetables", line: "Build a clash-free timetable for every class, teacher and room.", confirm: "'Clash-free' promise." },
+        { id: "calendar", icon: CalendarDays, name: "School calendar", line: "Terms, exams, holidays and events in one calendar staff and parents can see." },
+        { id: "library", icon: LibraryBig, name: "Library", line: "Track books, loans and returns, and spot what's overdue at a glance." },
+      ],
+    },
+  ] as RoadmapGroup[],
+};
 
 export const HOW = {
   eyebrow: "Getting started",

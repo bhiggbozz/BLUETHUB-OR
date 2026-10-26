@@ -10,6 +10,7 @@
 @source "../../../packages/ui/src/components/ui/input.tsx";
 @source "../../../packages/ui/src/components/ui/textarea.tsx";
 @source "../../../packages/ui/src/components/ui/label.tsx";
+@source "../../../packages/ui/src/components/ui/dialog.tsx";
 /* Docs and build logs are not markup. */
 @source not "../docs";
 @source not "../.turbo";
@@ -268,7 +269,120 @@
   transform: translateX(3px);
 }
 
+/* Interactive card: lifts on hover. The deeper shadow and accent border sit on
+   pseudo-elements and fade in, so only transform and opacity ever animate. */
+.card-lift {
+  position: relative;
+  isolation: isolate;
+  transition: transform var(--motion-hover) var(--ease-out-soft);
+}
+
+.card-lift::before,
+.card-lift::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-hover) var(--ease-out-soft);
+}
+
+.card-lift::before {
+  z-index: -1;
+  box-shadow: var(--shadow-hover);
+}
+
+.card-lift::after {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+.card-lift:hover,
+.card-lift:focus-within {
+  transform: translate3d(0, var(--motion-lift), 0);
+}
+
+.card-lift:hover::before,
+.card-lift:hover::after,
+.card-lift:focus-within::before,
+.card-lift:focus-within::after {
+  opacity: 1;
+}
+
+/* Icon nudge with a little spring, for cards. */
+.icon-spring {
+  transition: transform 450ms var(--ease-spring);
+}
+
+.group:hover .icon-spring,
+.group:focus-within .icon-spring {
+  transform: rotate(10deg) scale(1.06);
+}
+
+/* Connector line that draws in once its section is revealed. */
+.draw-line {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-draw) var(--ease-out-soft) 150ms;
+}
+
+.js [data-reveal].is-in .draw-line,
+html:not(.js) .draw-line {
+  transform: scaleX(1);
+}
+
+/* The shared shadcn Dialog: a short fade + settle (opacity and scale only;
+   scale is its own property, so it does not fight the centring translate). */
+@keyframes bh-dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+@keyframes bh-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+[data-slot="dialog-content"][data-state="open"] {
+  animation: bh-dialog-in 260ms var(--ease-out-soft);
+}
+
+[data-slot="dialog-overlay"][data-state="open"] {
+  animation: bh-fade-in 200ms var(--ease-out-soft);
+}
+
+/* Faint grain for depth on feature surfaces (tiny inline SVG, no request). */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%272%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27 opacity=%270.045%27/%3E%3C/svg%3E");
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .card-lift,
+  .card-lift::before,
+  .card-lift::after,
+  .icon-spring,
+  .draw-line {
+    transition: none;
+  }
+
+  .card-lift:hover,
+  .card-lift:focus-within,
+  .group:hover .icon-spring {
+    transform: none;
+  }
+
+  .draw-line {
+    transform: scaleX(1);
+  }
+
+  [data-slot="dialog-content"][data-state="open"],
+  [data-slot="dialog-overlay"][data-state="open"] {
+    animation: none;
+  }
+
   .js [data-reveal] {
     opacity: 1;
     transform: none;
