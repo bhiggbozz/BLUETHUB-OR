@@ -1,6 +1,9 @@
 @import "./styles/globals.css";
 @import "tailwindcss";
 
+/* Let Tailwind see the classes used by the shared shadcn kit. */
+@source "../../../packages/ui/src/components/ui";
+
 /* ──────────────────────────────────────────────
    Type scale
    Serif (Lora) carries display and section headings for an editorial voice;
@@ -55,7 +58,7 @@
 @utility text-lede {
   font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
   line-height: 1.65;
-  color: var(--color-muted);
+  color: var(--color-muted-foreground);
 }
 
 @utility text-body {
@@ -66,7 +69,7 @@
 @utility text-caption {
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: var(--color-muted);
+  color: var(--color-muted-foreground);
 }
 
 @utility eyebrow {
@@ -159,20 +162,122 @@
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-muted);
+    background: var(--color-muted-foreground);
   }
 
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
     }
+  }
+}
 
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+/* ──────────────────────────────────────────────
+   Motion system
+   One easing (--ease-out-soft), entrances 500–800ms, hovers 150–250ms.
+   Only transform and opacity animate. Everything is off for reduced motion.
+   ────────────────────────────────────────────── */
+
+/* Scroll reveal: elements start slightly low and transparent, and settle once.
+   Stagger children by setting --i (see components/common/motion.tsx).
+   Without JS (no .js on <html>) content is simply visible. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition:
+    opacity var(--motion-enter) var(--ease-out-soft),
+    transform var(--motion-enter) var(--ease-out-soft);
+  transition-delay: calc(var(--i, 0) * var(--motion-stagger) + var(--delay, 0ms));
+}
+
+.js [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Ambient rotation (hero) and the circular-text badge. Paused off-screen. */
+@keyframes bh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotate-ambient {
+  animation: bh-spin var(--motion-ambient) linear infinite;
+}
+
+.rotate-badge {
+  animation: bh-spin var(--motion-badge) linear infinite;
+}
+
+[data-paused="true"] .rotate-ambient,
+[data-paused="true"] .rotate-badge,
+.rotate-ambient[data-paused="true"],
+.rotate-badge[data-paused="true"] {
+  animation-play-state: paused;
+}
+
+/* Small rotate on hover for icons inside a .group card. */
+.rotate-on-hover {
+  transition: transform var(--motion-hover) var(--ease-out-soft);
+}
+
+.group:hover .rotate-on-hover,
+.group:focus-visible .rotate-on-hover {
+  transform: rotate(-12deg) scale(1.06);
+}
+
+/* Scroll-linked rotation for one or two decorative shapes.
+   Progressive enhancement: browsers without scroll timelines show a still shape. */
+@keyframes bh-scroll-turn {
+  from {
+    transform: rotate(-35deg);
+  }
+  to {
+    transform: rotate(55deg);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (width >= 48rem) {
+    .rotate-scroll {
+      animation: bh-scroll-turn linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
     }
+  }
+}
+
+/* Arrow nudge used by CTA buttons. */
+.arrow-nudge {
+  transition: transform var(--motion-hover) var(--ease-out-soft);
+}
+
+.group:hover .arrow-nudge,
+.group:focus-visible .arrow-nudge {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .rotate-ambient,
+  .rotate-badge,
+  .rotate-scroll {
+    animation: none !important;
+  }
+
+  .rotate-on-hover,
+  .arrow-nudge {
+    transition: none;
+  }
+
+  .group:hover .rotate-on-hover,
+  .group:hover .arrow-nudge {
+    transform: none;
   }
 }

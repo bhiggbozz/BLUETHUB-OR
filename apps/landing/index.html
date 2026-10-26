@@ -2,10 +2,11 @@
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bluethub · Software for schools, finance and growing brands</title>
-    <meta name="description" content="Bluethub designs, builds and runs software for schools, financial services and growing brands. We are the team behind Skoolhub, QueensMoni, SABI and Cerebre Plus." />
+    <title>Bluethub · School management and e-learning that works offline</title>
+    <meta name="description" content="Lessons, assessments, QR attendance and parent updates in one platform for your school, and it keeps working when the internet doesn&#39;t. Start a 3-month pilot." />
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+    <link rel="apple-touch-icon" href="/logo-192.png" />
     <meta name="theme-color" content="#f7f8fc" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
     <!-- [CONFIRM] canonical origin -->
@@ -14,19 +15,21 @@
     <!-- Open Graph / social previews -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Bluethub" />
-    <meta property="og:title" content="Bluethub · Software for schools, finance and growing brands" />
-    <meta property="og:description" content="We design, build and run software that real organisations rely on. The team behind Skoolhub, QueensMoni, SABI and Cerebre Plus." />
+    <meta property="og:title" content="Bluethub · One place to teach, test and track your school" />
+    <meta property="og:description" content="Lessons, assessments, QR attendance and parent updates in one platform, and it works offline. Start a 3-month pilot." />
     <meta property="og:url" content="https://bluethub.com/" />
     <meta property="og:locale" content="en_NG" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Bluethub · Software for schools, finance and growing brands" />
-    <meta name="twitter:description" content="We design, build and run software that real organisations rely on." />
-    <!-- [CONFIRM] Add a 1200x630 image at public/og-image.png, then enable these two tags:
+    <meta name="twitter:title" content="Bluethub · One place to teach, test and track your school" />
+    <meta name="twitter:description" content="Lessons, assessments, QR attendance and parent updates in one platform, and it works offline." />
+    <!-- [CONFIRM] Add a 1200x630 image at public/og-image.png, then enable:
     <meta property="og:image" content="https://bluethub.com/og-image.png" />
     <meta name="twitter:image" content="https://bluethub.com/og-image.png" />
     -->
-    <!-- Apply the saved (or system) theme before first paint to avoid a flash. -->
+
+    <!-- Before first paint: mark JS available (enables scroll reveals) and apply the saved/system theme. -->
     <script>
+      document.documentElement.classList.add("js");
       try {
         var t = localStorage.getItem("bluetthub-theme");
         if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

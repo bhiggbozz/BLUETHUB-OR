@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { MotionConfig } from "framer-motion";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { routes } from "@/routes/index";
 
@@ -13,8 +12,6 @@ function LoadingFallback() {
 
 export default function App() {
   return (
-    // reducedMotion="user": every Framer animation respects prefers-reduced-motion.
-    <MotionConfig reducedMotion="user">
     <BrowserRouter>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
@@ -24,6 +21,5 @@ export default function App() {
         </Routes>
       </Suspense>
     </BrowserRouter>
-    </MotionConfig>
   );
 }

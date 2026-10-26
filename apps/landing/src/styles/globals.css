@@ -1,12 +1,11 @@
 /* ──────────────────────────────────────────────
    Bluethub — Design Tokens (Tailwind v4, CSS-first)
-   "Freshly classic": the original palette, re-balanced.
-   Lora (serif) for display & section headings, Sora for everything else.
+   Token names follow shadcn/ui semantics so @bluethub/ui-kit components
+   (packages/ui) render correctly. Colour values are the existing Bluethub
+   palette: Sora + Lora, brand blue #1a4fd6, navy ink.
    ────────────────────────────────────────────── */
 
-/* `dark:` utilities follow the site toggle (data-theme), not the OS setting.
-   Without this, Tailwind v4 keys `dark:` off prefers-color-scheme and the
-   toggle only half-applied. */
+/* `dark:` follows the site toggle (data-theme), not the OS. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
@@ -14,125 +13,112 @@
   --font-sans: "Sora", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif: "Lora", Georgia, "Times New Roman", serif;
 
-  /* ── Brand palette (unchanged values, kept for compatibility) ── */
+  /* ── Brand scale (kept for compatibility) ── */
   --color-blue-50: #eff6ff;
   --color-blue-100: #dbeafe;
   --color-blue-200: #bfdbfe;
   --color-blue-400: #60a5fa;
-  --color-blue-500: #2563eb;
   --color-blue-600: #1a4fd6;
-  --color-blue-700: #1e56d6;
   --color-blue-800: #1e3a6e;
-  --color-blue-900: #0a1628;
-
-  --color-accent-50: #fef3c7;
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
-
-  --color-emerald-50: #d1fae5;
-  --color-emerald-400: #34d399;
-  --color-emerald-500: #10b981;
-
   --color-navy-900: #0a1628;
-  --color-navy-800: #0d1117;
-  --color-navy-700: #161b22;
-  --color-navy-600: #1c2333;
-  --color-navy-500: #21293a;
-  --color-navy-400: #64748b;
-  --color-navy-300: #94a3b8;
 
-  --color-surface-50: #f0f4ff;
-  --color-surface-100: #e8edf8;
-  --color-surface-200: #f8faff;
-  --color-surface-white: #ffffff;
-
-  /* ── Semantic tokens (light) ── */
-  --color-background: #f7f8fc; /* was #f0f4ff: calmer neutral so blue reads as the accent */
-  --color-tint: #eef2fb; /* alternating section surface */
+  /* ── shadcn semantic tokens (light) ── */
+  --color-background: #f7f8fc;
   --color-foreground: #1e293b;
-  --color-heading: #0a1628;
-  --color-muted: #526077; /* was #64748b: now passes WCAG AA on every light surface */
-  --color-subtle: #6b7891; /* captions on white only */
-  --color-border: #e3e8f2;
-  --color-border-strong: #cfd7e6;
-
   --color-card: #ffffff;
   --color-card-foreground: #1e293b;
-
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1e293b;
   --color-primary: #1a4fd6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eef2fb;
+  --color-secondary-foreground: #0a1628;
+  --color-muted: #eef2fb; /* a surface, per shadcn */
+  --color-muted-foreground: #526077; /* body-secondary text, AA on every light surface */
+  --color-accent: #e9efff; /* hover surface, per shadcn */
+  --color-accent-foreground: #1643b8;
+  --color-destructive: #c42b3c;
+  --color-border: #e3e8f2;
+  --color-input: #cfd7e6;
+  --color-ring: #1a4fd6;
+
+  /* ── Bluethub extensions ── */
+  --color-heading: #0a1628;
+  --color-subtle: #6b7891;
+  --color-tint: #eef2fb;
+  --color-border-strong: #cfd7e6;
   --color-primary-strong: #1643b8;
   --color-primary-soft: #e9efff;
-  --color-primary-foreground: #ffffff;
-
-  /* Accent is a highlight, not a second brand colour. Text-safe shade for light surfaces. */
-  --color-accent: #f59e0b;
-  --color-accent-text: #a16207;
-
+  --color-highlight: #f59e0b; /* the one warm accent: tiny highlights only */
+  --color-highlight-soft: #fef3c7;
+  --color-highlight-text: #a16207;
   --color-success: #0f8a5f;
-  --color-danger: #c42b3c;
-
-  --color-ink: #0a1628; /* dark band (CTA, footer) */
+  --color-success-soft: #e3f5ee;
+  --color-ink: #0a1628;
   --color-ink-foreground: #f5f7fb;
-  --color-ink-muted: #aeb8cc; /* was white/40: passes AA on ink */
+  --color-ink-muted: #aeb8cc;
 
-  --color-secondary: #eef2fb;
-  --color-secondary-foreground: #1e293b;
-
-  /* ── Radius: one consistent set ── */
+  /* ── Radius ── */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  /* legacy names, mapped onto the new set */
-  --radius-card: 16px;
-  --radius-pill: 999px;
-  --radius-button: 12px;
 
-  /* ── Elevation: soft, layered, never heavy ── */
+  /* ── Elevation ── */
   --shadow-soft: 0 1px 2px rgb(10 22 40 / 0.04), 0 4px 16px -8px rgb(10 22 40 / 0.08);
   --shadow-lift: 0 2px 4px rgb(10 22 40 / 0.05), 0 18px 40px -20px rgb(10 22 40 / 0.22);
+  --shadow-float: 0 4px 8px rgb(10 22 40 / 0.06), 0 30px 60px -24px rgb(10 22 40 / 0.35);
 
-  /* ── Motion ── */
+  /* ── Motion: one easing language for the whole site ── */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* ── Dark theme: same hues, lifted for a dark canvas ── */
-[data-theme="dark"] {
-  --color-background: #0d1117;
-  --color-tint: #121925;
-  --color-foreground: #dfe5ef;
-  --color-heading: #f5f7fb;
-  --color-muted: #9ba8bf;
-  --color-subtle: #8693ab;
-  --color-border: #222b3a;
-  --color-border-strong: #313c50;
-
-  --color-card: #141b27;
-  --color-card-foreground: #dfe5ef;
-
-  --color-primary: #5b9aff;
-  --color-primary-strong: #82b2ff;
-  --color-primary-soft: #14223d;
-  --color-primary-foreground: #0d1117;
-
-  --color-accent-text: #fbbf24;
-  --color-success: #34d399;
-  --color-danger: #f87183;
-
-  --color-ink: #070b14;
-  --color-ink-foreground: #f5f7fb;
-  --color-ink-muted: #a3aec3;
-
-  --color-secondary: #121925;
-  --color-secondary-foreground: #dfe5ef;
-
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 6px 18px -10px rgb(0 0 0 / 0.6);
-  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 20px 44px -20px rgb(0 0 0 / 0.75);
-
-  color-scheme: dark;
 }
 
 :root {
   color-scheme: light;
+  --motion-enter: 700ms;
+  --motion-hover: 200ms;
+  --motion-stagger: 80ms;
+  --motion-ambient: 26s; /* one full turn */
+  --motion-badge: 20s;
+}
+
+[data-theme="dark"] {
+  --color-background: #0d1117;
+  --color-foreground: #dfe5ef;
+  --color-card: #141b27;
+  --color-card-foreground: #dfe5ef;
+  --color-popover: #141b27;
+  --color-popover-foreground: #dfe5ef;
+  --color-primary: #5b9aff;
+  --color-primary-foreground: #0d1117;
+  --color-secondary: #121925;
+  --color-secondary-foreground: #dfe5ef;
+  --color-muted: #121925;
+  --color-muted-foreground: #9ba8bf;
+  --color-accent: #14223d;
+  --color-accent-foreground: #9cc2ff;
+  --color-destructive: #f87183;
+  --color-border: #222b3a;
+  --color-input: #313c50;
+  --color-ring: #5b9aff;
+
+  --color-heading: #f5f7fb;
+  --color-subtle: #8693ab;
+  --color-tint: #121925;
+  --color-border-strong: #313c50;
+  --color-primary-strong: #82b2ff;
+  --color-primary-soft: #14223d;
+  --color-highlight-soft: #3a2a0d;
+  --color-highlight-text: #fbbf24;
+  --color-success: #34d399;
+  --color-success-soft: #0f2a22;
+  --color-ink: #070b14;
+  --color-ink-foreground: #f5f7fb;
+  --color-ink-muted: #a3aec3;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 6px 18px -10px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 20px 44px -20px rgb(0 0 0 / 0.75);
+  --shadow-float: 0 4px 8px rgb(0 0 0 / 0.4), 0 30px 60px -24px rgb(0 0 0 / 0.8);
+
+  color-scheme: dark;
 }
