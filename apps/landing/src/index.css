@@ -1,8 +1,18 @@
 @import "./styles/globals.css";
 @import "tailwindcss";
 
-/* Let Tailwind see the classes used by the shared shadcn kit. */
-@source "../../../packages/ui/src/components/ui";
+/* Let Tailwind see the classes of the shadcn kit components this site uses
+   (listed individually so unused kit styles stay out of the CSS bundle). */
+@source "../../../packages/ui/src/components/ui/button.tsx";
+@source "../../../packages/ui/src/components/ui/badge.tsx";
+@source "../../../packages/ui/src/components/ui/card.tsx";
+@source "../../../packages/ui/src/components/ui/tabs.tsx";
+@source "../../../packages/ui/src/components/ui/input.tsx";
+@source "../../../packages/ui/src/components/ui/textarea.tsx";
+@source "../../../packages/ui/src/components/ui/label.tsx";
+/* Docs and build logs are not markup. */
+@source not "../docs";
+@source not "../.turbo";
 
 /* ──────────────────────────────────────────────
    Type scale

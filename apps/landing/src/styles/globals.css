@@ -51,7 +51,7 @@
   --color-primary-soft: #e9efff;
   --color-highlight: #f59e0b; /* the one warm accent: tiny highlights only */
   --color-highlight-soft: #fef3c7;
-  --color-highlight-text: #a16207;
+  --color-highlight-text: #854d0e; /* was #a16207: 4.4:1 on the soft badge, now AA */
   --color-success: #0f8a5f;
   --color-success-soft: #e3f5ee;
   --color-ink: #0a1628;

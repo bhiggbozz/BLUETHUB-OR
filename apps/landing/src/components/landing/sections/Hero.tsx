@@ -10,7 +10,7 @@ import { AttendanceScanMock } from "../mockups/AttendanceScanMock";
 /** Slow ambient orbit behind the product shots: one full turn every 26s, paused off-screen. */
 function Orbit() {
   return (
-    <Rotate mode="ambient" className="absolute top-1/2 left-1/2 size-[34rem] -translate-x-1/2 -translate-y-1/2 max-md:size-[24rem]">
+    <Rotate mode="ambient" className="absolute top-1/2 left-1/2 size-[34rem] -translate-x-1/2 -translate-y-1/2 max-md:hidden">
       <svg viewBox="0 0 400 400" className="size-full" fill="none">
         <circle cx="200" cy="200" r="196" className="stroke-border-strong" strokeWidth="1" strokeDasharray="2 8" />
         <circle cx="200" cy="200" r="150" className="stroke-border" strokeWidth="1" />
