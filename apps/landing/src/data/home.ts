@@ -1,255 +1,303 @@
 /**
- * Copy deck for the home page.
- *
- * `confirm` holds a note for anything assumed rather than known. Those notes
- * render as [CONFIRM] markers in development builds only.
- * Proof items under EXPERIENCE are drawn from work in this repository (Skoolhub);
- * everything Bluethub still needs to supply is a labelled placeholder.
+ * Home page copy, mirroring docs/copy-deck.md.
+ * Every product claim maps to a feature in apps/web. Unbuilt features are
+ * listed under COMING_SOON. `confirm` notes render as markers in dev only.
  */
 import {
-  Compass,
-  Layers,
-  LifeBuoy,
-  MonitorSmartphone,
-  Sparkles,
-  Wallet,
-  WifiOff,
-  Building2,
-  Radio,
+  BookOpenCheck,
+  CalendarX2,
+  ClipboardCheck,
+  Clock4,
+  FileScan,
+  Fingerprint,
+  KeyRound,
+  LockKeyhole,
+  MessageSquareOff,
+  NotebookPen,
+  QrCode,
+  ShieldCheck,
+  SlidersHorizontal,
+  Target,
   Users,
+  WifiOff,
   type LucideIcon,
 } from "lucide-react";
 
 export const HERO = {
-  eyebrow: "Software studio · Lagos",
-  eyebrowConfirm: "Is 'software studio' the right descriptor, and is Lagos the base?",
-  title: "We build software that real organisations run on.",
-  lede: "Bluethub designs, builds and runs digital products for schools, financial services and growing brands. Four of our own platforms are already in use, so we know what it takes long after launch day.",
-  ledeConfirm: "Confirm all four products are live and in use.",
-  primary: { label: "Start a project", href: "#contact" },
-  secondary: { label: "See our products", href: "#products" },
-  trust: "The team behind Skoolhub, QueensMoni, SABI and Cerebre Plus.",
+  eyebrow: "For primary and secondary schools",
+  eyebrowConfirm: "Target market: primary and secondary schools (Nigeria first?)",
+  title: "One place to teach, test and track your school.",
+  lede: "Bluethub gives your teachers, students and parents one simple platform for lessons, assessments and attendance. And it keeps working when the network doesn't.",
+  primary: { label: "Book a demo", href: "#demo" },
+  secondary: { label: "See how it works", href: "#how" },
+  trust: "Start with a 3-month pilot. Your school gets its own Bluethub address.",
+  badge: "3-month pilot · book a demo · ",
 } as const;
 
-export interface Service {
+export interface Pain {
+  icon: LucideIcon;
+  title: string;
+  line: string;
+}
+
+export const PROBLEM = {
+  eyebrow: "Sound familiar?",
+  title: "School still runs on paper, group chats and good luck.",
+  lede: "Registers, exercise books, spreadsheets and WhatsApp groups. Things slip through the gaps, and the people who need answers find out last.",
+  action: { label: "See how Bluethub fixes this", href: "#solution" },
+};
+
+export const PAINS: Pain[] = [
+  { icon: ClipboardCheck, title: "Registers that eat into lessons", line: "Calling names, then copying them into a book nobody can search." },
+  { icon: NotebookPen, title: "Marking that takes every evening", line: "Teachers retype the same questions and mark every script by hand." },
+  { icon: WifiOff, title: "Lessons lost to bad network", line: "When the connection drops, the class stops, and absent students miss it for good." },
+  { icon: CalendarX2, title: "Parents who hear at the end of term", line: "By the time a report goes home, it's too late to help." },
+  { icon: MessageSquareOff, title: "Leaders working blind", line: "No single view of which classes, subjects or teachers need support." },
+];
+
+export const SOLUTION = {
+  eyebrow: "The Bluethub way",
+  title: "Everything your school does, finally connected.",
+  lede: "Classes, lessons, tests, attendance and parents live in one system, with a home for every role. Set it up once and every page stays in step.",
+  action: { label: "Book a demo", href: "#demo" },
+};
+
+export const BEFORE_AFTER: { before: string; after: string }[] = [
+  { before: "Paper registers", after: "QR attendance in seconds, even offline" },
+  { before: "Retyped tests", after: "A shared question bank, marked automatically" },
+  { before: "Missed lessons", after: "Whiteboard lessons students can replay" },
+  { before: "End-of-term surprises", after: "Parents see attendance as it happens" },
+  { before: "Guesswork", after: "Performance by class, subject and teacher" },
+];
+
+export type RoleId = "leaders" | "teachers" | "students" | "parents";
+
+export interface RoleFeature {
+  id: RoleId;
+  tab: string;
+  who: string;
+  title: string;
+  points: string[];
+  note?: string;
+}
+
+export const FEATURES_INTRO = {
+  eyebrow: "Built for everyone in your school",
+  title: "A home for every role.",
+  lede: "Each person signs in to a space made for them, with only what they need.",
+  action: { label: "Book a demo", href: "#demo" },
+};
+
+export const ROLES: RoleFeature[] = [
+  {
+    id: "leaders",
+    tab: "School leaders",
+    who: "Principals and administrators",
+    title: "See your whole school at a glance.",
+    points: [
+      "Set up classes, subjects and the full curriculum, topic by topic",
+      "Register staff, students and parents, and link parents to their children",
+      "Approve lessons before students see them",
+      "Track performance by class, subject and teacher",
+      "Choose exactly what each staff member can do",
+      "Put your school's logo on every screen",
+    ],
+  },
+  {
+    id: "teachers",
+    tab: "Teachers",
+    who: "Subject teachers, class teachers and head teachers",
+    title: "Teach once. Reach every student.",
+    points: [
+      "Record lessons on a digital whiteboard with your voice, even offline",
+      "Take attendance by scanning each student's QR code",
+      "Build a question bank by topic, or pull questions from scanned papers",
+      "Create quizzes and timed assessments that mark themselves",
+      "See exactly which questions a class got wrong with Exam Focus",
+    ],
+    note: "Head teachers also get a whole-class view by topic and by student.",
+  },
+  {
+    id: "students",
+    tab: "Students",
+    who: "Every learner",
+    title: "Learn at their own pace, online or off.",
+    points: [
+      "Replay any recorded lesson, or download it to watch offline",
+      "Answer by choosing, typing, drawing or speaking",
+      "See scores by subject and by subtopic",
+      "Study together in groups and the class discussion forum",
+    ],
+  },
+  {
+    id: "parents",
+    tab: "Parents",
+    who: "Parents and guardians",
+    title: "Know how your child is doing, as it happens.",
+    points: [
+      "See attendance for each child, session by session",
+      "Spot patterns, like a subject they keep missing",
+      "Set a practice quiz from topics they were actually taught",
+      "Switch between children in one account",
+    ],
+  },
+];
+
+export const COMING_SOON = ["Fee tracking", "Report cards", "Timetables", "SMS alerts", "Library", "School calendar"];
+
+export const HOW = {
+  eyebrow: "Getting started",
+  title: "Up and running without the upheaval.",
+  lede: "We set Bluethub up with you, so your staff can keep teaching.",
+  action: { label: "Start your 3-month pilot", href: "#pilot" },
+  steps: [
+    { title: "Book a demo", line: "See Bluethub with your classes in mind, and agree what your pilot should prove." },
+    {
+      title: "We set up your school",
+      line: "Your own Bluethub address and logo, with your classes, subjects and curriculum.",
+      confirm: "Who performs setup?",
+    },
+    { title: "Add your people", line: "Register teachers, students and parents. Everyone gets their own login and role." },
+    {
+      title: "Go live",
+      line: "Teachers start recording, testing and taking attendance, with our support through the first weeks.",
+      confirm: "What onboarding support is included?",
+    },
+  ] as { title: string; line: string; confirm?: string }[],
+};
+
+export interface Benefit {
+  icon: LucideIcon;
+  title: string;
+  line: string;
+}
+
+export const RESULTS = {
+  eyebrow: "What changes",
+  title: "Less admin. More teaching.",
+  lede: "Here's what Bluethub takes off your staff's plate from day one.",
+};
+
+export const BENEFITS: Benefit[] = [
+  { icon: WifiOff, title: "Teaching survives bad network", line: "Lessons and attendance work offline and sync when you're back online." },
+  { icon: BookOpenCheck, title: "Fewer evenings marking", line: "Quizzes and objective questions mark themselves." },
+  { icon: FileScan, title: "No more retyping past papers", line: "Pull questions straight from scanned papers into your bank." },
+  { icon: QrCode, title: "Registers that count themselves", line: "Attendance rates and absence lists build automatically." },
+  { icon: Target, title: "Exam prep that targets weak spots", line: "Exam Focus shows the questions a class keeps missing." },
+  { icon: Users, title: "Parents who stay involved", line: "Attendance and practice quizzes, right on their phone." },
+];
+
+/** Product facts that are true today (counted up on scroll). */
+export const FACTS = [
+  { value: 4, label: "ways students can answer", detail: "Choose, type, draw or speak" },
+  { value: 3, label: "types of attendance session", detail: "Class, subject or topic" },
+  { value: 6, label: "kinds of user, each with its own access", detail: "From principal to parent" },
+];
+
+/** Figures Bluethub will supply later; shown as labelled placeholders. */
+export const RESULT_PLACEHOLDERS = ["Schools on Bluethub", "Hours saved per teacher each week", "Change in attendance"];
+
+export const TESTIMONIAL_PLACEHOLDERS = [
+  { hint: "A principal on what changed for their staff and school.", who: "Name, Principal, School" },
+  { hint: "A parent on staying close to their child's learning.", who: "Name, Parent, School" },
+];
+
+export interface SecurityPoint {
   icon: LucideIcon;
   title: string;
   line: string;
   confirm?: string;
 }
 
-export const SERVICES_INTRO = {
-  eyebrow: "What we do",
-  title: "From first idea to software people rely on every day.",
-  lede: "Bring us a problem, a half-built product or a blank page. We'll help you decide what to build, then build it properly.",
-  action: { label: "Talk to us about your project", href: "#contact" },
-  confirm: "Confirm this list of services matches what Bluethub sells.",
-} as const;
+export const SECURITY = {
+  eyebrow: "Security and privacy",
+  title: "Your school's data stays your school's.",
+  lede: "Every school runs in its own separate space, and every sign-in is protected.",
+  action: { label: "Ask us about security", href: "#demo" },
+  confirm: "Hosting location, backups and NDPR compliance: confirm before adding any claim.",
+};
 
-export const SERVICES: Service[] = [
+export const SECURITY_POINTS: SecurityPoint[] = [
   {
-    icon: Compass,
-    title: "Product discovery",
-    line: "We turn an idea into a clear scope, a tested prototype and a realistic plan before you commit a budget.",
+    icon: ShieldCheck,
+    title: "A separate space for every school",
+    line: "Each school has its own address, and its data is kept apart from every other school's.",
+    confirm: "Wording for per-school (multi-tenant) encryption.",
   },
-  {
-    icon: MonitorSmartphone,
-    title: "Web and mobile apps",
-    line: "Fast, accessible apps that work on the phones and connections your customers actually have.",
-  },
-  {
-    icon: Layers,
-    title: "Multi-tenant platforms",
-    line: "One platform, many organisations. Each client's data stays separate and every new roll-out stays simple.",
-  },
-  {
-    icon: Wallet,
-    title: "Fintech products",
-    line: "Accounts, payments and wallets designed to earn trust from the first screen to the last transaction.",
-    confirm: "Confirm Bluethub offers fintech builds to clients.",
-  },
-  {
-    icon: Sparkles,
-    title: "Practical AI",
-    line: "AI for content, insight and automation, wired into the tools your team already uses. Only where it pays off.",
-    confirm: "Confirm Bluethub offers AI work to clients.",
-  },
-  {
-    icon: LifeBuoy,
-    title: "Support and growth",
-    line: "We stay after launch to monitor, fix and improve, so your product keeps pace with your users.",
-  },
+  { icon: KeyRound, title: "Encrypted sign-in tokens", line: "Sessions use encrypted, expiring tokens that renew securely." },
+  { icon: Fingerprint, title: "Passwords never travel in plain text", line: "They're hashed before they leave the device." },
+  { icon: Clock4, title: "Automatic sign-out", line: "Idle sessions end after 30 minutes." },
+  { icon: LockKeyhole, title: "Access by role", line: "People see only what their role allows. Parents see only their own children." },
+  { icon: SlidersHorizontal, title: "Staff permissions you control", line: "Administrators decide what each staff member can do." },
 ];
 
-export interface Product {
-  id: string;
-  name: string;
-  sector: string;
-  line: string;
-  points: string[];
-  status: "Live" | "In development";
-  /** Public URL; leave empty to hide the "Visit" link. */
-  url: string;
-  confirm: string;
-}
-
-export const PRODUCTS_INTRO = {
-  eyebrow: "Our products",
-  title: "Platforms we designed, built and still run.",
-  lede: "Each one started with a real problem in a real sector. Running them ourselves keeps us honest about what good software takes.",
-  action: { label: "Build something like this", href: "#contact" },
-} as const;
-
-export const PRODUCTS: Product[] = [
-  {
-    id: "skoolhub",
-    name: "Skoolhub",
-    sector: "Education",
-    line: "Runs a whole school from one place, and keeps working when the internet doesn't.",
-    points: [
-      "Lessons recorded offline, synced later",
-      "Question banks and assessments by topic",
-      "Attendance and progress for parents",
-    ],
-    status: "Live",
-    url: "",
-    confirm: "Confirm Skoolhub is the public name of the school platform, its status, and its URL.",
-  },
-  {
-    id: "queensmoni",
-    name: "QueensMoni",
-    sector: "Digital banking",
-    line: "Everyday banking that fits in a pocket and makes sense on first use.",
-    points: ["Accounts, transfers and payments", "Built mobile-first", "Security designed in from day one"],
-    status: "Live",
-    url: "",
-    confirm: "Confirm QueensMoni's features, status, URL and whether it can be shown publicly.",
-  },
-  {
-    id: "sabi",
-    name: "SABI",
-    sector: "Agencies and brands",
-    line: "Lets an agency run many brands from one workspace without losing track of any of them.",
-    points: ["A separate workspace per brand", "Shared assets, approvals and roles", "One view across every account"],
-    status: "Live",
-    url: "",
-    confirm: "Confirm SABI's features, status, URL and whether it can be shown publicly.",
-  },
-  {
-    id: "cerebre-plus",
-    name: "Cerebre Plus",
-    sector: "AI marketing",
-    line: "Helps small marketing teams plan, write and measure like much bigger ones.",
-    points: ["AI-assisted campaign planning", "Drafts in your brand's voice", "Results you can read at a glance"],
-    status: "Live",
-    url: "",
-    confirm: "Confirm Cerebre Plus's features, status, URL and whether it can be shown publicly.",
-  },
-];
-
-export interface Step {
-  title: string;
-  line: string;
-  duration: string;
-}
-
-export const PROCESS_INTRO = {
-  eyebrow: "How we work",
-  title: "A clear process, with no surprises.",
-  lede: "You'll always know what we're building, why, and what happens next.",
-  action: { label: "Start a project", href: "#contact" },
-  confirm: "Confirm the typical duration of each step.",
-} as const;
-
-export const STEPS: Step[] = [
-  {
-    title: "Listen",
-    line: "We learn your goals, users and constraints, and agree what success looks like.",
-    duration: "1–2 weeks",
-  },
-  {
-    title: "Shape",
-    line: "We prototype the key screens and fix the scope, timeline and cost before building.",
-    duration: "2–3 weeks",
-  },
-  {
-    title: "Build",
-    line: "We ship in short cycles with a working demo every week. You see progress, not reports.",
-    duration: "Weekly releases",
-  },
-  {
-    title: "Launch and grow",
-    line: "We release carefully, watch real usage and keep improving the product with you.",
-    duration: "Ongoing",
-  },
-];
-
-export interface Experience {
-  icon: LucideIcon;
-  title: string;
-  line: string;
-}
-
-export const PROOF_INTRO = {
-  eyebrow: "Experience",
-  title: "Built for the conditions people actually work in.",
-  lede: "Our client list is still growing. Here's what we've already shipped in production, and what it taught us.",
-} as const;
-
-/** Verified against the Skoolhub codebase in this repository. */
-export const EXPERIENCE: Experience[] = [
-  {
-    icon: WifiOff,
-    title: "Offline-first apps",
-    line: "Teachers record lessons with no connection. Everything syncs when the network comes back.",
-  },
-  {
-    icon: Building2,
-    title: "Multi-tenant platforms",
-    line: "Many schools on one codebase, each with its own data, roles and settings.",
-  },
-  {
-    icon: Radio,
-    title: "Live teaching and replay",
-    line: "A real-time teaching whiteboard with recorded audio that students can replay later.",
-  },
-  {
-    icon: Users,
-    title: "Experiences by role",
-    line: "Separate, tailored views for administrators, teachers, students and parents in one product.",
-  },
-];
-
-/** Figures to supply. Shown as labelled placeholders until real numbers exist. */
-export const FIGURE_PLACEHOLDERS = ["Clients served", "People using our products", "Years building software"] as const;
-
-export const QUOTE_PLACEHOLDERS = [
-  { hint: "A client quote about the outcome we delivered: one or two sentences.", who: "Name, role, organisation" },
-  { hint: "A quote from someone who uses one of our products every day.", who: "Name, role, organisation" },
-] as const;
-
-export const ABOUT = {
-  eyebrow: "About Bluethub",
-  title: "A small team that builds for the long run.",
-  story: [
-    "Bluethub started with a simple frustration: too much software is designed for perfect conditions most people never see. So we build for the real ones. Patchy networks, busy people, older phones and tight budgets.",
-    "Today we run our own products in education, finance and marketing, and we bring the same care to every product we build with clients.",
+export const PILOT = {
+  eyebrow: "Pilot offer",
+  title: "Try Bluethub for three months.",
+  lede: "Run it with real classes, see what changes, then decide.",
+  ledeConfirm: "Free or paid pilot?",
+  included: [
+    "Your own school address and branding",
+    "Setup of classes, subjects and curriculum",
+    "Accounts for staff, students and parents",
+    "Every current feature for every role",
+    "A review together at the end",
   ],
-  storyConfirm: "Placeholder story. Replace with Bluethub's real founding story, year and team size.",
-  action: { label: "Work with us", href: "#contact" },
-} as const;
+  includedConfirm: "Confirm what the pilot includes.",
+  primary: { label: "Start your pilot", href: "#demo" },
+  secondary: { label: "Questions? Talk to us", href: "#faq" },
+  badge: "3-month pilot · start this term · ",
+};
 
-export const VALUES = [
-  { title: "Build for real conditions", line: "We design for the network, device and day our users actually have." },
-  { title: "Say it plainly", line: "Clear plans, honest estimates and no jargon, especially when the news is bad." },
-  { title: "Own the outcome", line: "We measure success by what changes for your users, not by what we shipped." },
-  { title: "Stay for the long run", line: "Good software is looked after. We're here after launch, not just before it." },
-] as const;
+export const FAQ: { q: string; a: string; confirm?: string }[] = [
+  {
+    q: "What does Bluethub cost?",
+    a: "Every school starts with a 3-month pilot so you can see the value first. After that, pricing depends on the size of your school, and we'll give you a clear quote.",
+    confirm: "Pricing approach after the pilot.",
+  },
+  {
+    q: "Our internet is unreliable. Will it still work?",
+    a: "Yes. Teachers can record lessons and take attendance with no connection. Everything is saved on the device and syncs automatically when the network returns. Students can also download lessons to watch offline.",
+  },
+  {
+    q: "Do we need special devices?",
+    a: "No. Bluethub runs in the web browser on phones, tablets and laptops, and can be installed like an app. QR attendance uses the phone's camera.",
+    confirm: "Minimum device requirements.",
+  },
+  {
+    q: "How long does setup take, and who does it?",
+    a: "We set up your school's address, logo, classes and subjects with you. Then you add your staff, students and parents, and you're ready to go.",
+    confirm: "Setup time and who does it.",
+  },
+  {
+    q: "Will our teachers need training?",
+    a: "Each role only sees what it needs, so it's quick to learn. We walk your staff through it during the pilot.",
+    confirm: "Training offered during the pilot.",
+  },
+  {
+    q: "How do parents get access?",
+    a: "Your school creates a parent account and links it to their children. Parents sign in from any phone browser.",
+  },
+  {
+    q: "Is our data safe?",
+    a: "Each school has its own separate space. Sign-ins use encrypted tokens, passwords are hashed, idle sessions end automatically, and everyone sees only what their role allows.",
+  },
+  {
+    q: "Can we bring in our existing records?",
+    a: "During setup we add your classes, subjects, staff and students with you, so you start with your own school's structure.",
+    confirm: "How existing records are imported.",
+  },
+  {
+    q: "Do you handle fees and report cards?",
+    a: "Not yet. Fee tracking, report cards, timetables, SMS alerts, a library and a school calendar are coming soon.",
+  },
+];
 
-export const TEAM_PLACEHOLDERS = 3;
+export const DEMO = {
+  eyebrow: "Book a demo",
+  title: "See Bluethub with your school in mind.",
+  lede: "Tell us a little about your school. We'll set up a demo and plan your 3-month pilot together.",
+  points: ["A 30-minute walkthrough for your leadership team", "Your questions about setup, data and pricing answered", "A pilot plan built around your school"],
+  pointsConfirm: "Demo length and format.",
+};
 
-export const CONTACT = {
-  eyebrow: "Start a project",
-  title: "Tell us what you're building.",
-  lede: "Share a few details and we'll come back with honest next steps, even if that means we're not the right fit.",
-} as const;

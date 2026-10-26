@@ -1,15 +1,17 @@
 import { Navbar } from "@/components/landing/navbar/Navbar";
-import { Hero } from "@/components/landing/hero/Hero";
-import { Services } from "@/components/landing/services/Services";
-import { Products } from "@/components/landing/products/Products";
-import { HowItWorks } from "@/components/landing/how-it-works/HowItWorks";
-import { Proof } from "@/components/landing/proof/Proof";
-import { About } from "@/components/landing/about/About";
-import { Contact } from "@/components/landing/contact/Contact";
+import { Hero } from "@/components/landing/sections/Hero";
+import { Problem } from "@/components/landing/sections/Problem";
+import { Solution } from "@/components/landing/sections/Solution";
+import { Features } from "@/components/landing/sections/Features";
+import { HowItWorks } from "@/components/landing/sections/HowItWorks";
+import { Results } from "@/components/landing/sections/Results";
+import { Security } from "@/components/landing/sections/Security";
+import { Pilot } from "@/components/landing/sections/Pilot";
+import { Faq } from "@/components/landing/sections/Faq";
+import { Demo } from "@/components/landing/sections/Demo";
 import { Footer } from "@/components/landing/footer/Footer";
-// Pricing is parked for now. To bring it back, uncomment the import and the
-// <Pricing /> line below, then add { label: "Pricing", href: "#pricing" } to NAV_LINKS.
-// import { Pricing } from "@/components/landing/pricing/Pricing";
+// Pricing is parked: the pilot offer replaces it for now. To restore, import
+// "@/components/landing/pricing/Pricing" and render <Pricing /> after <Pilot />.
 
 export default function LandingPage() {
   return (
@@ -17,13 +19,15 @@ export default function LandingPage() {
       <Navbar />
       <main id="main" tabIndex={-1} className="outline-none">
         <Hero />
-        <Services />
-        <Products />
+        <Problem />
+        <Solution />
+        <Features />
         <HowItWorks />
-        <Proof />
-        <About />
-        {/* <Pricing /> */}
-        <Contact />
+        <Results />
+        <Security />
+        <Pilot />
+        <Faq />
+        <Demo />
       </main>
       <Footer />
     </>
