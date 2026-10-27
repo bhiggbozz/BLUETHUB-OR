@@ -35,7 +35,7 @@ export function BrowserFrame({ path, label, className, children }: BrowserFrameP
         </span>
         <span className="mx-auto flex min-w-0 max-w-[70%] items-center gap-1.5 truncate rounded-md bg-white px-3 py-1 text-[10px] text-slate-500 ring-1 ring-black/5">
           <Lock className="size-2.5 shrink-0" />
-          <span className="truncate">yourschool.bluethub.com{path}</span>
+          <span className="truncate">yourschool.bluetsch.com{path}</span>
         </span>
         <span className="w-10" />
       </div>
