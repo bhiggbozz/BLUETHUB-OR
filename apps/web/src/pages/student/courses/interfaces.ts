@@ -18,14 +18,6 @@ export interface PerformanceStats {
   totalStudents: number;
 }
 
-export interface ActivityItem {
-  id: string;
-  label: string;
-  highlight: string;
-  timestamp: string;
-  dotColor: "green" | "blue" | "orange";
-}
-
 export interface ContinueLearning {
   topicLabel: string;
   title: string;

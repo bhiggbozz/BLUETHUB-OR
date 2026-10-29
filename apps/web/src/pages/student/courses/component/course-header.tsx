@@ -24,11 +24,9 @@ function CourseHeaderSkeleton() {
       <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 sm:h-56 sm:w-56" />
       <div className="relative flex items-start justify-between">
         <div className="w-2/3 space-y-2">
-          <div className="h-3 w-24 animate-pulse rounded bg-white/20" />
           <div className="h-7 w-48 animate-pulse rounded bg-white/25" />
           <div className="h-4 w-32 animate-pulse rounded bg-white/15" />
         </div>
-        <div className="hidden h-14 w-14 shrink-0 animate-pulse rounded-2xl bg-white/15 sm:flex sm:h-16 sm:w-16" />
       </div>
       <div className="relative mt-5 flex flex-wrap gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -128,18 +126,12 @@ function CourseHeader() {
       <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 sm:h-56 sm:w-56" />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/65 sm:text-sm">
-            {"Science Department"}
-          </p>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
+          <h1 className="text-2xl font-bold sm:text-3xl">
             {firstLesson?.subjectName ?? "Untitled Subject"}
           </h1>
           <p className="mt-0.5 text-sm text-white/80 sm:text-base">
             {firstLesson?.teacherName ?? "Teacher unassigned"}
           </p>
-        </div>
-        <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 sm:flex sm:h-16 sm:w-16">
-          <span className="text-2xl sm:text-3xl">🔬</span>
         </div>
       </div>
 
