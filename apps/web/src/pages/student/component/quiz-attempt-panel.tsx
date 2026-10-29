@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@bluethub/ui-kit";
+import MathText from "@/component/math-text";
 import {
   quizService,
   type QuizAnswerSubmission,
@@ -611,7 +612,7 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-800">
                   <span className="mr-2 text-[#4255db]">Q{qIdx + 1}.</span>
-                  {question.title}
+                  <MathText text={question.title} />
                 </p>
                 {/* Question type badge + Difficulty badge */}
                 <div className="flex shrink-0 gap-1.5">
@@ -629,7 +630,7 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
               </div>
 
               {question.textContent && (
-                <p className="mt-1.5 text-sm text-slate-600">{question.textContent}</p>
+                <MathText text={question.textContent} className="mt-1.5 block text-sm text-slate-600" />
               )}
 
               {(() => {
@@ -687,7 +688,7 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
                         >
                           {option.optionLabel}
                         </span>
-                        <span className="flex-1">{option.optionText}</span>
+                        <MathText text={option.optionText} className="flex-1" />
                       </button>
                     );
                   })}
