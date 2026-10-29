@@ -18,6 +18,7 @@ import arrowMenu from "@/assets/svg/arrow_menu_open.svg";
 import arrowMenuOpen from "@/assets/svg/arrow_menu_close.svg";
 import registrationIcon from "@/assets/svg/registration.svg";
 import dashboardIcon from "@/assets/svg/element-4.svg";
+import calendarIcon from "@/assets/svg/calendar.svg";
 // import messageIcon from "@/assets/svg/message.svg";
 // import UserPlus from "@/assets/svg/user_plus.svg";
 import ShieldCheck from "@/assets/svg/shield_check.svg";
@@ -63,6 +64,7 @@ const MAIN_LINKS: NavItem[] = [
     { name: "Dashboard", icons: dashboardIcon, path: "/admin" },
     { name: "Analytics", icons: analyticsIcon, path: "/admin/analytics" },
     { name: "Attendance", icons: AttendanceIcon, path: "/admin/attendance-analytics" },
+    { name: "Calendar", icons: calendarIcon, path: "/calendar" },
     // { name: "Message", icons: messageIcon, path: "/admin/message" },
 ];
 

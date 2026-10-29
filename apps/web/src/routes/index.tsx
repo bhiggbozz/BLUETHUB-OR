@@ -145,6 +145,10 @@ import QuizByStudent from '@/pages/admin/quiz/by-student';
 import AttendanceAnalytics from '@/pages/admin/attendance-analytics';
 import UploadSchoolLogoPage from '@/component/upload-school-logo-page';
 import OfflineStudentPage from '@/pages/offline/student';
+import { CalendarProtectedRoute, CalendarSetupProtectedRoute } from '@/component/protected-routes/calendar-routes';
+import CalendarLayout from '@/pages/calendar/layout';
+import CalendarPage from '@/pages/calendar';
+import CalendarSetupWizard from '@/pages/calendar/setup';
 
 const router = createBrowserRouter([
     {
@@ -201,6 +205,27 @@ const router = createBrowserRouter([
         element: <ErrorBoundary fallbackMessage="Replay page error" >
             <Provider store={store}><Replay /></Provider>
         </ErrorBoundary>
+    },
+    {
+        // Top-level and role-agnostic — every signed-in role (Student, Parent,
+        // SubjectTeacher, ClassTeacher, HeadTeacher, Administrator,
+        // SuperAdministrator) can read the school calendar at the same URL,
+        // reached via a "Calendar" nav item in each role's own sidebar.
+        path: '/calendar',
+        element: <ErrorBoundary fallbackMessage="Calendar page error">
+            <Provider store={store}>
+                <CalendarProtectedRoute>
+                    <CalendarLayout />
+                </CalendarProtectedRoute>
+            </Provider>
+        </ErrorBoundary>,
+        children: [
+            { index: true, element: <CalendarPage /> },
+            {
+                path: 'setup',
+                element: <CalendarSetupProtectedRoute><CalendarSetupWizard /></CalendarSetupProtectedRoute>,
+            },
+        ],
     },
     {
         path: "*",

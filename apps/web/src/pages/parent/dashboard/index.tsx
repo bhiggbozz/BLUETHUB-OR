@@ -5,6 +5,7 @@ import { CalendarCheck2, CheckCircle2, ChevronRight, GraduationCap, Loader2, Use
 import { useAuthContext } from "@/contexts/auth-context";
 import { useParentChildren } from "@/contexts/parent-children-context";
 import { attendanceService, type AttendanceHistoryItem } from "@/services/attendance";
+import CalendarTermDashboardCard from "@/pages/calendar/components/calendar-term-dashboard-card";
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
@@ -61,6 +62,8 @@ const ParentDashboard = () => {
           Keep track of your {childList.length === 1 ? "child's" : "children's"} attendance at a glance.
         </p>
       </div>
+
+      <CalendarTermDashboardCard />
 
       {childrenLoading ? (
         <div className="flex items-center justify-center gap-2 py-16 text-gray-400">

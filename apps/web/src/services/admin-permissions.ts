@@ -5,6 +5,7 @@ const headers = { "X-Tenant-ID": import.meta.env.VITE_DEFAULT_TENANT };
 const endpoint = {
   assignAdminPermissions: "api/user/AssignPermissions",
   getAllAdminPermissions: "api/user/GetAllAdminPermissions",
+  getAdminPermissions: "api/User/GetAdminPermissions",
 }
 
 // Admin Permission Flags
@@ -17,6 +18,7 @@ export const AdminPermissionFlags = {
   ManageClassrooms: 32,
   ManageSubjects: 64,
   CreateUsers: 128,
+  ManageCalendar: 256,
 } as const;
 
 export type AdminPermissionKey = keyof typeof AdminPermissionFlags;
@@ -73,6 +75,17 @@ export const adminPermissionsService = {
         params: { pageNumber, pageSize },
       }
     ),
+
+  // One admin's own permissions — used to gate write access to things like
+  // the calendar setup/edit screens for the signed-in Administrator.
+  getAdminPermissions: (adminUserId: string) =>
+    API.get<TResponse<AdminPermissionDto>>(
+      endpoint.getAdminPermissions,
+      {
+        headers,
+        params: { adminUserId },
+      }
+    ),
 };
 
 // Helper to convert permission flags to names
@@ -86,6 +99,7 @@ export const getPermissionName = (flag: number): string => {
     32: "Manage Lesson",
     64: "Manage Subjects",
     128: "Create Users",
+    256: "Manage Calendar",
   };
   return names[flag] ?? `Unknown (${flag})`;
 };
@@ -101,5 +115,6 @@ export const getAllPermissionFlags = (): Array<{ flag: number; name: string }> =
     { flag: 32, name: "Manage Lesson" },
     { flag: 64, name: "Manage Subjects" },
     { flag: 128, name: "Create Users" },
+    { flag: 256, name: "Manage Calendar" },
   ];
 };

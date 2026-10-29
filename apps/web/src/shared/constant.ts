@@ -154,7 +154,7 @@ export const navLink = [
   { name: "Dashboard", path: "/admin", icons: element },
   { name: "Analytics", path: "/admin/analytics", icons: element },
   { name: "Approvals", path: "/admin/approvals", icons: AssignmentIcon },
-  { name: "Calendar", path: "/admin/calendar", icons: Calendar },
+  { name: "Calendar", path: "/calendar", icons: Calendar },
   // { name: "Message", path: "/admin/message", icons: message },
 ];
 export const other_menu_Link = [
