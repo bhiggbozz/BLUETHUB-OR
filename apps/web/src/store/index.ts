@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import ClassActionSlice from "./class-action-slice";
+import CalendarSlice from "./calendar-slice";
 
 export const store = configureStore({
   reducer: {
     action: ClassActionSlice,
+    calendar: CalendarSlice,
   },
   // Optional: Add middleware, devtools config, etc.
   middleware: (getDefaultMiddleware) =>

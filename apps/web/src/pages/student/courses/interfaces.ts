@@ -1,14 +1,36 @@
-type QuizStatus = "pass" | "fail" | "available" | "locked";
+export interface QuizConfig {
+  allowRetakes: boolean;
+  maxAttempts: number;
+  passMarkPercent: number;
+  timeLimitMinutes: number | null;
+  autoSubmitOnTimeout: boolean;
+  shuffleQuestions: boolean;
+  showResultMode: string;
+  showCorrectAnswers: boolean;
+  allowBoardAnswer: boolean;
+  easyMarks: number;
+  mediumMarks: number;
+  hardMarks: number;
+  examLevelMarks: number;
+}
+
+export interface QuizAttemptStatus {
+  hasInProgressAttempt: boolean;
+  inProgressAttemptId: string | null;
+  completedAttempts: number;
+  maxAttemptsReached: boolean;
+  canStart: boolean;
+}
 
 export interface Quiz {
-  id: string;
-  title: string;
-  durationMinutes: number;
-  questionCount: number;
-  tag?: string;
-  status: QuizStatus;
-  scorePercent?: number;
-  helperText?: string;
+  quizCode: string;
+  lessonTitle: string;
+  totalQuestions: number;
+  totalMarks: number;
+  config: QuizConfig;
+  attemptStatus: QuizAttemptStatus;
+  bestScorePercent: number | null;
+  bestIsPassed: boolean;
 }
 
 export interface PerformanceStats {
@@ -16,14 +38,6 @@ export interface PerformanceStats {
   attemptCount: number;
   position: number | null;
   totalStudents: number;
-}
-
-export interface ActivityItem {
-  id: string;
-  label: string;
-  highlight: string;
-  timestamp: string;
-  dotColor: "green" | "blue" | "orange";
 }
 
 export interface ContinueLearning {
@@ -52,3 +66,17 @@ export interface CoursePerformance {
   assessment: PerformanceStats;
 }
 
+
+
+export type QuizStatus = "pass" | "fail" | "available" | "locked";
+
+export function getQuizStatus(quiz: Quiz): QuizStatus {
+  // A quiz with no questions can't be taken, whatever canStart says.
+  if (quiz.totalQuestions === 0) return "locked";
+
+  if (quiz.attemptStatus.completedAttempts > 0) {
+    return quiz.bestIsPassed ? "pass" : "fail";
+  }
+
+  return "available";
+}

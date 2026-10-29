@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@bluethub/ui-kit";
+import MathText from "@/component/math-text";
 import {
   quizService,
   type QuizAnswerSubmission,
@@ -24,6 +25,7 @@ import {
   type StudentQuizQuestionDto,
 } from "@/services/quiz";
 import toast from "react-hot-toast";
+import { AxiosError } from "axios";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Quiz Timer Hook
@@ -144,8 +146,13 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
         if (!data.attemptStatus.canStart) {
           setPhase("blocked");
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to load quiz preview.";
+      } catch (error) {
+        const msg =
+          error instanceof AxiosError
+            ? error.response?.data?.responseMessage ??
+            error.response?.data?.message ??
+            error.message
+            : (error as Error).message;
         setError(msg);
         toast.error(msg);
       }
@@ -420,8 +427,8 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
               {status.maxAttemptsReached
                 ? "Maximum attempts reached. You cannot retake this quiz."
                 : status.hasInProgressAttempt
-                ? "You have an in-progress attempt. Resume to continue."
-                : "You are not allowed to start this quiz right now."}
+                  ? "You have an in-progress attempt. Resume to continue."
+                  : "You are not allowed to start this quiz right now."}
             </div>
 
             {status.hasInProgressAttempt && !status.maxAttemptsReached && (
@@ -611,7 +618,7 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-800">
                   <span className="mr-2 text-[#4255db]">Q{qIdx + 1}.</span>
-                  {question.title}
+                  <MathText text={question.title} />
                 </p>
                 {/* Question type badge + Difficulty badge */}
                 <div className="flex shrink-0 gap-1.5">
@@ -629,7 +636,7 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
               </div>
 
               {question.textContent && (
-                <p className="mt-1.5 text-sm text-slate-600">{question.textContent}</p>
+                <MathText text={question.textContent} className="mt-1.5 block text-sm text-slate-600" />
               )}
 
               {(() => {
@@ -672,22 +679,20 @@ const QuizAttemptPanel = ({ lessonId, quizCode, onClose }: QuizAttemptPanelProps
                             ? handleTextChange(question.questionId, option.optionText)
                             : handleSelectOption(question.questionId, option.optionId)
                         }
-                        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                          selected
-                            ? "border-[#4255db] bg-[#eef2ff] font-semibold text-[#4255db]"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
-                        }`}
+                        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${selected
+                          ? "border-[#4255db] bg-[#eef2ff] font-semibold text-[#4255db]"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                          }`}
                       >
                         <span
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
-                            selected
-                              ? "border-[#4255db] bg-[#4255db] text-white"
-                              : "border-slate-300 bg-white text-slate-500"
-                          }`}
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${selected
+                            ? "border-[#4255db] bg-[#4255db] text-white"
+                            : "border-slate-300 bg-white text-slate-500"
+                            }`}
                         >
                           {option.optionLabel}
                         </span>
-                        <span className="flex-1">{option.optionText}</span>
+                        <MathText text={option.optionText} className="flex-1" />
                       </button>
                     );
                   })}

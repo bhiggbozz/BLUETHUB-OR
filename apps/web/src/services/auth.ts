@@ -81,9 +81,16 @@ API.interceptors.response.use(
         return API(originalRequest); // retry original request with new token
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.clear();
-        if (window.location.pathname !== "/auth") {
-          window.location.href = "/auth";
+        // The restricted first-time-login token's refresh is *expected* to
+        // be rejected by the backend (it's only valid for the one password-
+        // change call, see login.tsx) — that's not a real logout. Let
+        // new-password.tsx's own catch handle it instead of wiping storage
+        // and hard-redirecting out from under the user mid-form.
+        if (window.location.pathname !== "/auth/new-password") {
+          localStorage.clear();
+          if (window.location.pathname !== "/auth") {
+            window.location.href = "/auth";
+          }
         }
         return Promise.reject(refreshError);
       } finally {
