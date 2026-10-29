@@ -7,7 +7,7 @@ import quizzes from "@/assets/svg/quizzes.svg?react";
 import discussion from "@/assets/svg/Discussion_forum.svg?react";
 import studyGroups from "@/assets/svg/people.svg?react";
 // import live_classes from "@/assets/svg/live_classes.svg?react";
-// import Calendar from "@/assets/svg/calendar.svg?react";
+import Calendar from "@/assets/svg/calendar.svg?react";
 import recorded_class from "@/assets/svg/monitor_play.svg?react";
 import premium from "@/assets/svg/premium.svg?react";
 // import grades from "@/assets/svg/grades.svg?react";
@@ -54,6 +54,7 @@ interface NavGroup {
 // labeled sections instead of one long flat list.
 const MAIN_LINKS: NavLinkItem[] = [
     { name: "Dashboard", path: "/student", icons: element },
+    { name: "Calendar", path: "/calendar", icons: Calendar },
 ];
 
 const NAV_GROUPS: NavGroup[] = [

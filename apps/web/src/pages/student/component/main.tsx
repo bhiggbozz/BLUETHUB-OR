@@ -3,6 +3,7 @@ import ExtracurricularActivity from "./extra-curricular-activity";
 import MyCourse from "./my-course";
 import PerformanceOverview from "./performance-overview";
 import StudentSummary from "./student-summary";
+import CalendarTermDashboardCard from "@/pages/calendar/components/calendar-term-dashboard-card";
 
 const StudentIndex = () => {
   return (
@@ -18,6 +19,7 @@ const StudentIndex = () => {
   dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500 "
     >
       <StudentAppBar />
+      <CalendarTermDashboardCard />
       <ExtracurricularActivity />
       <PerformanceOverview />
       <StudentSummary />

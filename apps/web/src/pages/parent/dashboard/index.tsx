@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useParentChildren } from "@/contexts/parent-children-context";
 import type { ParentChild } from "@/services/parent";
+import CalendarTermDashboardCard from "@/pages/calendar/components/calendar-term-dashboard-card";
 import { Button } from "../component/ui/button";
 import { ChildrenGate } from "../component/ui/children-gate";
 import { Skeleton } from "../component/ui/feedback";
@@ -38,6 +39,7 @@ const ParentDashboard = () => {
         }
       />
       <WelcomeGuide />
+      <CalendarTermDashboardCard />
       <ChildrenGate skeleton={<DashboardSkeleton />}>{(child) => <DashboardBody child={child} />}</ChildrenGate>
     </motion.div>
   );

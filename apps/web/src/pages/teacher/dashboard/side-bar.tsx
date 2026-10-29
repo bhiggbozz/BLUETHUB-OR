@@ -10,6 +10,7 @@ import type { NavItem } from "@/pages/admin/side-bar";
 import settingsIcon from "@/assets/svg/settings.svg";
 import logoutIcon from "@/assets/svg/logout.svg";
 import dashboardIcon from "@/assets/svg/element-4.svg";
+import calendarIcon from "@/assets/svg/calendar.svg";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { schoolInfo } from "@/services";
@@ -54,6 +55,7 @@ const ChevronIcon = ({ open }: { open: boolean }) => (
 
 const MAIN_LINKS: NavItem[] = [
   { name: "Dashboard", icons: dashboardIcon, path: "/teacher" },
+  { name: "Calendar", icons: calendarIcon, path: "/calendar" },
 ];
 
 const OTHER_LINKS: NavItem[] = [

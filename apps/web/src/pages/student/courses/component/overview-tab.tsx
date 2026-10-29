@@ -1,8 +1,7 @@
 import { Badge, Button, Card, CardContent } from "@bluethub/ui-kit";
 import { AlertCircle, Play } from "lucide-react";
 import StatBlock from "./stat-block";
-import ActivityDot from "./activity-dot";
-import type { ActivityItem, ContinueLearning } from "../interfaces";
+import type { ContinueLearning } from "../interfaces";
 import { isStudentRoleData, useAuthContext } from "@/contexts/auth-context";
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
@@ -10,52 +9,9 @@ import { studentService, type StudentSubjectLessonsResponse } from "@/services/s
 import { quizService, type SubjectQuizItemDto } from "@/services/quiz";
 import { getErrorMessage } from "./course-header";
 
-// ---------------------------------------------------------------------------
-// TODO(backend): everything below is placeholder data with no API behind it
-// yet. Wiring notes for whoever picks these up:
-//   - DEFAULT_DESCRIPTION: needs a subject-level description field — surface
-//     it once `getLessonsBySubject` (or a subject-metadata endpoint) returns
-//     one, and drop this constant.
-//   - FALLBACK_ACTIVITY: needs a "recent activity" endpoint (completions,
-//     quiz scores, downloads) scoped to this subject + student.
-//   - continueLearning below is derived from `lessons[0]` as a stand-in for
-//     "last opened lesson" — there's no last-accessed/progress field on the
-//     current DTO to compute a real one from.
-// ---------------------------------------------------------------------------
-
-const DEFAULT_DESCRIPTION =
-  "Explore the natural world through hands-on science. This course covers living things, the solar system, matter, energy, the environment, and human body systems — building a strong foundation for senior science.";
-
-const FALLBACK_ACTIVITY: ActivityItem[] = [
-  {
-    id: "1",
-    label: "Completed",
-    highlight: "Living Things — Cell Structure",
-    timestamp: "Today",
-    dotColor: "green",
-  },
-  {
-    id: "2",
-    label: "Scored",
-    highlight: "85% on Topic 1 Quiz",
-    timestamp: "Yesterday",
-    dotColor: "blue",
-  },
-  {
-    id: "3",
-    label: "Downloaded",
-    highlight: "Matter & Materials PDF",
-    timestamp: "Mon",
-    dotColor: "orange",
-  },
-  {
-    id: "4",
-    label: "Completed",
-    highlight: "Living Things — Photosynthesis",
-    timestamp: "Mon",
-    dotColor: "green",
-  },
-];
+// continueLearning is derived from `lessons[0]` as a stand-in for "last
+// opened lesson" — there's no last-accessed/progress field on the current
+// DTO to compute a real one from.
 
 // ---------------------------------------------------------------------------
 // Loading / error states
@@ -82,28 +38,9 @@ function OverviewSkeleton() {
               <div key={i} className="h-16 flex-1 animate-pulse rounded-xl bg-slate-100" />
             ))}
           </div>
-          <div className="mt-5 space-y-2">
-            <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
-            <div className="h-3 w-5/6 animate-pulse rounded bg-slate-100" />
-            <div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" />
-          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-none shadow-sm">
-        <CardContent className="p-4 sm:p-5">
-          <div className="mb-3 h-4 w-32 animate-pulse rounded bg-slate-200" />
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between gap-3">
-                <div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" />
-                <div className="h-3 w-10 shrink-0 animate-pulse rounded bg-slate-100" />
-              </div>
             ))}
           </div>
         </CardContent>
@@ -183,9 +120,7 @@ function OverviewTab() {
     };
   }, [subjectId]);
 
-  const tags = [userClass, "Second Term", "WAEC Aligned", "Practical"].filter(
-    (tag): tag is string => Boolean(tag)
-  );
+  const tags = [userClass].filter((tag): tag is string => Boolean(tag));
 
   const lessons = subjectSummary?.lessons ?? [];
 
@@ -194,7 +129,7 @@ function OverviewTab() {
     [lessons]
   );
 
-  // See TODO block above — stand-in until there's a real "last opened lesson" source.
+  // Stand-in until there's a real "last opened lesson" source — see note above.
   const continueLearning: ContinueLearning | null = lessons[0]
     ? {
         topicLabel: "Pick up where you left off",
@@ -203,8 +138,6 @@ function OverviewTab() {
         durationMinutes: 0,
       }
     : null;
-
-  const activity = FALLBACK_ACTIVITY;
 
   if (loading) {
     return <OverviewSkeleton />;
@@ -259,44 +192,14 @@ function OverviewTab() {
             <StatBlock value={quizzes.length} label="Quizzes" />
           </div>
 
-          <p className="mt-5 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            {DEFAULT_DESCRIPTION}
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="rounded-full bg-[#292382]/10 text-[#292382] hover:bg-[#292382]/10">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-none shadow-sm">
-        <CardContent className="p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-semibold sm:text-base">Recent activity</span>
-            <Button variant="link" className="h-auto p-0 text-sm text-[#292382]">
-              See all
-            </Button>
-          </div>
-          {activity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {activity.map((item) => (
-                <li key={item.id} className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5">
-                    <ActivityDot color={item.dotColor} />
-                    <p className="text-sm text-foreground sm:text-base">
-                      {item.label} <span className="font-semibold">{item.highlight}</span>
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">{item.timestamp}</span>
-                </li>
+          {tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="rounded-full bg-[#292382]/10 text-[#292382] hover:bg-[#292382]/10">
+                  {tag}
+                </Badge>
               ))}
-            </ul>
+            </div>
           )}
         </CardContent>
       </Card>

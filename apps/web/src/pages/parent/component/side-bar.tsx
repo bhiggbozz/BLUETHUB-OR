@@ -248,7 +248,7 @@ export function ParentMobileTabBar() {
       aria-label="Parent navigation"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-(--pp-line) bg-(--pp-surface)/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
     >
-      <div className="mx-auto grid max-w-md grid-cols-3 px-2">
+      <div className="mx-auto grid max-w-md grid-cols-4 px-2">
         {PARENT_NAV.map((item) => {
           const active = isNavActive(item, pathname);
           return (

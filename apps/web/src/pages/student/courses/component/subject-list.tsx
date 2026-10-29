@@ -5,7 +5,6 @@ import {
   TabsTrigger,
 } from "@bluethub/ui-kit";
 import CourseHeader from "./course-header";
-import CourseProgressCard from "./course-progress-card";
 import OverviewTab from "./overview-tab";
 import TopicsTab from "./topics-tab";
 import AssessmentsTab from "./assessments-tab";
@@ -31,9 +30,6 @@ export default function SubjectList() {
   return (
     <div className="mx-auto w-full">
       <CourseHeader />
-      <div className="mt-2.75">
-        <CourseProgressCard />
-      </div>
       <Tabs defaultValue={courseTabs[0].value} className="mt-4">
         <TabsList
           className="grid w-full !h-[45px] rounded-xl bg-white p-1"
