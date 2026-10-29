@@ -29,11 +29,9 @@ export function getTenantFromUrl(): string {
   }
 
   const parts = hostname.split('.');
-  // console.log('[getTenantFromUrl] hostname parts:', parts);
 
   if (parts.length >= 3) {
     const subdomain = parts[0];
-    // console.log('[getTenantFromUrl] production → subdomain extracted:', subdomain);
     return subdomain;
   }
 

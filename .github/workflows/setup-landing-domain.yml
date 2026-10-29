@@ -1,0 +1,77 @@
+name: Set up bluethub.com on the VPS
+
+# One-time server setup for the landing domain. Runs when this file changes on
+# Main (or manually from the Actions tab). Safe to re-run: every step is
+# idempotent, and nginx is only reloaded after `nginx -t` passes.
+on:
+  push:
+    branches: [Main]
+    paths:
+      - .github/workflows/setup-landing-domain.yml
+  workflow_dispatch:
+
+jobs:
+  setup-domain:
+    name: nginx site + HTTPS for bluethub.com
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure host nginx and certificate
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -eu
+            SUDO=""
+            if [ "$(id -u)" -ne 0 ]; then SUDO="sudo -n"; fi
+
+            SITE=/etc/nginx/sites-available/bluethub.com
+            LINK=/etc/nginx/sites-enabled/bluethub.com
+
+            echo "== Landing container check (127.0.0.1:3001)"
+            curl -fsS -o /dev/null http://127.0.0.1:3001/healthz && echo "landing container is up" || {
+              echo "Landing container is not answering on 127.0.0.1:3001. Aborting."; exit 1; }
+
+            echo "== Writing $SITE"
+            # Only write the HTTP block if certbot hasn't already managed this file.
+            if ! $SUDO grep -q "managed by Certbot" "$SITE" 2>/dev/null; then
+              $SUDO tee "$SITE" >/dev/null <<'CONF'
+            server {
+                listen 80;
+                server_name bluethub.com www.bluethub.com;
+
+                location / {
+                    proxy_pass http://127.0.0.1:3001;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            }
+            CONF
+            else
+              echo "Site already managed by Certbot; leaving it as is."
+            fi
+            $SUDO ln -sf "$SITE" "$LINK"
+
+            echo "== Testing nginx config"
+            if ! $SUDO nginx -t; then
+              echo "nginx -t failed: removing the new site so existing sites stay up."
+              $SUDO rm -f "$LINK"
+              exit 1
+            fi
+            $SUDO systemctl reload nginx
+            echo "HTTP check:"; curl -sS -o /dev/null -w "%{http_code}\n" -H "Host: bluethub.com" http://127.0.0.1/
+
+            echo "== Certificate"
+            if ! command -v certbot >/dev/null 2>&1; then
+              $SUDO apt-get update -y && $SUDO apt-get install -y certbot python3-certbot-nginx
+            fi
+            $SUDO certbot --nginx \
+              -d bluethub.com -d www.bluethub.com \
+              --non-interactive --agree-tos --register-unsafely-without-email \
+              --redirect --keep-until-expiring
+
+            $SUDO nginx -t && $SUDO systemctl reload nginx
+            echo "Done: https://bluethub.com should now serve the landing page."

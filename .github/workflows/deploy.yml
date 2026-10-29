@@ -53,3 +53,41 @@ jobs:
             docker load -i bluethub-or-web.tar.gz
             docker compose up -d --no-build web
             docker image prune -f
+
+  # Landing site (bluethub.com). Same flow as the web app: build the
+  # landing-nginx image here, copy it to the VPS, restart only `landing`.
+  # The tag matches Compose's default image name for the `landing` service
+  # in /docker/bluethub-or (project "bluethub-or"), so --no-build picks it up.
+  deploy-landing:
+    name: Build & Deploy Landing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image (landing)
+        run: docker build --target landing-nginx -t bluethub-or-landing:latest .
+
+      - name: Save image
+        run: docker save bluethub-or-landing:latest | gzip > bluethub-or-landing.tar.gz
+
+      - name: Copy image to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "bluethub-or-landing.tar.gz"
+          target: "/docker/bluethub-or"
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /docker/bluethub-or
+            docker load -i bluethub-or-landing.tar.gz
+            docker compose up -d --no-build landing
+            docker image prune -f

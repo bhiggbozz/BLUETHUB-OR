@@ -1,44 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@bluethub/ui-kit";
 import PerformanceOverview from "./performance-overview";
 import QuizRow from "./quiz-row";
-import quizService, { type SubjectQuizItemDto } from "@/services/quiz";
+import { quizService } from "@/services/quiz";
+import { useAuthContext } from "@/contexts/auth-context";
 import { getErrorMessage } from "./course-header";
-import type { Quiz } from "../interfaces";
-
-function mapToQuiz(item: SubjectQuizItemDto): Quiz {
-  const { attemptStatus, bestIsPassed, bestScorePercent } = item;
-
-  let status: Quiz["status"];
-  let helperText: string | undefined;
-
-  if (bestIsPassed === true) {
-    status = "pass";
-  } else if (bestIsPassed === false) {
-    status = "fail";
-  } else if (attemptStatus.canStart) {
-    status = "available";
-  } else {
-    status = "locked";
-    helperText = attemptStatus.hasInProgressAttempt
-      ? "In progress"
-      : attemptStatus.maxAttemptsReached
-        ? "No attempts left"
-        : "Locked";
-  }
-
-  return {
-    id: item.quizCode,
-    title: item.lessonTitle,
-    durationMinutes: item.config.timeLimitMinutes ?? 0,
-    questionCount: item.totalQuestions,
-    status,
-    scorePercent: bestScorePercent ?? undefined,
-    helperText,
-  };
-}
+import { getQuizStatus, type Quiz } from "../interfaces";
 
 function QuizRowSkeleton() {
   return (
@@ -47,41 +16,48 @@ function QuizRowSkeleton() {
         <span className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-slate-200" />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="h-3.5 w-2/3 animate-pulse rounded bg-slate-200" />
-          <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
+          <div className="h-5 w-20 animate-pulse rounded-full bg-slate-100" />
         </div>
-        <span className="h-9 w-16 shrink-0 animate-pulse rounded bg-slate-200" />
+        <span className="h-8 w-16 shrink-0 animate-pulse rounded-md bg-slate-200" />
       </CardContent>
     </Card>
   );
 }
 
-function QuizListSkeleton({ count = 3 }: { count?: number }) {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: count }).map((_, i) => (
-        <QuizRowSkeleton key={i} />
-      ))}
-    </div>
-  );
-}
-
-function AssessmentsError({ message }: { message: string }) {
+function QuizzesError({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-3 rounded-xl bg-rose-50 p-4">
       <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
       <div>
-        <p className="text-sm font-semibold text-rose-700">Couldn&apos;t load assessments</p>
+        <p className="text-sm font-semibold text-rose-700">Couldn&apos;t load quizzes</p>
         <p className="text-xs text-rose-500 sm:text-sm">{message}</p>
       </div>
     </div>
   );
 }
 
+function QuizzesEmpty() {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-xl bg-slate-50 py-10 text-center">
+      <ClipboardList className="h-6 w-6 text-slate-400" />
+      <p className="text-sm font-medium text-slate-500">No quizzes yet</p>
+      <p className="text-xs text-slate-400 sm:text-sm">
+        Quizzes your teacher publishes for this subject will show up here.
+      </p>
+    </div>
+  );
+}
+
 function AssessmentsTab() {
-  const { subjectId } = useParams();
+  const { user } = useAuthContext();
+  const { subjectId } = useParams<{ subjectId: string }>();
+
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const userId = user?.id;
 
   useEffect(() => {
     if (!subjectId) {
@@ -90,39 +66,41 @@ function AssessmentsTab() {
       return;
     }
 
+    // Auth context can still be hydrating on first render.
+    if (!userId) return;
+
     let isMounted = true;
 
-    const loadQuizzes = async () => {
+    const loadSubjectQuizzes = async () => {
       setLoading(true);
       setErrorMessage(null);
 
       try {
         const res = await quizService.getSubjectQuizzes(subjectId);
         if (!isMounted) return;
-
-        if (!res.data.status) {
-          setErrorMessage(res.data.responseMessage ?? "Failed to load assessments");
-          return;
-        }
-
-        setQuizzes((res.data.data ?? []).map(mapToQuiz));
+        setQuizzes((res.data.data as unknown as Quiz[]) ?? []);
       } catch (error) {
         if (!isMounted) return;
-        setErrorMessage(getErrorMessage(error, "Something went wrong while loading assessments"));
+        setErrorMessage(getErrorMessage(error, "Something went wrong while loading quizzes"));
       } finally {
         if (isMounted) setLoading(false);
       }
     };
 
-    loadQuizzes();
+    loadSubjectQuizzes();
 
     return () => {
       isMounted = false;
     };
-  }, [subjectId]);
+  }, [userId, subjectId]);
 
-  const active = quizzes.filter((q) => q.status !== "locked");
-  const locked = quizzes.filter((q) => q.status === "locked");
+  const { active, locked } = useMemo(
+    () => ({
+      active: quizzes.filter((q) => getQuizStatus(q) !== "locked"),
+      locked: quizzes.filter((q) => getQuizStatus(q) === "locked"),
+    }),
+    [quizzes]
+  );
 
   return (
     <div className="space-y-6">
@@ -137,34 +115,38 @@ function AssessmentsTab() {
         </div>
 
         {loading ? (
-          <QuizListSkeleton />
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <QuizRowSkeleton key={i} />
+            ))}
+          </div>
         ) : errorMessage ? (
-          <AssessmentsError message={errorMessage} />
+          <QuizzesError message={errorMessage} />
         ) : quizzes.length === 0 ? (
-          <p className="px-1 text-sm text-muted-foreground">No quizzes yet for this subject.</p>
+          <QuizzesEmpty />
         ) : (
-          <>
-            <div className="space-y-3">
-              {active.map((quiz) => (
-                <QuizRow key={quiz.id} quiz={quiz} />
-              ))}
-            </div>
-
-            {locked.length > 0 && (
-              <div className="mt-6">
-                <p className="mb-3 px-1 text-sm font-semibold text-muted-foreground sm:text-base">
-                  Upcoming — locked
-                </p>
-                <div className="space-y-3">
-                  {locked.map((quiz) => (
-                    <QuizRow key={quiz.id} quiz={quiz} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+          <div className="space-y-3">
+            {active.map((quiz) => (
+              <QuizRow key={quiz.quizCode} quiz={quiz} />
+            ))}
+          </div>
         )}
       </div>
+
+      {/* Locked quizzes: no backend rule for locking yet, so this only renders
+          for the "no questions yet" case in getQuizStatus. */}
+      {!loading && !errorMessage && locked.length > 0 && (
+        <div>
+          <p className="mb-3 px-1 text-sm font-semibold text-muted-foreground sm:text-base">
+            Upcoming — locked
+          </p>
+          <div className="space-y-3">
+            {locked.map((quiz) => (
+              <QuizRow key={quiz.quizCode} quiz={quiz} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

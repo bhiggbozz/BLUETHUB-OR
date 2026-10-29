@@ -1,1 +1,417 @@
 @import "./styles/globals.css";
+@import "tailwindcss";
+
+/* Let Tailwind see the classes of the shadcn kit components this site uses
+   (listed individually so unused kit styles stay out of the CSS bundle). */
+@source "../../../packages/ui/src/components/ui/button.tsx";
+@source "../../../packages/ui/src/components/ui/badge.tsx";
+@source "../../../packages/ui/src/components/ui/card.tsx";
+@source "../../../packages/ui/src/components/ui/tabs.tsx";
+@source "../../../packages/ui/src/components/ui/input.tsx";
+@source "../../../packages/ui/src/components/ui/textarea.tsx";
+@source "../../../packages/ui/src/components/ui/label.tsx";
+@source "../../../packages/ui/src/components/ui/dialog.tsx";
+/* Docs and build logs are not markup. */
+@source not "../docs";
+@source not "../.turbo";
+
+/* ──────────────────────────────────────────────
+   Type scale
+   Serif (Lora) carries display and section headings for an editorial voice;
+   Sora carries UI, h3/h4 and body copy. Fluid sizes, tight tracking at scale.
+   ────────────────────────────────────────────── */
+
+@utility text-display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 1.55rem + 3.9vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: var(--color-heading);
+}
+
+@utility text-h1 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.022em;
+  color: var(--color-heading);
+}
+
+@utility text-h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.875rem, 1.4rem + 1.9vw, 2.75rem);
+  line-height: 1.14;
+  letter-spacing: -0.018em;
+  color: var(--color-heading);
+}
+
+@utility text-h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+  color: var(--color-heading);
+}
+
+@utility text-h4 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.4;
+  letter-spacing: -0.008em;
+  color: var(--color-heading);
+}
+
+@utility text-lede {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  line-height: 1.65;
+  color: var(--color-muted-foreground);
+}
+
+@utility text-body {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+@utility text-caption {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+}
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* Comfortable reading width: ~60–75 characters. */
+@utility measure {
+  max-width: 68ch;
+}
+
+/* Section rhythm on the 8px grid: 64 / 96 / 128 px. */
+@utility section-y {
+  padding-block: 4rem;
+  @media (width >= 48rem) {
+    padding-block: 6rem;
+  }
+  @media (width >= 80rem) {
+    padding-block: 8rem;
+  }
+}
+
+/* ── Base styles (layered so utilities always win) ── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Sticky header height + breathing room for in-page anchors. */
+    scroll-padding-top: 5.5rem;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-size: 1rem;
+    line-height: 1.7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+
+  /* One visible, consistent focus style for keyboard users. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* One icon style: every lucide icon shares a stroke weight; .icon-bold for tiny checks. */
+  .lucide {
+    stroke-width: var(--icon-stroke, 1.75);
+  }
+
+  .icon-bold {
+    --icon-stroke: 2.75;
+  }
+
+  img,
+  svg,
+  video {
+    display: block;
+    max-width: 100%;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-background);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted-foreground);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/* ──────────────────────────────────────────────
+   Motion system
+   One easing (--ease-out-soft), entrances 500–800ms, hovers 150–250ms.
+   Only transform and opacity animate. Everything is off for reduced motion.
+   ────────────────────────────────────────────── */
+
+/* Scroll reveal: elements start slightly low and transparent, and settle once.
+   Stagger children by setting --i (see components/common/motion.tsx).
+   Without JS (no .js on <html>) content is simply visible. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition:
+    opacity var(--motion-enter) var(--ease-out-soft),
+    transform var(--motion-enter) var(--ease-out-soft);
+  transition-delay: calc(var(--i, 0) * var(--motion-stagger) + var(--delay, 0ms));
+}
+
+.js [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Ambient rotation (hero) and the circular-text badge. Paused off-screen. */
+@keyframes bh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotate-ambient {
+  animation: bh-spin var(--motion-ambient) linear infinite;
+}
+
+.rotate-badge {
+  animation: bh-spin var(--motion-badge) linear infinite;
+}
+
+[data-paused="true"] .rotate-ambient,
+[data-paused="true"] .rotate-badge,
+.rotate-ambient[data-paused="true"],
+.rotate-badge[data-paused="true"] {
+  animation-play-state: paused;
+}
+
+/* Small rotate on hover for icons inside a .group (same spec as .icon-spring:
+   one icon motion across the site). */
+.rotate-on-hover {
+  transition: transform 450ms var(--ease-spring);
+}
+
+.group:hover .rotate-on-hover,
+.group:focus-visible .rotate-on-hover {
+  transform: rotate(10deg) scale(1.06);
+}
+
+/* Scroll-linked rotation for one or two decorative shapes.
+   Progressive enhancement: browsers without scroll timelines show a still shape. */
+@keyframes bh-scroll-turn {
+  from {
+    transform: rotate(-35deg);
+  }
+  to {
+    transform: rotate(55deg);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (width >= 48rem) {
+    .rotate-scroll {
+      animation: bh-scroll-turn linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+}
+
+/* Arrow nudge used by CTA buttons. */
+.arrow-nudge {
+  transition: transform var(--motion-hover) var(--ease-out-soft);
+}
+
+.group:hover .arrow-nudge,
+.group:focus-visible .arrow-nudge {
+  transform: translateX(3px);
+}
+
+/* Interactive card: lifts on hover. The deeper shadow and accent border sit on
+   pseudo-elements and fade in, so only transform and opacity ever animate. */
+.card-lift {
+  position: relative;
+  isolation: isolate;
+  transition: transform var(--motion-hover) var(--ease-out-soft);
+}
+
+.card-lift::before,
+.card-lift::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-hover) var(--ease-out-soft);
+}
+
+.card-lift::before {
+  z-index: -1;
+  box-shadow: var(--shadow-hover);
+}
+
+.card-lift::after {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+.card-lift:hover,
+.card-lift:focus-within {
+  transform: translate3d(0, var(--motion-lift), 0);
+}
+
+.card-lift:hover::before,
+.card-lift:hover::after,
+.card-lift:focus-within::before,
+.card-lift:focus-within::after {
+  opacity: 1;
+}
+
+/* Icon nudge with a little spring, for cards. */
+.icon-spring {
+  transition: transform 450ms var(--ease-spring);
+}
+
+.group:hover .icon-spring,
+.group:focus-within .icon-spring {
+  transform: rotate(10deg) scale(1.06);
+}
+
+/* Connector line that draws in once its section is revealed. */
+.draw-line {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-draw) var(--ease-out-soft) 150ms;
+}
+
+.js [data-reveal].is-in .draw-line,
+html:not(.js) .draw-line {
+  transform: scaleX(1);
+}
+
+/* The shared shadcn Dialog: a short fade + settle (opacity and scale only;
+   scale is its own property, so it does not fight the centring translate). */
+@keyframes bh-dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+@keyframes bh-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+[data-slot="dialog-content"][data-state="open"] {
+  animation: bh-dialog-in 260ms var(--ease-out-soft);
+}
+
+[data-slot="dialog-overlay"][data-state="open"] {
+  animation: bh-fade-in 200ms var(--ease-out-soft);
+}
+
+/* Faint grain for depth on feature surfaces (tiny inline SVG, no request). */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%272%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27 opacity=%270.045%27/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-lift,
+  .card-lift::before,
+  .card-lift::after,
+  .icon-spring,
+  .draw-line {
+    transition: none;
+  }
+
+  .card-lift:hover,
+  .card-lift:focus-within,
+  .group:hover .icon-spring {
+    transform: none;
+  }
+
+  .draw-line {
+    transform: scaleX(1);
+  }
+
+  [data-slot="dialog-content"][data-state="open"],
+  [data-slot="dialog-overlay"][data-state="open"] {
+    animation: none;
+  }
+
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .rotate-ambient,
+  .rotate-badge,
+  .rotate-scroll {
+    animation: none !important;
+  }
+
+  .rotate-on-hover,
+  .arrow-nudge {
+    transition: none;
+  }
+
+  .group:hover .rotate-on-hover,
+  .group:hover .arrow-nudge {
+    transform: none;
+  }
+}

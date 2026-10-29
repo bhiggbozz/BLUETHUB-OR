@@ -2,13 +2,46 @@
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Bluethub — Smart learning platform for African schools. Offline-first e-learning with question banks, parent monitoring, and real-time analytics." />
-    <title>Bluethub — Learn. Grow. Thrive.</title>
+    <title>Bluethub · School management and e-learning that works offline</title>
+    <meta name="description" content="Lessons, assessments, QR attendance and parent updates in one platform for your school, and it keeps working when the internet doesn&#39;t. Start a 3-month pilot." />
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+    <link rel="apple-touch-icon" href="/logo-192.png" />
+    <meta name="theme-color" content="#f7f8fc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
+    <!-- [CONFIRM] canonical origin -->
+    <link rel="canonical" href="https://bluethub.com/" />
+
+    <!-- Open Graph / social previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bluethub" />
+    <meta property="og:title" content="Bluethub · One place to teach, test and track your school" />
+    <meta property="og:description" content="Lessons, assessments, QR attendance and parent updates in one platform, and it works offline. Start a 3-month pilot." />
+    <meta property="og:url" content="https://bluethub.com/" />
+    <meta property="og:locale" content="en_NG" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bluethub · One place to teach, test and track your school" />
+    <meta name="twitter:description" content="Lessons, assessments, QR attendance and parent updates in one platform, and it works offline." />
+    <!-- [CONFIRM] Add a 1200x630 image at public/og-image.png, then enable:
+    <meta property="og:image" content="https://bluethub.com/og-image.png" />
+    <meta name="twitter:image" content="https://bluethub.com/og-image.png" />
+    -->
+
+    <!-- Before first paint: mark JS available (enables scroll reveals) and apply the saved/system theme. -->
+    <script>
+      document.documentElement.classList.add("js");
+      try {
+        var t = localStorage.getItem("bluetthub-theme");
+        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+    <!-- Fonts load without blocking first paint (display=swap; system fallbacks render first). -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;1,400&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;1,400&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;1,400&display=swap" /></noscript>
   </head>
   <body>
     <div id="root"></div>
