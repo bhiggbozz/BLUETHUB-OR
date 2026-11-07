@@ -40,6 +40,7 @@ import {
   type ExtractedQuestionPreview,
 } from "@/services/question-job";
 import { questionJobService } from "@/services/question-job";
+import { getErrorMessage } from "@/utils/errors";
 import {
   QuestionTypeEnum,
   DifficultyLevelEnum,
@@ -87,6 +88,17 @@ const parseContentParts = (raw: unknown): ContentPart[] => {
     display: part?.display as ContentPart["display"],
   }));
 };
+
+// The classroom/subject/topic/sub-topic were chosen once, at scan-submit
+// time — this is read-only display text, never an input. Missing segments
+// (topicName can be empty on older jobs) are skipped rather than shown blank.
+const buildFilingLabel = (data: JobPreviewResponseData | null): string =>
+  !data
+    ? ""
+    : [data.classroomName, data.subjectName, data.topicName, data.subTopicName]
+        .map((v) => (v ?? "").trim())
+        .filter(Boolean)
+        .join(" · ");
 
 const renderLatex = (expr: string, displayMode: boolean) => {
   try {
@@ -634,13 +646,20 @@ export default function QuestionPreviewModal({
     }
   };
 
-  // Handle approve
+  // Handle approve — per-question, not the whole job. `_edits` isn't sent
+  // yet (the PUT /api/questions edit payload isn't confirmed) so an edited
+  // question is approved with its original extracted text for now.
   const handleApprove = async (index: number, _edits?: Partial<ExtractedQuestionPreview>) => {
     if (!data) return;
+    const question = data.questions[index];
+    if (!question?.questionId) {
+      toast.error("This question is missing an id and can't be approved yet.");
+      return;
+    }
 
     setProcessing(true);
     try {
-      await questionJobService.confirmJob(_jobId);
+      await questionJobService.approveQuestion(question.questionId);
       updateQuestionState(index, { status: "approved" });
       toast.success("Question approved!");
 
@@ -655,19 +674,24 @@ export default function QuestionPreviewModal({
       }, 1000);
     } catch (err) {
       console.error("Approve error:", err);
-      toast.error("Failed to approve question");
+      toast.error(getErrorMessage(err, "Failed to approve question"));
     } finally {
       setProcessing(false);
     }
   };
 
-  // Handle reject
+  // Handle reject — per-question soft-delete, not the whole job.
   const handleReject = async (index: number, reason: string) => {
     if (!data) return;
+    const question = data.questions[index];
+    if (!question?.questionId) {
+      toast.error("This question is missing an id and can't be rejected yet.");
+      return;
+    }
 
     setProcessing(true);
     try {
-      await questionJobService.confirmJob(_jobId);
+      await questionJobService.rejectQuestion(question.questionId, reason);
       updateQuestionState(index, { status: "rejected", rejectReason: reason });
       toast.success("Question rejected");
 
@@ -682,7 +706,7 @@ export default function QuestionPreviewModal({
       }, 1000);
     } catch (err) {
       console.error("Reject error:", err);
-      toast.error("Failed to reject question");
+      toast.error(getErrorMessage(err, "Failed to reject question"));
     } finally {
       setProcessing(false);
     }
@@ -762,6 +786,13 @@ export default function QuestionPreviewModal({
             </a>
           )}
         </div>
+
+        {/* Filing — read-only, chosen once at scan-submit time */}
+        {!loading && data && buildFilingLabel(data) && (
+          <div className="px-4 sm:px-6 py-2 bg-purple-50 border-b border-purple-100 shrink-0">
+            <p className="text-xs font-medium text-purple-700 truncate">{buildFilingLabel(data)}</p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">

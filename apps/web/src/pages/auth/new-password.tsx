@@ -19,21 +19,21 @@ const NewPassword = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState("");
-    const [isStudent, setIsStudent] = useState<number>();
+    const [isStudent, setIsStudent] = useState(false);
     const { login: loginAuth } = useAuthContext();
 
-    // Restore school branding from a previous session
+    // roleId is stashed as a plain localStorage string (not part of
+    // schoolInfo) by the login screen's firstTimeLogin branch. Guard on
+    // `!== null` first — `Number(null) === 0` would otherwise misread "never
+    // set" as "Student" (roleId 0).
     useEffect(() => {
-        const stored =
-            localData.retrieve<{ roleId: number }>("schoolInfo");
-        if (stored?.roleId && stored?.roleId === 0) setIsStudent(stored.roleId);
+        const storedRoleId = localStorage.getItem("roleId");
+        setIsStudent(storedRoleId !== null && Number(storedRoleId) === UserRole.Student);
     }, []);
 
 
     // Staff roles (everyone but Student) must satisfy the stricter complexity
-    // Yw%M56a&
-    // schema. roleId is stashed in localStorage by the login screen's
-    // firstTimeLogin branch (Student = 0).
+    // schema.
 
     const {
         register,

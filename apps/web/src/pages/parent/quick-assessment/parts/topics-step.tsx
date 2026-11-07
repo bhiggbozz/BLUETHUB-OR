@@ -1,25 +1,41 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useId } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpenCheck, Check, Search, SearchX } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Check, RefreshCw, Search, SearchX } from "lucide-react";
 import type { TaughtTopic } from "@/services/parent-assessment";
+import type { CalendarTermDto } from "@/services/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "../../component/ui/button";
 import { EmptyState, ErrorState, Skeleton } from "../../component/ui/feedback";
 import { Segmented } from "../../component/ui/segmented";
 import { fadeUp, stagger } from "../../component/ui/motion";
-import { daysAgo, shortDate, toLocalIsoDate } from "../../lib/format";
+import { shortDate } from "../../lib/format";
 
-export type RangePreset = "14" | "30" | "90" | "custom";
+/** A topic a teacher logged as "taught" doesn't guarantee it has any bank
+ * questions yet — this is what's left after the caller checks each one and
+ * drops the ones with nothing available. */
+export interface TaughtTopicWithAvailability extends TaughtTopic {
+  availableCount: number;
+}
 
 interface TopicsStepProps {
   firstName: string;
-  preset: RangePreset;
-  onPreset: (p: RangePreset) => void;
+  // Term picker — only shown once the school's calendar has resolved.
+  calendarLoading: boolean;
+  hasCalendar: boolean;
+  terms: CalendarTermDto[];
+  selectedTermId: string | null;
+  onSelectTerm: (termId: string) => void;
+  // The range actually in effect — a term's dates when hasCalendar, or a
+  // parent-entered custom pair (via onFromDate/onToDate) otherwise.
   fromDate: string;
   toDate: string;
   onFromDate: (v: string) => void;
   onToDate: (v: string) => void;
-  topics: TaughtTopic[];
+  topics: TaughtTopicWithAvailability[];
+  // Taught topics that were checked and dropped for having zero bank
+  // questions — shown as a note so "taught but not pickable" isn't silent.
+  hiddenCount: number;
   searched: boolean;
   loading: boolean;
   error: string | null;
@@ -32,21 +48,29 @@ interface TopicsStepProps {
   continueError: string | null;
 }
 
-export const presetRange = (p: Exclude<RangePreset, "custom">) => ({
-  from: toLocalIsoDate(daysAgo(Number(p))),
-  to: toLocalIsoDate(new Date()),
-});
-
 export function TopicsStep(props: TopicsStepProps) {
-  const { firstName, preset, fromDate, toDate, topics, searched, loading, error, selected } = props;
+  const {
+    firstName, calendarLoading, hasCalendar, terms, selectedTermId,
+    fromDate, toDate, topics, searched, loading, error, selected,
+  } = props;
   const [filter, setFilter] = useState("");
   const ids = { from: useId(), to: useId(), err: useId() };
-  const today = toLocalIsoDate(new Date());
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const rangeInvalid = Boolean(fromDate && toDate && fromDate > toDate);
+
+  const termOptions = useMemo(
+    () =>
+      terms.map((t) => ({
+        value: t.id,
+        label: t.status === "Current" ? `${t.name} (current)` : t.name,
+      })),
+    [terms],
+  );
 
   const grouped = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    const map = new Map<string, TaughtTopic[]>();
+    const map = new Map<string, TaughtTopicWithAvailability[]>();
     for (const t of topics) {
       if (q && !`${t.topicName} ${t.subjectName}`.toLowerCase().includes(q)) continue;
       const list = map.get(t.subjectName) ?? [];
@@ -62,25 +86,35 @@ export function TopicsStep(props: TopicsStepProps) {
         <p className="pp-eyebrow">Step 1</p>
         <h2 className="pp-display mt-1 text-[19px] font-semibold text-(--pp-text)">What has {firstName} been taught?</h2>
         <p className="mt-1 text-[13px] leading-5 text-(--pp-muted)">
-          Pick a period. We'll list every topic teachers recorded as taught in it.
+          {hasCalendar
+            ? "Defaults to the current term. Switch terms to look further back."
+            : "Pick a period. We'll list every topic teachers recorded as taught in it."}
         </p>
 
         <div className="mt-5 space-y-4">
-          <Segmented
-            label="Taught in"
-            value={preset}
-            onChange={props.onPreset}
-            size="sm"
-            className="flex w-full sm:inline-flex sm:w-auto"
-            options={[
-              { value: "14", label: "2 weeks" },
-              { value: "30", label: "30 days" },
-              { value: "90", label: "90 days" },
-              { value: "custom", label: "Custom" },
-            ]}
-          />
-
-          {preset === "custom" && (
+          {calendarLoading ? (
+            <Skeleton className="h-9 w-64 rounded-xl" />
+          ) : hasCalendar ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Segmented
+                label="Term"
+                value={selectedTermId ?? ""}
+                onChange={props.onSelectTerm}
+                size="sm"
+                className="flex w-full sm:inline-flex sm:w-auto"
+                options={termOptions}
+              />
+              <button
+                type="button"
+                onClick={props.onFind}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-semibold text-(--pp-iris) hover:bg-(--pp-iris-soft) disabled:opacity-50"
+                title="Refresh taught topics for this term"
+              >
+                <RefreshCw className={cn("size-3.5", loading && "animate-spin")} /> Refresh
+              </button>
+            </div>
+          ) : (
             <div className="grid grid-cols-2 gap-3 sm:max-w-md">
               <label htmlFor={ids.from}>
                 <span className="pp-eyebrow">From</span>
@@ -88,7 +122,7 @@ export function TopicsStep(props: TopicsStepProps) {
                   id={ids.from}
                   type="date"
                   value={fromDate}
-                  max={toDate || today}
+                  max={toDate || todayIso}
                   onChange={(e) => props.onFromDate(e.target.value)}
                   aria-invalid={rangeInvalid}
                   aria-describedby={rangeInvalid ? ids.err : undefined}
@@ -102,7 +136,7 @@ export function TopicsStep(props: TopicsStepProps) {
                   type="date"
                   value={toDate}
                   min={fromDate}
-                  max={today}
+                  max={todayIso}
                   onChange={(e) => props.onToDate(e.target.value)}
                   aria-invalid={rangeInvalid}
                   aria-describedby={rangeInvalid ? ids.err : undefined}
@@ -117,21 +151,24 @@ export function TopicsStep(props: TopicsStepProps) {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              onClick={props.onFind}
-              loading={loading}
-              disabled={rangeInvalid || !fromDate || !toDate}
-              icon={<BookOpenCheck className="size-4" />}
-            >
-              {searched ? "Search again" : "Find taught topics"}
-            </Button>
-            <span className="pp-num text-[12px] text-(--pp-subtle)">
-              {fromDate && toDate && !rangeInvalid
-                ? `${shortDate(new Date(`${fromDate}T00:00:00`))} – ${shortDate(new Date(`${toDate}T00:00:00`))}`
-                : ""}
+          {!hasCalendar && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={props.onFind}
+                loading={loading}
+                disabled={rangeInvalid || !fromDate || !toDate}
+                icon={<BookOpenCheck className="size-4" />}
+              >
+                {searched ? "Search again" : "Find taught topics"}
+              </Button>
+            </div>
+          )}
+
+          {fromDate && toDate && (
+            <span className="pp-num block text-[12px] text-(--pp-subtle)">
+              {shortDate(new Date(`${fromDate}T00:00:00`))} – {shortDate(new Date(`${toDate}T00:00:00`))}
             </span>
-          </div>
+          )}
         </div>
       </section>
 
@@ -152,14 +189,13 @@ export function TopicsStep(props: TopicsStepProps) {
         <section className="pp-surface">
           <EmptyState
             icon={<SearchX className="size-5" />}
-            title="No taught topics in that period"
-            description="Teachers may not have recorded lessons yet. Try a longer period, such as 90 days."
-            action={
-              preset !== "90" ? (
-                <Button variant="secondary" size="sm" onClick={() => props.onPreset("90")}>
-                  Use the last 90 days
-                </Button>
-              ) : undefined
+            title={props.hiddenCount > 0 ? "Nothing ready to practise yet" : "No taught topics in that period"}
+            description={
+              props.hiddenCount > 0
+                ? `${props.hiddenCount} topic${props.hiddenCount === 1 ? "" : "s"} ${props.hiddenCount === 1 ? "was" : "were"} taught, but none have practice questions banked yet.`
+                : hasCalendar
+                  ? "Teachers may not have recorded lessons yet this term. Try an earlier term."
+                  : "Teachers may not have recorded lessons yet. Try a longer period."
             }
           />
         </section>
@@ -170,9 +206,15 @@ export function TopicsStep(props: TopicsStepProps) {
           <div className="flex flex-col gap-3 border-b border-(--pp-line) p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
               <p className="text-[14px] font-semibold text-(--pp-text)">
-                {topics.length} topic{topics.length === 1 ? "" : "s"} taught
+                {topics.length} topic{topics.length === 1 ? "" : "s"} ready to practise
               </p>
               <p className="text-[12px] text-(--pp-subtle)">Choose the ones to practise. You can pick across subjects.</p>
+              {props.hiddenCount > 0 && (
+                <p className="mt-1 text-[11px] text-(--pp-subtle)">
+                  {props.hiddenCount} other topic{props.hiddenCount === 1 ? "" : "s"} taught this period{" "}
+                  {props.hiddenCount === 1 ? "doesn't" : "don't"} have questions banked yet, so {props.hiddenCount === 1 ? "it isn't" : "they aren't"} shown.
+                </p>
+              )}
             </div>
             {topics.length > 6 && (
               <label className="relative sm:w-60">
@@ -238,6 +280,9 @@ export function TopicsStep(props: TopicsStepProps) {
                             <span className="block truncate text-[11px] text-(--pp-subtle)">
                               Taught {t.timesTaught}× · last on {shortDate(new Date(t.lastTaughtDate))}
                             </span>
+                          </span>
+                          <span className="pp-num shrink-0 text-[11px] text-(--pp-subtle)">
+                            {t.availableCount} question{t.availableCount === 1 ? "" : "s"}
                           </span>
                         </motion.button>
                       );
