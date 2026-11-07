@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import toast from "react-hot-toast";
@@ -14,15 +14,12 @@ import {
   type OptionPreviewDto,
 } from "@/services/question-job";
 import { questionService, type CreateOptionPayload } from "@/services/question";
-import { schoolService } from "@/services/school";
-import { useAuthContext, isTeacherRoleData } from "@/contexts/auth-context";
+import { useAuthContext } from "@/contexts/auth-context";
 import { Button, Dialog, DialogContent, DialogTitle } from "@bluethub/ui-kit";
 import TitleBar from "@/shared/title-bar";
 import { useNavigate } from "react-router-dom";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface SelectItem { id: string; name: string; }
-
 interface ContentPart {
   type: "text" | "latex" | "image";
   value?: string;
@@ -55,12 +52,21 @@ interface EditableQuestion {
   statusName: string;
   subTopicName?: string;
   topicName?: string;
+  // What this question is actually filed under — from the preview response
+  // (per-question id, falling back to the job's own filing), never from a
+  // page-level dropdown. Save is blocked if any of these is missing.
+  classroomId?: string;
+  subjectId?: string;
+  topicId?: string | null;
+  subTopicId?: string;
   creationDate: string;
   options: EditableOption[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
+
+const isUsableGuid = (value?: string | null): value is string => !!value && value !== EMPTY_GUID;
 
 const QUESTION_TYPE_CHOICES = [
   { value: 1, label: "Multiple Choice" },
@@ -81,21 +87,6 @@ const sanitizePlainTextInput = (text: string) =>
 
 const sanitizeQuestionTextForSave = (text: string) =>
   text.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
-
-// Curriculum responses vary: array, { topics: [] }, or { data: { topics: [] } }
-const extractTopicsList = (payload: unknown): any[] => {
-  const obj = (payload ?? {}) as any;
-  const candidates = [
-    obj?.data?.topics,
-    obj?.data?.Topics,
-    obj?.topics,
-    obj?.Topics,
-  ];
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) return candidate;
-  }
-  return Array.isArray(obj) ? obj : [];
-};
 
 const isOptionQuestionType = (questionType: number) => questionType === 1 || questionType === 4;
 
@@ -167,33 +158,6 @@ const statusPillClass = (status: string) => {
 };
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
-const FilterSelect = ({
-  label, value, options, placeholder, onChange, disabled, loading,
-}: {
-  label: string;
-  value: string;
-  options: SelectItem[];
-  placeholder?: string;
-  onChange: (v: string) => void;
-  disabled?: boolean;
-  loading?: boolean;
-}) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-xs font-semibold text-slate-500">{label}</label>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled || loading}
-      className="h-9 rounded-lg border border-slate-200 px-3 text-sm disabled:opacity-50 bg-white"
-    >
-      <option value="">{loading ? "Loading…" : placeholder ?? `Select ${label}`}</option>
-      {options.map((opt) => (
-        <option key={opt.id} value={opt.id}>{opt.name}</option>
-      ))}
-    </select>
-  </div>
-);
-
 const SummaryCard = ({
   label, value, tone,
 }: {
@@ -355,9 +319,20 @@ const PreviewModal = ({
 // ── Main component ─────────────────────────────────────────────────────────
 const ADMIN_ROLES = ["SuperAdministrator", "Administrator"];
 
+interface PreviewFiling {
+  classroomId?: string;
+  classroomName?: string;
+  subjectId?: string;
+  subjectName?: string;
+  topicId?: string;
+  topicName?: string;
+  subTopicId?: string;
+  subTopicName?: string;
+}
+
 const MyUploads = () => {
   const navigate= useNavigate()
-  const { user, isLoading: authLoading } = useAuthContext();
+  const { user } = useAuthContext();
   const isAdmin = ADMIN_ROLES.includes(user?.roleName ?? "");
   const [jobs, setJobs] = useState<JobSummaryDto[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -374,14 +349,10 @@ const MyUploads = () => {
   const [isAdminOnly, setIsAdminOnly] = useState(false);
   const [editableQuestions, setEditableQuestions] = useState<EditableQuestion[]>([]);
   const [previewJob, setPreviewJob] = useState<JobSummaryDto | null>(null);
-  const [classroomId, setClassroomId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [topicId, setTopicId] = useState("");
-  const [subTopicId, setSubTopicId] = useState("");
-  const [topics, setTopics] = useState<SelectItem[]>([]);
-  const [topicsData, setTopicsData] = useState<any[]>([]);
-  const [subTopics, setSubTopics] = useState<SelectItem[]>([]);
-  const [loadingTopics, setLoadingTopics] = useState(false);
+  // The job's own filing (classroom/subject/topic/sub-topic), as returned by
+  // GET /api/questionjob/{jobId}/preview — read-only, displayed to the
+  // teacher, and the only source used when saving. Never a dropdown.
+  const [previewFiling, setPreviewFiling] = useState<PreviewFiling | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchJobs = async (silent = false) => {
@@ -410,49 +381,9 @@ const MyUploads = () => {
     await questionJobService.confirmJob(jobId);
   };
 
-  const autoDetectFilters = async (job: JobSummaryDto) => {
-    const roleData = user?.roleData;
-    if (!roleData || !isTeacherRoleData(roleData)) return;
-    const topicName = job.topicName?.toLowerCase().trim();
-    if (topicName) {
-      for (const classroom of roleData.classrooms) {
-        const cId = String(classroom.classroomId);
-        const subjects = classroom.subjects ?? [];
-        for (const subject of subjects) {
-          const sId = String(subject.subjectId);
-          try {
-            const { data } = await schoolService.getTopicsWithSubTopics(sId, cId);
-            const list = extractTopicsList((data as any)?.data ?? data);
-            const match = list.find((t: any) =>
-              String(t?.name ?? t?.topicName ?? "").toLowerCase().trim() === topicName
-            );
-            if (match) {
-              setClassroomId(cId);
-              setSubjectId(sId);
-              setTopicId(String(match?.id ?? match?.topicId ?? ""));
-              setSubTopicId("");
-              return;
-            }
-          } catch { /* continue searching */ }
-        }
-      }
-    }
-
-    // Fallback: when the job has no topic name (or no match), pre-select a single
-    // classroom + first subject so saving still works.
-    if (roleData.classrooms.length === 1) {
-      const firstClassroom = roleData.classrooms[0];
-      const cId = String(firstClassroom?.classroomId ?? "");
-      const firstSubject = (firstClassroom?.subjects ?? [])[0];
-      if (cId && firstSubject) {
-        setClassroomId(cId);
-        setSubjectId(String(firstSubject.subjectId));
-      }
-    }
-  };
-
   const handleOpenJobPreview = async (job: JobSummaryDto) => {
     setPreviewJob(job);
+    setPreviewFiling(null);
     setIsEditMode(false);
     setEditableQuestions([]);
     setPreviewLoading(true);
@@ -461,6 +392,16 @@ const MyUploads = () => {
       const jobData = (data.data ?? data) as unknown as JobPreviewResponseData;
       const rawQuestions = jobData?.questions ?? [];
       setPreviewScanSessionId(jobData?.scanSessionId ?? null);
+      setPreviewFiling({
+        classroomId: jobData?.classroomId,
+        classroomName: jobData?.classroomName,
+        subjectId: jobData?.subjectId,
+        subjectName: jobData?.subjectName,
+        topicId: jobData?.topicId,
+        topicName: jobData?.topicName,
+        subTopicId: jobData?.subTopicId,
+        subTopicName: jobData?.subTopicName,
+      });
       const mapped: EditableQuestion[] = rawQuestions.map((q, index) => {
         // The API may return questionType as a string ("Objective") or number
         const questionType = parseQuestionTypeFromApi((q as unknown as Record<string, unknown>).questionType ?? q.questionType);
@@ -496,6 +437,12 @@ const MyUploads = () => {
           statusName: "Draft",
           subTopicName: job.subTopicName ?? "",
           topicName: job.topicName ?? "",
+          // Per-question filing wins over the job-level filing when the
+          // backend returns both — otherwise fall back to the job's own.
+          classroomId: q.classroomId ?? jobData?.classroomId,
+          subjectId: q.subjectId ?? jobData?.subjectId,
+          topicId: q.topicId ?? jobData?.topicId ?? null,
+          subTopicId: q.subTopicId ?? jobData?.subTopicId,
           creationDate: new Date().toISOString(),
           options: (q.options ?? []).map((opt, i) => ({
             id: crypto.randomUUID(),
@@ -506,11 +453,11 @@ const MyUploads = () => {
         };
       });
       setEditableQuestions(mapped);
-      void autoDetectFilters(job);
     } catch (err) {
       const e = err as AxiosError<{ responseMessage?: string }>;
       toast.error(e.response?.data?.responseMessage ?? "Failed to load job questions");
       setPreviewJob(null);
+      setPreviewFiling(null);
     } finally {
       setPreviewLoading(false);
     }
@@ -707,31 +654,6 @@ const MyUploads = () => {
     return null;
   };
 
-  const normalizeName = (value?: string | null) => (value ?? "").trim().toLowerCase();
-
-  const resolveTopicIdByName = (name?: string | null) => {
-    const target = normalizeName(name);
-    if (!target) return "";
-    const found = topics.find((topic) => normalizeName(topic.name) === target);
-    return found?.id ?? "";
-  };
-
-  const resolveSubTopicIdByName = (name?: string | null) => {
-    const target = normalizeName(name);
-    if (!target) return "";
-
-    for (const topic of topicsData) {
-      const nested = (topic?.SubTopics ?? topic?.subTopics ?? []) as any[];
-      const found = nested.find((sub) => normalizeName(String(sub?.Name ?? sub?.name ?? sub?.subTopicName ?? "")) === target);
-      if (found) {
-        return String(found?.Id ?? found?.id ?? found?.subTopicId ?? "");
-      }
-    }
-
-    const foundFlat = subTopics.find((sub) => normalizeName(sub.name) === target);
-    return foundFlat?.id ?? "";
-  };
-
   const handleSaveEditedQuestions = async () => {
     // Everything below runs synchronously up to setIsSavingEditedQuestions(true)
     // — the button's disabled state doesn't take effect until React repaints,
@@ -742,33 +664,6 @@ const MyUploads = () => {
 
     if (!previewJob) {
       const message = "No active upload job selected.";
-      setSaveError(message);
-      toast.error(message);
-      return;
-    }
-
-    if (!classroomId) {
-      const message = "Select a classroom before saving.";
-      setSaveError(message);
-      toast.error(message);
-      return;
-    }
-
-    if (!subjectId) {
-      const message = "Select a subject before saving.";
-      setSaveError(message);
-      toast.error(message);
-      return;
-    }
-
-    const resolvedTopicId = topicId || resolveTopicIdByName(previewJob.topicName);
-    const resolvedSubTopicId =
-      subTopicId ||
-      resolveSubTopicIdByName(previewJob.subTopicName) ||
-      resolveSubTopicIdByName(editableQuestions[0]?.subTopicName);
-
-    if (!resolvedSubTopicId || resolvedSubTopicId === EMPTY_GUID) {
-      const message = "Could not resolve sub-topic for this job. Select a sub-topic, then save again.";
       setSaveError(message);
       toast.error(message);
       return;
@@ -790,7 +685,23 @@ const MyUploads = () => {
       }
     }
 
-    const selectedTopicName = topics.find((topic) => topic.id === resolvedTopicId)?.name ?? previewJob.topicName ?? "";
+    // Classroom/subject/topic/sub-topic come from the job's own filing
+    // (resolved per question when the preview loaded), never from a
+    // page-level dropdown. A missing id here means the server didn't
+    // return filing for this job — there's nothing the teacher can pick to
+    // fix that, so this blocks the save with a support message instead of
+    // asking them to select anything.
+    const missingFilingIndex = editableQuestions.findIndex(
+      (q) => !isUsableGuid(q.classroomId) || !isUsableGuid(q.subjectId) || !isUsableGuid(q.subTopicId)
+    );
+    if (missingFilingIndex !== -1) {
+      const message = `Question ${missingFilingIndex + 1} is missing classroom/subject/sub-topic filing from the server. Contact support before saving.`;
+      setSaveError(message);
+      toast.error(message);
+      return;
+    }
+
+    const topicName = previewFiling?.topicName || previewJob.topicName || "General";
 
     setIsSavingEditedQuestions(true);
 
@@ -807,13 +718,11 @@ const MyUploads = () => {
           clientId: `upload-${previewJob.jobId}-${question.localId}`,
           originDevice: "web",
           createdAtDevice: new Date().toISOString(),
-          subjectId,
-          topicId: resolvedTopicId || null,
-          topic: [selectedTopicName, question.topicName, previewJob.topicName]
-            .map((value) => (value ?? "").trim())
-            .find((value) => value.length > 0) ?? "General",
-          subTopic: resolvedSubTopicId,
-          classroomId,
+          subjectId: question.subjectId!,
+          ...(isUsableGuid(question.topicId) ? { topicId: question.topicId } : {}),
+          topic: topicName,
+          subTopic: question.subTopicId!,
+          classroomId: question.classroomId!,
           title: plainText || `Question ${index + 1}`,
           textContent: plainText,
           questionType: question.questionType,
@@ -850,21 +759,16 @@ const MyUploads = () => {
       }
 
       const savedJobId = previewJob.jobId;
-      console.info("[MyUploads] Confirming processed job", savedJobId);
       await confirmProcessedJobDirect(savedJobId);
-      console.info("[MyUploads] Job confirmed", savedJobId);
 
       setJobs((prev) => prev.filter((job) => job.jobId !== savedJobId));
       setIsEditMode(false);
       setPreviewJob(null);
+      setPreviewFiling(null);
       setSaveError(null);
       toast.success("Questions saved and job processed.");
 
       void fetchStatuses();
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 250);
     } catch (error) {
       const err = error as { response?: { data?: { responseMessage?: string } }; message?: string };
       const message = err?.response?.data?.responseMessage ?? err?.message ?? "Failed to save edited questions.";
@@ -874,27 +778,6 @@ const MyUploads = () => {
       setIsSavingEditedQuestions(false);
     }
   };
-
-  const classrooms = useMemo<SelectItem[]>(() => {
-    const roleData = user?.roleData;
-    if (!roleData || !isTeacherRoleData(roleData)) return [];
-    return roleData.classrooms.map((c) => ({
-      id: String(c.classroomId),
-      name: String(c.className),
-    }));
-  }, [user?.roleData]);
-
-  const subjects = useMemo<SelectItem[]>(() => {
-    const roleData = user?.roleData;
-    if (!roleData || !isTeacherRoleData(roleData)) return [];
-    const selectedClassroom = roleData.classrooms.find(
-      (c) => String(c.classroomId) === classroomId
-    );
-    return (selectedClassroom?.subjects ?? []).map((s) => ({
-      id: String(s.subjectId),
-      name: String(s.subjectName),
-    }));
-  }, [user?.roleData, classroomId]);
 
   useEffect(() => {
     fetchJobs();
@@ -910,39 +793,6 @@ const MyUploads = () => {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [jobs]);
 
-  useEffect(() => {
-    if (!subjectId || !classroomId) {
-      setTopics([]);
-      setTopicsData([]);
-      setSubTopics([]);
-      setTopicId("");
-      setSubTopicId("");
-      return;
-    }
-    setLoadingTopics(true);
-    schoolService.getTopicsWithSubTopics(subjectId, classroomId)
-      .then(({ data }) => {
-        const list = extractTopicsList((data as any)?.data ?? data);
-        setTopicsData(list);
-        setTopics(list.map((t: any) => ({
-          id: String(t?.id ?? t?.topicId ?? ""),
-          name: String(t?.name ?? t?.topicName ?? ""),
-        })));
-      })
-      .catch(() => {})
-      .finally(() => setLoadingTopics(false));
-  }, [subjectId, classroomId]);
-
-  useEffect(() => {
-    if (!topicId) { setSubTopics([]); return; }
-    const topic = topicsData.find((t: any) => String(t?.id ?? t?.topicId ?? "") === topicId);
-    const nested = ((topic?.SubTopics ?? topic?.subTopics ?? []) as any[]).map((sub: any) => ({
-      id: String(sub?.Id ?? sub?.id ?? sub?.subTopicId ?? ""),
-      name: String(sub?.Name ?? sub?.name ?? sub?.subTopicName ?? ""),
-    }));
-    setSubTopics(nested);
-  }, [topicId, topicsData]);
-
   return (
     <div className="font-poppins">
       <div className="border min-h-screen  border-white/20 overflow-hidden bg-white/80 backdrop-blur-sm">
@@ -954,55 +804,6 @@ const MyUploads = () => {
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Track pending, processing, completed and failed question extraction jobs.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <FilterSelect
-              label="Classroom"
-              value={classroomId}
-              options={classrooms}
-              placeholder="Select classroom"
-              onChange={(v) => {
-                setClassroomId(v);
-                setSubjectId("");
-                setTopicId("");
-                setSubTopicId("");
-              }}
-              loading={authLoading}
-            />
-            <FilterSelect
-              label="Subject"
-              value={subjectId}
-              options={subjects}
-              placeholder={classroomId ? "Select subject" : "Select classroom first"}
-              onChange={(v) => {
-                setSubjectId(v);
-                setTopicId("");
-                setSubTopicId("");
-              }}
-              disabled={!classroomId}
-              loading={authLoading}
-            />
-            <FilterSelect
-              label="Topic"
-              value={topicId}
-              options={topics}
-              placeholder={subjectId ? "Select topic (optional)" : "Select subject first"}
-              onChange={(v) => {
-                setTopicId(v);
-                setSubTopicId("");
-              }}
-              disabled={!subjectId}
-              loading={loadingTopics}
-            />
-            <FilterSelect
-              label="Sub-topic"
-              value={subTopicId}
-              options={subTopics}
-              placeholder={topicId ? "Select sub-topic (optional)" : "Select topic first"}
-              onChange={setSubTopicId}
-              disabled={!topicId}
-            />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -1082,7 +883,11 @@ const MyUploads = () => {
                 <DialogTitle className="text-base font-semibold text-slate-800">Uploaded Job Questions</DialogTitle>
                 {previewJob && (
                   <p className="text-xs text-slate-500 mt-1">
-                    {previewJob.topicName} • {previewJob.subTopicName} • {previewJob.questionType}
+                    {[previewFiling?.classroomName, previewFiling?.subjectName, previewFiling?.topicName, previewFiling?.subTopicName]
+                      .map((v) => (v ?? "").trim())
+                      .filter(Boolean)
+                      .join(" · ") || `${previewJob.topicName ?? ""} • ${previewJob.subTopicName ?? ""}`}
+                    {" • "}{previewJob.questionType}
                   </p>
                 )}
               </div>

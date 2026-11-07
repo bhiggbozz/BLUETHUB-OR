@@ -4,6 +4,11 @@ import NotFound from '@/component/not-found';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ClassRoom from '@/layouts/teacher/class/class-room';
 import StudentBoardRoom from '@/layouts/student/board/student-class-room';
+import TeacherLiveClassRoom from '@/layouts/teacher/live-class/live-class-room';
+import StudentLiveClassRoom from '@/layouts/student/live-class/student-live-class-room';
+import TeacherLiveClassIndex from '@/pages/teacher/live-class';
+import CreateLiveClass from '@/pages/teacher/live-class/create';
+import LiveClassEndSummary from '@/pages/teacher/live-class/end-summary';
 import Replay from '@/component/reply';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
@@ -44,6 +49,15 @@ import ParentProtectedRoute from '@/component/protected-routes/parent-routes';
 import ParentDashboard from '@/pages/parent/dashboard';
 import ParentAttendance from '@/pages/parent/attendance';
 import ParentQuickAssessment from '@/pages/parent/quick-assessment';
+import ParentPracticeQuizLayout from '@/pages/parent/practice-quiz/layout';
+import ParentPracticeQuizCreate from '@/pages/parent/practice-quiz';
+import ParentPracticeQuizList from '@/pages/parent/practice-quiz/quizzes';
+import ParentPracticeQuizReview from '@/pages/parent/practice-quiz/review';
+import ParentPracticeQuizTaught from '@/pages/parent/practice-quiz/taught';
+import StudentParentQuizLayout from '@/pages/student/parent-quiz/layout';
+import StudentParentQuizList from '@/pages/student/parent-quiz';
+import StudentParentQuizAttempt from '@/pages/student/parent-quiz/attempt';
+import StudentParentQuizResult from '@/pages/student/parent-quiz/result';
 import StudentIndex from '@/pages/student/component/main';
 import StudyGroupsIndex from '@/pages/student/study-groups';
 import StudyGroupDetailPage from '@/pages/student/study-groups/group-detail';
@@ -89,6 +103,7 @@ import UploadScan from '@/pages/teacher/component/upload-scan';
 import ReviewQuestion from '@/pages/teacher/component/review-question';
 import MyUploads from '@/pages/teacher/component/my-uploads';
 import AdminPermissions from '@/pages/admin/admin-permissions';
+import AdminSettings from '@/pages/admin/settings';
 import AdminRole from '@/pages/admin/registration/admin-role-management/admin-role';
 import ViewAllSubject from '@/pages/admin/registration/course/class/view-all-subject';
 import RegisterTeacherRole from '@/pages/admin/registration/teacher/assign-role';
@@ -238,6 +253,12 @@ const router = createBrowserRouter([
         </ErrorBoundary>
     },
     {
+        path: "teacher/live-class/room/:id",
+        element: <ErrorBoundary fallbackMessage="Live class error">
+            <TeacherProtectedRoute><TeacherLiveClassRoom /></TeacherProtectedRoute>
+        </ErrorBoundary>
+    },
+    {
         // Dedicated student board shell (layouts/student/board) — shares the
         // canvas/toolbar/recording engine with the teacher's board (Class has
         // no teacher-vs-student behavior of its own) but has its own app bar,
@@ -246,6 +267,12 @@ const router = createBrowserRouter([
         path: "student/board",
         element: <ErrorBoundary fallbackMessage="Whiteboard error">
             <StudentProtectedRoute><StudentBoardRoom /></StudentProtectedRoute>
+        </ErrorBoundary>
+    },
+    {
+        path: "student/live-class",
+        element: <ErrorBoundary fallbackMessage="Live class error">
+            <StudentProtectedRoute><StudentLiveClassRoom /></StudentProtectedRoute>
         </ErrorBoundary>
     },
 
@@ -374,6 +401,10 @@ const router = createBrowserRouter([
             {
                 path: 'admin-permissions',
                 element: <AdminPermissions />
+            },
+            {
+                path: 'settings',
+                element: <AdminSettings />
             },
             {
                 path: 'lesson-approval',
@@ -532,6 +563,9 @@ const router = createBrowserRouter([
             { path: "my-lessons", element: <MyLesson /> },
             { path: "submit-lesson", element: <SubmitLesson /> },
             { path: "start-class", element: <StartClass /> },
+            { path: "live-class", element: <TeacherLiveClassIndex /> },
+            { path: "live-class/new", element: <CreateLiveClass /> },
+            { path: "live-class/:id/end", element: <LiveClassEndSummary /> },
             { path: "assessment/createQuiz", element: <CreateQuizQuestion /> },
             { path: "assessment/questionlist", element: <TopicQuestionList /> },
             { path: "assessment/questionlist/subtopic", element: <SubtopicQuestionList /> },
@@ -580,6 +614,16 @@ const router = createBrowserRouter([
             { index: true, element: <ParentDashboard /> },
             { path: "attendance", element: <ParentAttendance /> },
             { path: "assessment", element: <ParentQuickAssessment /> },
+            {
+                path: "practice-quiz",
+                element: <ParentPracticeQuizLayout />,
+                children: [
+                    { index: true, element: <ParentPracticeQuizCreate /> },
+                    { path: "quizzes", element: <ParentPracticeQuizList /> },
+                    { path: "taught", element: <ParentPracticeQuizTaught /> },
+                    { path: ":quizId", element: <ParentPracticeQuizReview /> },
+                ],
+            },
         ],
     },
 
@@ -621,6 +665,15 @@ const router = createBrowserRouter([
             { path: "recorded-class/:classId/replay", element: <StudentReplay /> },
             { path: "quiz/:quizCode", element: <StudentQuizPage /> },
             { path: "Quizzes", element: <StudentQuizzes /> },
+            {
+                path: "parent-quiz",
+                element: <StudentParentQuizLayout />,
+                children: [
+                    { index: true, element: <StudentParentQuizList /> },
+                    { path: ":quizId", element: <StudentParentQuizAttempt /> },
+                    { path: ":quizId/result", element: <StudentParentQuizResult /> },
+                ],
+            },
             { path: "Grades-Progress", element: <GradesProgress /> },
             {
                 path: "assessment",

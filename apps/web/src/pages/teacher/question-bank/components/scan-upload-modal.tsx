@@ -32,6 +32,7 @@ import { questionJobService } from "@/services/question-job";
 import { schoolService } from "@/services/school";
 import { useAuthContext } from "@/contexts/auth-context";
 import { authService } from "@/services/auth";
+import { compressImageForUpload } from "@/utils/image-compression";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -298,44 +299,66 @@ export default function ScanUploadModal({
       "image/heif",
       "application/pdf",
     ];
-    const maxSize = 15 * 1024 * 1024; // 15MB
+    const isImage = file.type.startsWith("image/");
+    // Images get compressed before upload, so the raw camera photo is allowed
+    // to be much bigger than what actually gets sent. PDFs aren't compressed
+    // (no client-side re-encoding path), so that cap stays tight.
+    const maxSize = isImage ? 30 * 1024 * 1024 : 15 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
       return "Please upload an image (JPEG, PNG, HEIC) or PDF file.";
     }
 
     if (file.size > maxSize) {
-      return "File size must be less than 15MB.";
+      return isImage ? "Image must be less than 30MB." : "File size must be less than 15MB.";
     }
 
     return null;
   };
 
-  // Handle file selection
-  const handleFileSelect = (file: File) => {
+  // Handle file selection — images are downscaled/re-compressed first so a
+  // large phone photo doesn't get rejected (413) by the upload target.
+  const handleFileSelect = async (file: File) => {
     const error = validateFile(file);
     if (error) {
       setErrorMessage(error);
       return;
     }
 
-    setSelectedFile(file);
     setErrorMessage("");
 
-    // Create preview for images
-    if (file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    } else {
+    if (!file.type.startsWith("image/")) {
+      setSelectedFile(file);
       setPreviewUrl(null);
+      return;
     }
+
+    const toastId = "scan-img-compress";
+    const isLarge = file.size > 4 * 1024 * 1024;
+    if (isLarge) toast.loading("Optimizing photo for upload...", { id: toastId });
+
+    const result = await compressImageForUpload(file);
+
+    if (isLarge) {
+      if (result.wasCompressed) {
+        toast.success(
+          `Photo optimized: ${(result.originalSize / 1024 / 1024).toFixed(1)}MB → ${(result.compressedSize / 1024 / 1024).toFixed(1)}MB`,
+          { id: toastId }
+        );
+      } else {
+        toast.dismiss(toastId);
+      }
+    }
+
+    setSelectedFile(result.file);
+    setPreviewUrl(URL.createObjectURL(result.file));
   };
 
   // Handle file input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleFileSelect(file);
+      void handleFileSelect(file);
     }
   };
 
@@ -663,7 +686,7 @@ const jobResult = await questionJobService.submitJob(formData);
                   </div>
 
                   <p className="text-center text-xs text-gray-400 pt-1">
-                    Supports JPEG, PNG, HEIC, PDF • Max 15MB
+                    Supports JPEG, PNG, HEIC, PDF • Photos are optimized automatically • PDF max 15MB
                   </p>
                 </div>
               ) : (

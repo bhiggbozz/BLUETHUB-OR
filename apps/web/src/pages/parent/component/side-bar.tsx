@@ -248,7 +248,7 @@ export function ParentMobileTabBar() {
       aria-label="Parent navigation"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-(--pp-line) bg-(--pp-surface)/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
     >
-      <div className="mx-auto grid max-w-md grid-cols-4 px-2">
+      <div className="mx-auto grid max-w-md grid-cols-5 px-2">
         {PARENT_NAV.map((item) => {
           const active = isNavActive(item, pathname);
           return (
@@ -256,17 +256,17 @@ export function ParentMobileTabBar() {
               key={item.path}
               to={item.path}
               end={item.end}
-              className="relative flex h-16 flex-col items-center justify-center gap-1"
+              className="relative flex h-16 min-w-0 flex-col items-center justify-center gap-1 px-0.5"
             >
               {active && (
                 <motion.span
                   layoutId="tab-active"
                   transition={springy}
-                  className="absolute top-2 h-8 w-14 rounded-full bg-(--pp-iris-soft)"
+                  className="absolute top-2 h-8 w-11 rounded-full bg-(--pp-iris-soft)"
                 />
               )}
               <item.icon className={cn("relative size-5", active ? "text-(--pp-iris)" : "text-(--pp-subtle)")} />
-              <span className={cn("relative text-[11px] font-semibold", active ? "text-(--pp-text)" : "text-(--pp-subtle)")}>
+              <span className={cn("relative w-full truncate text-center text-[10px] font-semibold", active ? "text-(--pp-text)" : "text-(--pp-subtle)")}>
                 {item.short}
               </span>
             </NavLink>

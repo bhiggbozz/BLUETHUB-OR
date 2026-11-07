@@ -289,7 +289,90 @@ export interface LessonWatchStatus {
   students: LessonWatchStatusStudent[];
 }
 
+// ── GET api/lessons/topics-taught ────────────────────────────────────────────
+// Query-string only (no body): termId (takes priority over sessionId),
+// sessionId, classroomId (required for staff unless studentId given),
+// studentId (required for a parent — their own child only), subjectId.
+// Neither termId nor sessionId sent → the school's current term (or current
+// / latest session if today falls in a break).
+
+export interface GetTopicsTaughtParams {
+  termId?: string;
+  sessionId?: string;
+  classroomId?: string;
+  studentId?: string;
+  subjectId?: string;
+}
+
+export interface TopicsTaughtLesson {
+  lessonId: string;
+  aim: string;
+  subTopicId: string | null;
+  subTopicName: string | null;
+  classroomName: string;
+  teacherName: string;
+  taughtOn: string;
+  /** null for a staff caller viewing by classroomId */
+  watched: boolean | null;
+}
+
+export interface TopicsTaughtTopic {
+  topicId: string;
+  topicName: string;
+  lessonCount: number;
+  firstTaughtOn: string;
+  lastTaughtOn: string;
+  lessons: TopicsTaughtLesson[];
+}
+
+export interface TopicsTaughtSubject {
+  subjectId: string;
+  subjectName: string;
+  lessonCount: number;
+  topics: TopicsTaughtTopic[];
+}
+
+export interface TopicsTaughtTerm {
+  termId: string | null;
+  termName: string | null;
+  from: string | null;
+  to: string | null;
+  lessonCount: number;
+  topicCount: number;
+  subjects: TopicsTaughtSubject[];
+}
+
+export interface TopicsTaughtClassroom {
+  classroomId: string;
+  classroomName: string;
+}
+
+export interface TopicsTaughtResponse {
+  scope: "Term" | "Session";
+  sessionId: string;
+  sessionName: string;
+  termId: string | null;
+  termName: string | null;
+  from: string | null;
+  to: string | null;
+  studentId: string | null;
+  studentName: string | null;
+  classrooms: TopicsTaughtClassroom[];
+  totalLessons: number;
+  totalTopics: number;
+  terms: TopicsTaughtTerm[];
+}
+
 export const lessonService = {
+  // GET api/lessons/topics-taught — what's actually been taught, scoped by
+  // term or session, nested term → subject → topic → lessons.
+  getTopicsTaught: (params: GetTopicsTaughtParams = {}) =>
+    API.get<TResponse<TopicsTaughtResponse>>("api/lessons/topics-taught", {
+      params,
+      headers: { "X-Tenant-ID": X_Tenant_ID },
+    }),
+
+
   // ── Lesson for Class ───────────────────────────────────────────────────────
   getLessonForClass: (lessonId: string) =>
     API.get<TResponse<LessonForClassResponse>>(`api/lessons/${lessonId}/class`, {

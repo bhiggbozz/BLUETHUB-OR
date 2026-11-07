@@ -34,6 +34,17 @@ export interface JobSummaryDto {
   subTopicName?: string;
   extractedCount?: number;
   attemptCount?: number;
+  /** The classroom/subject/topic/sub-topic IDs chosen at scan-submit time
+   * (see questionJobService.submitJob). Not every backend version returns
+   * these yet — when absent, the save flow falls back to re-matching
+   * topicName/subTopicName against the currently selected classroom's
+   * curriculum, which is why picking a sub-topic can seem to be asked for
+   * twice. Once the backend echoes these back, saving skips that re-match
+   * entirely. */
+  classroomId?: string;
+  subjectId?: string;
+  topicId?: string;
+  subTopicId?: string;
 }
 
 export interface JobListItem {
@@ -87,6 +98,12 @@ export interface ExtractedQuestionPreview {
   aiConfidenceScore?: number;
   status?: string;
   options: OptionPreviewDto[];
+  // What this question is actually filed under right now — always prefer
+  // these over the job-level ids below when both are present.
+  classroomId?: string;
+  subjectId?: string;
+  topicId?: string;
+  subTopicId?: string;
 }
 
 export interface JobPreviewResponseData {
@@ -97,6 +114,19 @@ export interface JobPreviewResponseData {
   totalCount?: number;
   totalExtracted?: number;
   status: string;
+  // The classroom/subject/topic/sub-topic chosen at scan-submit time
+  // (POST api/questionjob/submit) and stored on the job — the review
+  // screen displays these read-only and uses the ids for saving instead of
+  // asking the teacher to pick again. topicId/topicName can be empty on
+  // older jobs; the rest are expected to always be present.
+  classroomId?: string;
+  classroomName?: string;
+  subjectId?: string;
+  subjectName?: string;
+  topicId?: string;
+  topicName?: string;
+  subTopicId?: string;
+  subTopicName?: string;
 }
 
 export interface QuestionPreviewResponse {
@@ -159,8 +189,24 @@ export const questionJobService = {
     return API.post<TResponse<unknown>>(`api/questionjob/${jobId}/retry`, {}, { headers });
   },
 
-  // POST api/questionjob/jobs/{jobId}/confirm
+  // POST api/questionjob/jobs/{jobId}/confirm — closes the whole job once
+  // every question in it has been approved or rejected. Not per-question.
   confirmJob: (jobId: string) =>
     API.post<TResponse<unknown>>(`api/questionjob/jobs/${jobId}/confirm`, {}, { headers }),
+
+  // POST api/questions/{questionId}/confirm — approve a single extracted
+  // question (adds it to the question bank).
+  approveQuestion: (questionId: string) =>
+    API.post<TResponse<unknown>>(`api/questions/${questionId}/confirm`, {}, { headers }),
+
+  // POST api/questions/{questionId}/reject — soft-deletes a single
+  // extracted question. `reason` is the teacher's free-text explanation
+  // from the reject dialog; omit it if blank.
+  rejectQuestion: (questionId: string, reason?: string) =>
+    API.post<TResponse<unknown>>(
+      `api/questions/${questionId}/reject`,
+      reason?.trim() ? { reason: reason.trim() } : {},
+      { headers }
+    ),
 };
 

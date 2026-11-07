@@ -26,7 +26,7 @@ import analyticsIcon from "@/assets/svg/analytics.svg";
 // import libraryIcon from "@/assets/svg/library.svg";
 import lessonIcon from "@/assets/svg/lesson.svg";
 import schoolBrandingIcon from "@/assets/svg/school-branding.svg";
-// import settingsIcon from "@/assets/svg/settings.svg";
+import settingsIcon from "@/assets/svg/settings.svg";
 import logoutIcon from "@/assets/svg/logout.svg";
 import AttendanceIcon from "@/assets/svg/attendance.svg";
 import assignmentIcon from "@/assets/svg/assignment.svg";
@@ -152,7 +152,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const other_menu_Link: NavItem[] = [
-    // { name: "Settings", icons: settingsIcon, path: "/admin/settings" },
+    { name: "Settings", icons: settingsIcon, path: "/admin/settings" },
     { name: "Log Out", icons: logoutIcon, path: "/" },
 ];
 

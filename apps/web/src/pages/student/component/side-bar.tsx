@@ -83,6 +83,7 @@ const NAV_GROUPS: NavGroup[] = [
             },
             { name: "My Course", path: "/student/my-course", icons: my_course, requiresOnline: true },
             { name: "Quizzes", path: "/student/Quizzes", icons: quizzes, requiresOnline: true },
+            { name: "From Your Parent", path: "/student/parent-quiz", icons: quizzes, requiresOnline: true },
             // { name: "Assignments", path: "/student/Assignments", icons: assignments, disabled: true },
         ],
     },
