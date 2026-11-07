@@ -6,7 +6,7 @@ import my_course from "@/assets/svg/scourses.svg?react";
 import quizzes from "@/assets/svg/quizzes.svg?react";
 import discussion from "@/assets/svg/Discussion_forum.svg?react";
 import studyGroups from "@/assets/svg/people.svg?react";
-// import live_classes from "@/assets/svg/live_classes.svg?react";
+import live_classes from "@/assets/svg/live_classes.svg?react";
 import Calendar from "@/assets/svg/calendar.svg?react";
 import recorded_class from "@/assets/svg/monitor_play.svg?react";
 import premium from "@/assets/svg/premium.svg?react";
@@ -93,7 +93,7 @@ const NAV_GROUPS: NavGroup[] = [
             // Not gated — a previously-opened lesson is cached (Cache API +
             // IndexedDB) and must stay watchable with no network at all.
             { name: "Recorded Class", path: "/student/recorded-class", icons: recorded_class },
-            // { name: "Live Classes", path: "/student/Live-Classes", icons: live_classes, disabled: true },
+            { name: "Live Class", path: "/student/live-class", icons: live_classes },
             // { name: "Calendar", path: "/student/calendar", icons: Calendar, disabled: true },
         ],
     },

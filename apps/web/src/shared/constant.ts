@@ -19,6 +19,7 @@ import AttendanceIcon from "@/assets/svg/attendance.svg";
 import LessonIcon from "@/assets/svg/lesson.svg";
 import QuestionBankIcons from "@/assets/svg/question-bank.svg";
 import CircleCheckIcon from "@/assets/svg/circle_check.svg";
+import LiveClassIcon from "@/assets/svg/live_classes.svg";
 
 // Teacher sidebar, grouped by workflow area (not by feature-team taxonomy) so a
 // teacher scans "what do I need right now" — class-day actions, content
@@ -46,6 +47,11 @@ export const TACADEMIC_GROUPS = [
         icons: PlayIcon,
         name: "Start Class",
         path: "/teacher/start-class",
+      },
+      {
+        icons: LiveClassIcon,
+        name: "Live Class",
+        path: "/teacher/live-class",
       },
       {
         icons: AttendanceIcon,
