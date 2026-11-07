@@ -6,22 +6,21 @@ import {
   parentAssessmentService,
   type DifficultyAvailability,
   type QuickCreateResponseData,
-  type TaughtTopic,
 } from "@/services/parent-assessment";
+import calendarService, { type CalendarTermDto } from "@/services/calendar";
 import { ChildrenGate } from "../component/ui/children-gate";
 import { IconButton } from "../component/ui/button";
 import { InlineNotice, Skeleton } from "../component/ui/feedback";
 import { PageHeader } from "../component/ui/panel";
 import { smooth, stagger } from "../component/ui/motion";
-import { childName, extractErrorMessage } from "../lib/format";
+import { childName, daysAgo, extractErrorMessage, toLocalIsoDate } from "../lib/format";
 import { DifficultyStep } from "./parts/difficulty-step";
 import { SettingsStep, validateSettings, type AssessmentSettings } from "./parts/settings-step";
 import { Stepper, type StepNumber } from "./parts/stepper";
 import { SuccessPanel } from "./parts/success-panel";
 import { SummaryAside } from "./parts/summary-aside";
-import { TopicsStep, presetRange, type RangePreset } from "./parts/topics-step";
+import { TopicsStep, type TaughtTopicWithAvailability } from "./parts/topics-step";
 
-const DEFAULT_PRESET: Exclude<RangePreset, "custom"> = "90";
 const DEFAULT_COUNT_PER_LEVEL = 5;
 
 const DEFAULT_SETTINGS: AssessmentSettings = {
@@ -57,11 +56,16 @@ function Wizard({ child }: { child: ParentChild }) {
   const [switchedNotice, setSwitchedNotice] = useState<string | null>(null);
 
   // ── Step 1: taught topics ───────────────────────────────────────────────
-  const initialRange = presetRange(DEFAULT_PRESET);
-  const [preset, setPreset] = useState<RangePreset>(DEFAULT_PRESET);
-  const [fromDate, setFromDate] = useState(initialRange.from);
-  const [toDate, setToDate] = useState(initialRange.to);
-  const [topics, setTopics] = useState<TaughtTopic[]>([]);
+  // Default range before the calendar resolves — only used if the school
+  // turns out to have no calendar set up at all.
+  const [fromDate, setFromDate] = useState(toLocalIsoDate(daysAgo(90)));
+  const [toDate, setToDate] = useState(toLocalIsoDate(new Date()));
+  const [calendarLoading, setCalendarLoading] = useState(true);
+  const [hasCalendar, setHasCalendar] = useState(false);
+  const [terms, setTerms] = useState<CalendarTermDto[]>([]);
+  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
+  const [topics, setTopics] = useState<TaughtTopicWithAvailability[]>([]);
+  const [hiddenCount, setHiddenCount] = useState(0);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
   const [topicsSearched, setTopicsSearched] = useState(false);
@@ -91,6 +95,7 @@ function Wizard({ child }: { child: ParentChild }) {
     setStep(1);
     setDirection(-1);
     setTopics([]);
+    setHiddenCount(0);
     setTopicsSearched(false);
     setTopicsError(null);
     setSelectedTopicIds(new Set());
@@ -114,13 +119,53 @@ function Wizard({ child }: { child: ParentChild }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when the child changes
   }, [child.studentId]);
 
-  const choosePreset = (p: RangePreset) => {
-    setPreset(p);
-    if (p !== "custom") {
-      const r = presetRange(p);
-      setFromDate(r.from);
-      setToDate(r.to);
-    }
+  // The school calendar (terms) is the same regardless of which child is
+  // selected, so this resolves once on mount, not per child. A missing
+  // session (data: null — schools that haven't set one up yet) falls back
+  // to the plain custom date range already in state above.
+  useEffect(() => {
+    let cancelled = false;
+    setCalendarLoading(true);
+    calendarService
+      .getCurrentSession()
+      .then((res) => {
+        if (cancelled) return;
+        const session = res.data?.data ?? null;
+        if (!session || session.terms.length === 0) {
+          setHasCalendar(false);
+          setTerms([]);
+          setSelectedTermId(null);
+          return;
+        }
+        const sorted = [...session.terms].sort((a, b) => a.sequence - b.sequence);
+        const current = sorted.find((t) => t.status === "Current") ?? sorted[sorted.length - 1];
+        setHasCalendar(true);
+        setTerms(sorted);
+        setSelectedTermId(current.id);
+        setFromDate(current.startDate);
+        setToDate(current.endDate);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHasCalendar(false);
+          setTerms([]);
+          setSelectedTermId(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCalendarLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectTerm = (termId: string) => {
+    const term = terms.find((t) => t.id === termId);
+    if (!term) return;
+    setSelectedTermId(termId);
+    setFromDate(term.startDate);
+    setToDate(term.endDate);
   };
 
   const findTopics = async () => {
@@ -129,7 +174,26 @@ function Wizard({ child }: { child: ParentChild }) {
     setTopicsSearched(false);
     try {
       const res = await parentAssessmentService.getTaughtTopics(child.studentId, fromDate, toDate);
-      setTopics(res.data?.data?.topics ?? []);
+      const taught = res.data?.data?.topics ?? [];
+
+      // Check each taught topic's own availability — a lesson can be logged
+      // as "taught" with nothing banked for it yet, and the parent should
+      // never be able to pick one that leads nowhere at the next step.
+      const withAvailability = await Promise.all(
+        taught.map(async (t): Promise<TaughtTopicWithAvailability> => {
+          try {
+            const availRes = await parentAssessmentService.getQuestionAvailability(child.studentId, [t.topicId]);
+            const availableCount = (availRes.data?.data?.byDifficulty ?? []).reduce((sum, d) => sum + d.availableCount, 0);
+            return { ...t, availableCount };
+          } catch {
+            return { ...t, availableCount: 0 };
+          }
+        }),
+      );
+
+      const usable = withAvailability.filter((t) => t.availableCount > 0);
+      setTopics(usable);
+      setHiddenCount(withAvailability.length - usable.length);
       setSelectedTopicIds(new Set());
       setTopicsSearched(true);
     } catch (err) {
@@ -138,6 +202,16 @@ function Wizard({ child }: { child: ParentChild }) {
       setTopicsLoading(false);
     }
   };
+
+  // Auto-load taught topics once the term is known — no "Find" click needed.
+  // Re-runs when the parent switches terms or switches child. Schools with
+  // no calendar keep the old behavior: the parent enters a custom range and
+  // presses "Find" explicitly.
+  useEffect(() => {
+    if (calendarLoading || !hasCalendar || !selectedTermId) return;
+    void findTopics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the resolved term or child changes, not on every render
+  }, [child.studentId, selectedTermId, hasCalendar, calendarLoading]);
 
   const toggleTopic = (id: string) =>
     setSelectedTopicIds((prev) => {
@@ -276,13 +350,17 @@ function Wizard({ child }: { child: ParentChild }) {
                 {step === 1 && (
                   <TopicsStep
                     firstName={first}
-                    preset={preset}
-                    onPreset={choosePreset}
+                    calendarLoading={calendarLoading}
+                    hasCalendar={hasCalendar}
+                    terms={terms}
+                    selectedTermId={selectedTermId}
+                    onSelectTerm={selectTerm}
                     fromDate={fromDate}
                     toDate={toDate}
                     onFromDate={setFromDate}
                     onToDate={setToDate}
                     topics={topics}
+                    hiddenCount={hiddenCount}
                     searched={topicsSearched}
                     loading={topicsLoading}
                     error={topicsError}

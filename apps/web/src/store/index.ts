@@ -1,11 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
 import ClassActionSlice from "./class-action-slice";
 import CalendarSlice from "./calendar-slice";
+import ParentQuizSlice from "./parent-quiz-slice";
+import LiveClassSlice from "./live-class-slice";
 
 export const store = configureStore({
   reducer: {
     action: ClassActionSlice,
     calendar: CalendarSlice,
+    parentQuiz: ParentQuizSlice,
+    liveClass: LiveClassSlice,
   },
   // Optional: Add middleware, devtools config, etc.
   middleware: (getDefaultMiddleware) =>

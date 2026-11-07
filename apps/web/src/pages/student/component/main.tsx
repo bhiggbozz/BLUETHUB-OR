@@ -4,6 +4,7 @@ import MyCourse from "./my-course";
 import PerformanceOverview from "./performance-overview";
 import StudentSummary from "./student-summary";
 import CalendarTermDashboardCard from "@/pages/calendar/components/calendar-term-dashboard-card";
+import ParentQuizDashboardCard from "./parent-quiz-card";
 
 const StudentIndex = () => {
   return (
@@ -20,6 +21,7 @@ const StudentIndex = () => {
     >
       <StudentAppBar />
       <CalendarTermDashboardCard />
+      <ParentQuizDashboardCard />
       <ExtracurricularActivity />
       <PerformanceOverview />
       <StudentSummary />

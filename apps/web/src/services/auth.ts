@@ -367,9 +367,15 @@ export const authService = {
   },
 
    updatePasswordNewUser: (data: IupdatePasswordRequestNewuser) => {
+    // No Authorization header on purpose — a first-time login (per
+    // login.tsx) intentionally clears any stored token before reaching the
+    // new-password screen, so `token.getToken()` is null here and a
+    // hardcoded header would literally send the string "Bearer null",
+    // which the backend's auth middleware rejects outright. This endpoint
+    // is designed to be called with no auth header at all; the request
+    // interceptors above already skip adding one when there's no real token.
     return API.post<ILoginResponse>(endpoints.updatePasswordNewUser, data, {
       headers: {
-        Authorization: `Bearer ${token.getToken()}`,
         "X-Tenant-ID":  getTenantFromUrl(),
       },
     });

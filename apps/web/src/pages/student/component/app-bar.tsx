@@ -25,6 +25,7 @@ import { isStudentRoleData, useAuthContext } from "@/contexts/auth-context";
 import { StudentMobileHeader } from "./header-mobile";
 import NotificationPanel from "./notification";
 import { useNotifications } from "@/hooks/useNotifications";
+import type { NotificationDto } from "@/services/notifications";
 const StudentAppBar = () => {
   const outletContext = useOutletContext<{ openMobileNav?: () => void }>() ?? {};
   const openMobileNav = outletContext.openMobileNav ?? (() => undefined);
@@ -32,6 +33,14 @@ const StudentAppBar = () => {
   const { user, logout } = useAuthContext();
   const [notificationStatus, setNotificationStatus] = useState<string>('')
   const { items: notifications, unreadCount, markRead, markAllRead } = useNotifications();
+
+  const handleOpenNotification = (notification: NotificationDto) => {
+    if (notification.entityType === "ParentQuiz" && notification.entityId) {
+      navigate(`/student/parent-quiz/${notification.entityId}`);
+    } else if (notification.entityType === "LiveClassSession") {
+      navigate("/student/live-class");
+    }
+  };
   const today = new Date();
 
   const roleData = user?.roleData;
@@ -149,7 +158,7 @@ const StudentAppBar = () => {
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80 border border-white p-0 m-2.5" align="end">
-                <NotificationPanel items={notifications} onMarkRead={markRead} onMarkAllRead={markAllRead} />
+                <NotificationPanel items={notifications} onMarkRead={markRead} onMarkAllRead={markAllRead} onOpen={handleOpenNotification} />
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

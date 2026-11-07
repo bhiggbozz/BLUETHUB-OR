@@ -15,9 +15,11 @@ interface NotificationProps {
   items: NotificationDto[];
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
+  /** Called on every tap (read or unread) so the caller can navigate to the entity it's about. */
+  onOpen?: (notification: NotificationDto) => void;
 }
 
-const Notification = ({ items, onMarkRead, onMarkAllRead }: NotificationProps) => {
+const Notification = ({ items, onMarkRead, onMarkAllRead, onOpen }: NotificationProps) => {
   return (
     <div className="overflow-hidden rounded-md border border-white/75 bg-white/82 backdrop-blur-sm">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
@@ -44,7 +46,10 @@ const Notification = ({ items, onMarkRead, onMarkAllRead }: NotificationProps) =
             <button
               key={notification.id}
               type="button"
-              onClick={() => !notification.isRead && onMarkRead(notification.id)}
+              onClick={() => {
+                if (!notification.isRead) onMarkRead(notification.id);
+                onOpen?.(notification);
+              }}
               className="flex w-full items-center gap-2 justify-between rounded-[16px] border border-slate-100 bg-slate-50/85 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
             >
               <div className="flex items-center gap-2.5 capitalize">

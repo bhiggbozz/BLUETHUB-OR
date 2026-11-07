@@ -1,4 +1,4 @@
-import { CalendarCheck2, CalendarDays, LayoutGrid, Sparkles, type LucideIcon } from "lucide-react";
+import { CalendarCheck2, CalendarDays, LayoutGrid, ListChecks, Sparkles, type LucideIcon } from "lucide-react";
 
 export interface ParentNavItem {
   name: string;
@@ -36,6 +36,14 @@ export const PARENT_NAV: ParentNavItem[] = [
     icon: Sparkles,
     description: "Build a quick quiz from topics your child was taught",
     hotkey: "p",
+  },
+  {
+    name: "Practice quizzes",
+    short: "Quizzes",
+    path: "/parent/practice-quiz",
+    icon: ListChecks,
+    description: "Send a short practice quiz straight to your child's account",
+    hotkey: "q",
   },
   {
     name: "Calendar",
