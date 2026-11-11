@@ -151,16 +151,20 @@ export function useLiveClassAudio() {
       // subscribed track, but never attaches it to anything playable itself.
       room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
         if (track.kind !== Track.Kind.Audio) return;
-        if (audioElementsRef.current.has(track.sid)) return; // already playing — don't stack a second element on the same stream
+        // `sid` is only optional on `Track` for a not-yet-published local
+        // track — a subscribed remote track always has one, but the type
+        // doesn't know that, so guard rather than assert.
+        const sid = track.sid;
+        if (!sid || audioElementsRef.current.has(sid)) return; // already playing — don't stack a second element on the same stream
         const el = track.attach();
         el.autoplay = true;
         document.body.appendChild(el);
-        audioElementsRef.current.set(track.sid, el);
+        audioElementsRef.current.set(sid, el);
       });
       room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
         if (track.kind !== Track.Kind.Audio) return;
         track.detach().forEach((el) => el.remove());
-        audioElementsRef.current.delete(track.sid);
+        if (track.sid) audioElementsRef.current.delete(track.sid);
       });
 
       try {
