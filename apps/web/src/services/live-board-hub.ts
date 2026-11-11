@@ -12,6 +12,10 @@ export interface HubStroke {
   currentBoard: number;
   seq?: number;
   author?: string;
+  /** "eraser" renders with destination-out compositing. Optional/absent
+   * means a normal stroke — additive field, harmless for the hub to just
+   * store/relay opaquely alongside the rest of the stroke JSON. */
+  strokeType?: "stroke" | "eraser";
 }
 
 export interface StudentBoardInfo {

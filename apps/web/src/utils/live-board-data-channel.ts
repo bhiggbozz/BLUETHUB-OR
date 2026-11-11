@@ -14,11 +14,26 @@
 import type { HubStroke } from "@/services/live-board-hub";
 import type { StrokeSegment } from "@/utils/stroke-segmentation";
 
+// Key is "t" (not "type") to match the backend brief's canonical wire shape
+// exactly — this only ever travels client-to-client over the LiveKit data
+// channel, never through the backend, but matching the documented contract
+// avoids confusion when comparing payloads against the spec later.
 export type BoardDataMessage =
-  | { type: "stroke"; id: string; pts: [number, number][]; c: string; w: number; ts: number; b: number }
-  | { type: "remove"; id: string }
-  | { type: "clear"; b: number }
-  | { type: "switch"; b: number };
+  | {
+      t: "stroke";
+      id: string;
+      pts: [number, number][];
+      c: string;
+      w: number;
+      ts: number;
+      b: number;
+      /** Additive, not part of the backend brief — "eraser" renders with
+       * destination-out compositing. Optional/absent means a normal stroke. */
+      strokeType?: "stroke" | "eraser";
+    }
+  | { t: "remove"; id: string }
+  | { t: "clear"; b: number }
+  | { t: "switch"; b: number };
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -30,7 +45,7 @@ export function encodeBoardMessage(msg: BoardDataMessage): Uint8Array {
 export function decodeBoardMessage(payload: Uint8Array): BoardDataMessage | null {
   try {
     const parsed = JSON.parse(decoder.decode(payload)) as Partial<BoardDataMessage> | null;
-    if (parsed && typeof parsed.type === "string") return parsed as BoardDataMessage;
+    if (parsed && typeof parsed.t === "string") return parsed as BoardDataMessage;
   } catch {
     // malformed or foreign payload on the "board" topic — ignore it
   }
@@ -47,18 +62,19 @@ export function strokeSegmentToWireMessage(
   startedAtMs: number
 ): BoardDataMessage {
   return {
-    type: "stroke",
+    t: "stroke",
     id: segment.id,
     pts: segment.pts,
     c: segment.c,
     w: segment.w,
     ts: Date.now() + serverOffsetMs - startedAtMs,
     b: segment.currentBoard,
+    strokeType: segment.strokeType,
   };
 }
 
-export function wireStrokeToHubStroke(msg: Extract<BoardDataMessage, { type: "stroke" }>): HubStroke {
-  return { id: msg.id, pts: msg.pts, c: msg.c, w: msg.w, ts: msg.ts, currentBoard: msg.b };
+export function wireStrokeToHubStroke(msg: Extract<BoardDataMessage, { t: "stroke" }>): HubStroke {
+  return { id: msg.id, pts: msg.pts, c: msg.c, w: msg.w, ts: msg.ts, currentBoard: msg.b, strokeType: msg.strokeType };
 }
 
 /** Default hold-back before a viewer draws an incoming main-board stroke, so

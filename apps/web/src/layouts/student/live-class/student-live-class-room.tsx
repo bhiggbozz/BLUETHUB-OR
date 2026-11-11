@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import toast from "react-hot-toast";
@@ -22,7 +22,9 @@ import { useLiveClassAudio } from "@/hooks/useLiveClassAudio";
 import LiveBoard from "@/component/live-class/live-board";
 import LiveStudentBoard from "@/component/live-class/live-student-board";
 import CountdownBanner from "@/component/live-class/countdown-banner";
+import LessonMediaPanel from "@/component/live-class/lesson-media-panel";
 import { getErrorMessage } from "@/utils/errors";
+import { withTimeout } from "@/utils/with-timeout";
 import {
   setLiveClass,
   setJoinResponse,
@@ -65,6 +67,20 @@ export default function StudentLiveClassRoom() {
   const [canSpeak, setCanSpeak] = useState(false);
   const [micEnabled, setMicEnabledUi] = useState(false);
   const joiningRef = useRef(false);
+
+  // Memoized against the fixed `join.serverTime`/`liveClass.startedAt`
+  // rather than recomputed from `Date.now()` on every re-render of this
+  // (frequently re-rendering) room — see the identical note in the
+  // teacher's room for why a plain recompute silently freezes instead of
+  // tracking real elapsed time.
+  const serverOffsetMs = useMemo(
+    () => (join ? new Date(join.serverTime).getTime() - Date.now() : 0),
+    [join?.serverTime]
+  );
+  const startedAtMs = useMemo(
+    () => (liveClass?.startedAt ? new Date(liveClass.startedAt).getTime() : Date.now()),
+    [liveClass?.startedAt]
+  );
 
   const resolveActiveClass = useCallback(async () => {
     try {
@@ -114,11 +130,15 @@ export default function StudentLiveClassRoom() {
       dispatch(setLiveClass(pendingClass));
       setCanSpeak(joinData.canSpeak);
 
-      const snapshot = await hub.connect(pendingClass.id);
+      const snapshot = await withTimeout(hub.connect(pendingClass.id), 15000, "Connecting to the live board");
       setBoardSnapshot(snapshot);
       setSharedStudentIdState(snapshot.sharedStudentId);
 
-      await audio.connect(joinData.audio.url, joinData.audio.token, joinData.canSpeak);
+      await withTimeout(
+        audio.connect(joinData.audio.url, joinData.audio.token, joinData.canSpeak),
+        15000,
+        "Connecting to the audio room"
+      );
       await audio.startAudio(); // user-gesture context from the Join click
 
       setStatus("ready");
@@ -295,8 +315,6 @@ export default function StudentLiveClassRoom() {
   // ── Ready — the actual room ───────────────────────────────────────────────
 
   const hasSharedBoard = !!sharedStudentId && sharedStudentId !== user?.id;
-  const serverOffsetMs = new Date(join.serverTime).getTime() - Date.now();
-  const startedAtMs = liveClass.startedAt ? new Date(liveClass.startedAt).getTime() : Date.now();
 
   return (
     <div className="flex h-dvh flex-col bg-slate-100 font-poppins">
@@ -307,6 +325,11 @@ export default function StudentLiveClassRoom() {
         </div>
         <ConnectionPill ok={hubStatus === "connected"} label="Board" />
         <ConnectionPill ok={audio.status === "connected"} label="Audio" />
+        <LessonMediaPanel
+          lessonId={liveClass.lessonId}
+          teacherId={liveClass.teacherId}
+          mediaChannel={audio}
+        />
         {audio.activeSpeakerIds.size > 0 && (
           <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600">
             <Volume2 className="size-3" /> Someone's talking
@@ -363,7 +386,12 @@ export default function StudentLiveClassRoom() {
       </div>
 
       <div className="min-h-0 flex-1 p-3">
-        {activeTab === "teacher" && (
+        {/* Kept mounted (just hidden) across tab switches rather than conditionally
+            rendered in/out — each board owns its own live stroke cache and "current
+            board" state fed by the data channel/hub in real time, so unmounting on
+            every tab switch would reset it back to the stale join-time snapshot and
+            silently miss whatever the teacher did while the student was on another tab. */}
+        <div className={activeTab === "teacher" ? "h-full" : "hidden"}>
           <LiveBoard
             hub={hub}
             canDraw={false}
@@ -374,26 +402,30 @@ export default function StudentLiveClassRoom() {
             startedAtMs={startedAtMs}
             serverOffsetMs={serverOffsetMs}
           />
+        </div>
+        {user && (
+          <div className={activeTab === "mine" ? "h-full" : "hidden"}>
+            <LiveStudentBoard
+              hub={hub}
+              studentId={user.id}
+              canDraw
+              isOwnBoard
+              initialSnapshot={boardSnapshot?.myBoard ?? null}
+              className="h-full"
+            />
+          </div>
         )}
-        {activeTab === "mine" && user && (
-          <LiveStudentBoard
-            hub={hub}
-            studentId={user.id}
-            canDraw
-            isOwnBoard
-            initialSnapshot={boardSnapshot?.myBoard ?? null}
-            className="h-full"
-          />
-        )}
-        {activeTab === "shared" && hasSharedBoard && sharedStudentId && (
-          <LiveStudentBoard
-            hub={hub}
-            studentId={sharedStudentId}
-            canDraw={false}
-            isOwnBoard={false}
-            viewOnlyLabel="Shared by your teacher"
-            className="h-full"
-          />
+        {hasSharedBoard && sharedStudentId && (
+          <div className={activeTab === "shared" ? "h-full" : "hidden"}>
+            <LiveStudentBoard
+              hub={hub}
+              studentId={sharedStudentId}
+              canDraw={false}
+              isOwnBoard={false}
+              viewOnlyLabel="Shared by your teacher"
+              className="h-full"
+            />
+          </div>
         )}
       </div>
     </div>

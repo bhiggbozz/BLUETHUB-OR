@@ -26,6 +26,8 @@ import {
   Menu,
   Sparkles,
   CalendarIcon,
+  Video,
+  Radio,
 } from "lucide-react";
 import {
   Button,
@@ -49,6 +51,8 @@ import {
   type MediaFilePayload,
   type DraftLessonPayload,
   type SubmitLessonPayload,
+  type LessonItem,
+  type LessonDeliveryMode,
 } from "@/services/lesson";
 import { schoolService } from "@/services/school";
 import { isTeacherRoleData, useAuthContext } from "@/contexts/auth-context";
@@ -112,6 +116,7 @@ interface LessonDraft {
   scheduledDate: string;
   scheduledTime: string;
   durationMinutes: string;
+  deliveryMode: LessonDeliveryMode;
   uploadedFiles: DraftFile[];
 }
 
@@ -522,6 +527,7 @@ const SubmitLesson = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
+  const [deliveryMode, setDeliveryMode] = useState<LessonDeliveryMode>("Recorded");
   const [fetchedSubjects, setFetchedSubjects] = useState<SubjectItem[]>([]);
 
   // ── Upload State ──
@@ -544,6 +550,12 @@ const SubmitLesson = () => {
   const [genStatus, setGenStatus] = useState<string | null>(null);
   const [genImages, setGenImages] = useState<GeneratedLessonImage[]>([]);
   const [genImagesLoading, setGenImagesLoading] = useState(false);
+
+  // Shown right after a plain submit (no AI-tracking screen) — the entry
+  // point into scheduling a Live Class for the lesson that was just
+  // submitted, per the brief's "right after a teacher submits a lesson"
+  // placement.
+  const [schedulePrompt, setSchedulePrompt] = useState<{ lessonId: string; status: string } | null>(null);
 
 
 
@@ -633,7 +645,7 @@ const SubmitLesson = () => {
       subjectId, subjectLabel,
       topicId, topicLabel,
       subTopicId, subTopicValue, aim, description,
-      scheduledDate, scheduledTime, durationMinutes,
+      scheduledDate, scheduledTime, durationMinutes, deliveryMode,
       uploadedFiles: uploadFiles
         .filter((f) => f.status === "done" && f.result)
         .map((f) => ({
@@ -647,7 +659,7 @@ const SubmitLesson = () => {
 
     localData.save(draftKey(user.id), draft);
     setDraftTimestamp(draft.savedAt);
-  }, [classroomId, subjectId, topicId, subTopicId, subTopicValue, aim, description, scheduledDate, scheduledTime, durationMinutes, completedCount]);
+  }, [classroomId, subjectId, topicId, subTopicId, subTopicValue, aim, description, scheduledDate, scheduledTime, durationMinutes, deliveryMode, completedCount]);
 
   const restoreDraft = (draft: LessonDraft) => {
     setClassroomId(draft.classroomId ?? "");
@@ -663,6 +675,7 @@ const SubmitLesson = () => {
     setScheduledDate(normalizeDateInput(draft.scheduledDate ?? ""));
     setScheduledTime(draft.scheduledTime ?? "");
     setDurationMinutes(draft.durationMinutes ?? "");
+    setDeliveryMode(draft.deliveryMode ?? "Recorded");
 
     if (draft.uploadedFiles.length > 0) {
       const restored: UploadFile[] = draft.uploadedFiles.map((f) => ({
@@ -1045,6 +1058,40 @@ const SubmitLesson = () => {
       .filter((f) => f.status === "done" && f.result)
       .map((f, idx) => ({ ...f.result!, displayOrder: idx + 1 }));
 
+  /** Builds the `LessonItem` shape `/teacher/live-class/new` expects, from
+   * this form's own state plus the id/status the submit response returned —
+   * avoids a round-trip fetch just to hand the lesson off to scheduling. */
+  const buildLessonItemForSchedule = (lessonId: string, status: string): LessonItem => ({
+    id: lessonId,
+    schoolId: "",
+    classroomId,
+    subjectId,
+    topicId,
+    subjectName: subjectLabel,
+    topicName: topicLabel,
+    subTopicName: subTopicValue.trim(),
+    className: classroomLabel,
+    subTopic: subTopicValue.trim(),
+    aim: aim.trim(),
+    description: description.trim(),
+    accessDate: buildAccessDate(),
+    accessTime: buildAccessTime(),
+    durationMinutes: durationMinutes ? Number(durationMinutes) : null,
+    deliveryMode,
+    status,
+    createdBy: user?.id ?? "",
+    approvedBy: null,
+    rejectedBy: null,
+    rejectionReason: null,
+    createdAt: new Date().toISOString(),
+    modifiedAt: new Date().toISOString(),
+    approvedAt: null,
+  });
+
+  const goScheduleLiveClass = (lessonId: string, status: string) => {
+    navigate("/teacher/live-class/new", { state: { lesson: buildLessonItemForSchedule(lessonId, status) } });
+  };
+
   // ── AI Material Request ──
   // The request ships with POST api/lessons/submit (shouldGenerateImage /
   // imageMaterialWords / imageCount). Generation runs async on the backend
@@ -1131,6 +1178,7 @@ const SubmitLesson = () => {
       accessDate: buildAccessDate(),
       accessTime: buildAccessTime(),
       durationMinutes: durationMinutes ? Number(durationMinutes) : null,
+      deliveryMode,
       ...(mediaFiles.length > 0 ? { mediaFiles } : {}),
     };
     try {
@@ -1209,6 +1257,7 @@ const SubmitLesson = () => {
         accessDate: buildAccessDate(),
         accessTime: buildAccessTime(),
         durationMinutes: durationMinutes ? Number(durationMinutes) : null,
+        deliveryMode,
         quizId,
         // AI material generation request — only sent when the feature is
         // enabled for the school so existing behavior is unchanged otherwise.
@@ -1242,7 +1291,15 @@ const SubmitLesson = () => {
         return;
       }
       toast.success(lessonStatus === "Approved" ? "Lesson published" : "Lesson submitted for approval");
-      navigate("/teacher/my-lessons", { replace: true });
+      if (lessonId && deliveryMode === "Live") {
+        // Already told us this is a live-delivery lesson — go straight to
+        // scheduling instead of asking again.
+        goScheduleLiveClass(lessonId, lessonStatus);
+      } else if (lessonId) {
+        setSchedulePrompt({ lessonId, status: lessonStatus });
+      } else {
+        navigate("/teacher/my-lessons", { replace: true });
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { responseMessage?: string } }; message?: string };
       debugLog("Lesson submit failed", {
@@ -1441,6 +1498,35 @@ const SubmitLesson = () => {
                     {[classroomLabel, subjectLabel, topicLabel].filter(Boolean).join(" → ")}
                   </p>
                 )}
+              </div>
+            </section>
+
+            {/* Delivery type */}
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-5">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deliveryMode === "Live"}
+                    onChange={(e) => setDeliveryMode(e.target.checked ? "Live" : "Recorded")}
+                    className="mt-0.5 size-4 shrink-0 rounded border-2 border-gray-300 text-chestnut focus:ring-chestnut/20"
+                  />
+                  <span>
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                      {deliveryMode === "Live" ? (
+                        <Radio className="w-3.5 h-3.5 text-red-500" />
+                      ) : (
+                        <Video className="w-3.5 h-3.5 text-gray-400" />
+                      )}
+                      Deliver this as a Live Class
+                    </span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      {deliveryMode === "Live"
+                        ? "You'll be taken straight to scheduling once this lesson is submitted."
+                        : "Leave unchecked for a regular recorded lesson — you can still schedule a live class from it later."}
+                    </span>
+                  </span>
+                </label>
               </div>
             </section>
 
@@ -2108,8 +2194,57 @@ const SubmitLesson = () => {
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <button
                   type="button"
+                  onClick={() => goScheduleLiveClass(submittedLesson.lessonId, submittedLesson.status)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-chestnut border-2 border-chestnut/30 hover:bg-chestnut/5 transition-all"
+                >
+                  <CalendarIcon className="w-4 h-4" /> Schedule a Live Class
+                </button>
+                <button
+                  type="button"
                   onClick={handleCloseStatus}
                   className="flex-1 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 transition-all"
+                >
+                  Go to my lessons
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Plain-submit success: offer to schedule a Live Class right away */}
+      {schedulePrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-2xl flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {schedulePrompt.status === "Approved" ? "Lesson published" : "Lesson submitted for approval"}
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Want to run this as a real-time Live Class with a few students?
+              </p>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => goScheduleLiveClass(schedulePrompt.lessonId, schedulePrompt.status)}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-chestnut hover:bg-chestnut/90 transition-all"
+                >
+                  <CalendarIcon className="w-4 h-4" /> Schedule a Live Class
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSchedulePrompt(null);
+                    navigate("/teacher/my-lessons", { replace: true });
+                  }}
+                  className="px-4 py-3 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all"
                 >
                   Go to my lessons
                 </button>

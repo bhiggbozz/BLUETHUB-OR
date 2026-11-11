@@ -37,7 +37,7 @@ const StudentAppBar = () => {
   const handleOpenNotification = (notification: NotificationDto) => {
     if (notification.entityType === "ParentQuiz" && notification.entityId) {
       navigate(`/student/parent-quiz/${notification.entityId}`);
-    } else if (notification.entityType === "LiveClassSession") {
+    } else if (notification.entityType === "LiveClass") {
       navigate("/student/live-class");
     }
   };

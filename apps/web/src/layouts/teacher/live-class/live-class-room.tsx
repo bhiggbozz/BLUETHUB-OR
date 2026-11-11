@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import toast from "react-hot-toast";
@@ -12,7 +12,7 @@ import {
   AlertDialogCancel,
   Button,
 } from "@bluethub/ui-kit";
-import { ArrowLeft, Loader2, LogOut, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Mic, MicOff, Wifi, WifiOff } from "lucide-react";
 import { liveClassService, type LiveClassDto, type LiveClassJoinResponse } from "@/services/live-class";
 import { useLiveBoardHub } from "@/hooks/useLiveBoardHub";
 import { useLiveClassAudio } from "@/hooks/useLiveClassAudio";
@@ -21,7 +21,9 @@ import LiveBoard from "@/component/live-class/live-board";
 import LiveStudentBoard from "@/component/live-class/live-student-board";
 import SpeakToggle from "@/component/live-class/speak-toggle";
 import CountdownBanner from "@/component/live-class/countdown-banner";
+import LessonMediaPanel from "@/component/live-class/lesson-media-panel";
 import { getErrorMessage } from "@/utils/errors";
+import { withTimeout } from "@/utils/with-timeout";
 import {
   setLiveClass,
   setJoinResponse,
@@ -65,11 +67,33 @@ export default function TeacherLiveClassRoom() {
   const [canSpeakMap, setCanSpeakMap] = useState<Record<string, boolean>>({});
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [ending, setEnding] = useState(false);
-  const joinedRef = useRef(false);
+
+  // Memoized against `join.serverTime`/`liveClass.startedAt` specifically —
+  // both are fixed once set, but this component re-renders often (speaker
+  // changes, canSpeak updates, hub events), and recomputing `Date.now() -
+  // <fixed timestamp>` fresh on every one of those re-renders would freeze
+  // the result near whatever it was at the render closest to join, not
+  // actually track elapsed time. Every outgoing stroke's `ts` is stamped
+  // from this, so a frozen offset silently breaks the student's playout
+  // scheduling the longer the class runs.
+  const serverOffsetMs = useMemo(
+    () => (join ? new Date(join.serverTime).getTime() - Date.now() : 0),
+    [join?.serverTime]
+  );
+  const startedAtMs = useMemo(
+    () => (liveClass?.startedAt ? new Date(liveClass.startedAt).getTime() : Date.now()),
+    [liveClass?.startedAt]
+  );
 
   useEffect(() => {
-    if (!id || joinedRef.current) return;
-    joinedRef.current = true;
+    if (!id) return;
+    // No "has run" ref guard here on purpose — under StrictMode's dev-only
+    // double-invoke (mount → cleanup → mount), a ref like that blocks the
+    // second, surviving invocation from ever running while the first one's
+    // `cancelled` flag flips true almost immediately, so the join silently
+    // aborts partway through and the room hangs on "Joining..." forever with
+    // no error. `cancelled` below is the correct, sufficient guard against
+    // stale results — it's fine for /join and /getById to fire twice in dev.
     let cancelled = false;
 
     (async () => {
@@ -87,14 +111,27 @@ export default function TeacherLiveClassRoom() {
         dispatch(setJoinResponse(joinData));
         dispatch(setLiveClass(classData));
         setCanSpeakMap(Object.fromEntries(classData.students.map((s) => [s.studentId, s.canSpeak])));
-        setFocusedStudentId((prev) => prev ?? classData.students[0]?.studentId ?? null);
+        // Start on the shared teacher board, not some student's — the
+        // teacher switches to a student's board deliberately, via the strip.
 
-        const snapshot = await hub.connect(id);
+        const snapshot = await withTimeout(hub.connect(id), 15000, "Connecting to the live board");
         if (cancelled) return;
         setBoardSnapshot(snapshot);
         setSharedStudentIdState(snapshot.sharedStudentId);
 
-        await audio.connect(joinData.audio.url, joinData.audio.token, joinData.canSpeak);
+        await withTimeout(
+          audio.connect(joinData.audio.url, joinData.audio.token, joinData.canSpeak),
+          15000,
+          "Connecting to the audio room"
+        );
+        if (cancelled) return;
+
+        // The teacher always speaks (per the live-class brief) — publish
+        // the mic by default instead of leaving them silent until they find
+        // a mute button. startAudio() also unlocks playback so the teacher
+        // can actually hear a student once permitted to speak.
+        await audio.startAudio();
+        await audio.setMicEnabled(true);
         if (cancelled) return;
 
         // Recording is a separate, isolated concern from the live hub/audio
@@ -113,15 +150,14 @@ export default function TeacherLiveClassRoom() {
             aim: "",
           };
         }
-        if (!cancelled) {
-          void recorder.start({
-            sessionId: joinData.boardSessionId,
-            lessonId: classData.lessonId,
-            teacherId: classData.teacherId,
-            teacherName: classData.teacherName,
-            initialBoard: snapshot.currentBoard,
-          });
-        }
+        if (cancelled) return;
+        void recorder.start({
+          sessionId: joinData.boardSessionId,
+          lessonId: classData.lessonId,
+          teacherId: classData.teacherId,
+          teacherName: classData.teacherName,
+          initialBoard: snapshot.currentBoard,
+        });
 
         setStatus("ready");
       } catch (err) {
@@ -259,9 +295,6 @@ export default function TeacherLiveClassRoom() {
 
   if (!liveClass || !join) return null;
 
-  const serverOffsetMs = new Date(join.serverTime).getTime() - Date.now();
-  const startedAtMs = liveClass.startedAt ? new Date(liveClass.startedAt).getTime() : Date.now();
-
   return (
     <div className="flex h-dvh flex-col bg-slate-100 font-poppins">
       {/* Top bar */}
@@ -274,20 +307,36 @@ export default function TeacherLiveClassRoom() {
         </div>
         <ConnectionPill ok={hubStatus === "connected"} label="Board" />
         <ConnectionPill ok={audio.status === "connected"} label="Audio" />
+        <LessonMediaPanel
+          lessonId={liveClass.lessonId}
+          isTeacher
+          teacherId={liveClass.teacherId}
+          mediaChannel={audio}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void audio.setMicEnabled(!audio.micEnabled)}
+          className={`gap-1.5 ${audio.micEnabled ? "" : "border-red-300 text-red-600 hover:bg-red-50"}`}
+          title={audio.micEnabled ? "Mute your mic" : "Unmute your mic"}
+        >
+          {audio.micEnabled ? <Mic className="size-4" /> : <MicOff className="size-4" />}
+        </Button>
         <CountdownBanner endsAt={join.endsAt} serverOffsetMs={serverOffsetMs} onEnded={() => {}} />
         <Button variant="destructive" size="sm" onClick={() => setEndDialogOpen(true)} className="gap-1.5">
           <LogOut className="size-4" /> End class
         </Button>
       </div>
 
-      {/* Student strip */}
-      <div className="flex items-center gap-3 overflow-x-auto border-b bg-white px-4 py-2.5">
+      {/* Student strip — kept compact so the main board below gets close to
+          as much height as the student's own full-size board view. */}
+      <div className="flex items-center gap-2.5 overflow-x-auto border-b bg-white px-4 py-1.5">
         {liveClass.students.map((student) => (
-          <div key={student.studentId} className="flex shrink-0 flex-col gap-1.5">
-            <div className="flex items-center gap-2">
+          <div key={student.studentId} className="flex shrink-0 flex-col gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setFocusedStudentId(student.studentId)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                   focusedStudentId === student.studentId
                     ? "bg-slate-800 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -303,7 +352,7 @@ export default function TeacherLiveClassRoom() {
               />
             </div>
             {focusedStudentId !== student.studentId && (
-              <div className="h-20 w-32 overflow-hidden rounded-lg border border-slate-200">
+              <div className="h-12 w-20 overflow-hidden rounded-lg border border-slate-200">
                 <LiveStudentBoard
                   hub={hub}
                   studentId={student.studentId}

@@ -20,7 +20,7 @@ export function getTenantFromUrl(): string {
   // console.log('[getTenantFromUrl] hostname:', hostname);
 
   const isLocal   = hostname === 'localhost' || hostname === '127.0.0.1';
-  const isNetlify = hostname.endsWith('.netlify.app');
+  const isNetlify = hostname.endsWith('.netlify.app') || hostname.endsWith('.trycloudflare.com'); // TEMP: trycloudflare for two-device test, revert after
 
   if (isLocal || isNetlify) {
     const tenant = (import.meta.env.VITE_TENANT_ID as string) || 'green';

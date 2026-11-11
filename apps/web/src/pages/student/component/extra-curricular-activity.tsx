@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Play from "@/assets/svg/play.svg?react";
 import { studentService, type StudentDashboardStats } from "@/services/student";
 import { BookOpen, ClipboardCheck, GraduationCap, Tv } from "lucide-react";
 import { cn } from "@/lib/utils";
+import StudentLiveClassCard from "@/component/live-class/student-live-class-card";
 
 const ExtracurricularActivity = () => {
   const navigate = useNavigate();
@@ -152,32 +152,7 @@ const ExtracurricularActivity = () => {
         })}
       </div>
 
-      {stats?.hasLiveClass && (
-        <button
-          onClick={() => navigate("/student/live-class")}
-          className={cn(
-            "flex w-full items-center justify-between rounded-[20px] bg-gradient-to-r from-[#f2485b] via-[#f65a63] to-[#ff7b59] p-3 text-white",
-            "shadow-[0_22px_45px_-24px_rgba(242,72,91,0.7)] transition-transform active:scale-[0.99]"
-          )}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-              <Play className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-bold">Live Class Now</p>
-              <p className="text-xs text-red-100">Tap to join</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
-            </span>
-            <span className="font-semibold text-xs">Join</span>
-          </div>
-        </button>
-      )}
+      <StudentLiveClassCard />
     </div>
   );
 };
