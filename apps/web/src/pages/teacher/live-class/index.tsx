@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -7,17 +7,33 @@ import {
   Users,
   Loader2,
   RefreshCw,
-  Inbox,
   AlertCircle,
   Menu,
   Radio,
   Clock,
   X,
+  CalendarClock,
+  History,
 } from "lucide-react";
-import { lessonService, type LessonItem } from "@/services/lesson";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  Button,
+  Input,
+  Label,
+} from "@bluethub/ui-kit";
 import { liveClassService, type LiveClassDto } from "@/services/live-class";
 import { schoolFeaturesService, LIVE_CLASS_FEATURE_KEY } from "@/services/school-features";
 import { getErrorMessage } from "@/utils/errors";
+import { formatWAT, serverOffsetMs, secondsUntil, formatCountdown } from "@/utils/live-class-time";
+
+const MIN_DURATION = 5;
+const MAX_DURATION = 40;
 
 const TeacherLiveClassIndex = () => {
   const navigate = useNavigate();
@@ -25,11 +41,18 @@ const TeacherLiveClassIndex = () => {
   const openMobileNav = outletContext?.openMobileNav ?? (() => {});
 
   const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
-  const [lessons, setLessons] = useState<LessonItem[]>([]);
   const [myClasses, setMyClasses] = useState<LiveClassDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<LiveClassDto | null>(null);
+
+  // Forces countdowns to re-render every second without a full refetch.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -42,12 +65,7 @@ const TeacherLiveClassIndex = () => {
         return;
       }
 
-      const [lessonsRes, classesRes] = await Promise.all([
-        lessonService.getMyLessons({ status: "Approved" }),
-        liveClassService.getMine(),
-      ]);
-      const lessonData = (lessonsRes.data as any)?.data;
-      setLessons((lessonData?.lessons ?? []).filter((l: LessonItem) => l.status === "Approved"));
+      const classesRes = await liveClassService.getMine();
       setMyClasses(classesRes.data.data ?? []);
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load live classes."));
@@ -60,12 +78,32 @@ const TeacherLiveClassIndex = () => {
     load();
   }, []);
 
-  const classByLessonId = new Map(myClasses.map((c) => [c.lessonId, c]));
-  const scheduledOrLive = myClasses.filter((c) => c.status === "Scheduled" || c.status === "Live");
+  // Re-poll while anything is still Scheduled, so a countdown reaching zero
+  // (or a lesson getting approved) flips canStartNow/visibility without the
+  // teacher having to refresh manually.
+  const hasScheduled = myClasses.some((c) => c.status === "Scheduled");
+  useEffect(() => {
+    if (!hasScheduled) return;
+    const t = setInterval(() => void load(), 15000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasScheduled]);
 
-  const handleStart = (lesson: LessonItem) => {
-    navigate("/teacher/live-class/new", { state: { lesson } });
-  };
+  const live = myClasses.filter((c) => c.status === "Live");
+  const upcoming = useMemo(
+    () =>
+      myClasses
+        .filter((c) => c.status === "Scheduled")
+        .sort((a, b) => new Date(a.scheduledStart ?? a.createdAt).getTime() - new Date(b.scheduledStart ?? b.createdAt).getTime()),
+    [myClasses]
+  );
+  const past = useMemo(
+    () =>
+      myClasses
+        .filter((c) => c.status === "Ended" || c.status === "Cancelled")
+        .sort((a, b) => new Date(b.endedAt ?? b.createdAt).getTime() - new Date(a.endedAt ?? a.createdAt).getTime()),
+    [myClasses]
+  );
 
   const handleStartScheduled = async (liveClass: LiveClassDto) => {
     setBusyId(liveClass.id);
@@ -119,7 +157,7 @@ const TeacherLiveClassIndex = () => {
           <Menu className="w-5 h-5 text-black lg:hidden inline" onClick={openMobileNav} />
           <h1 className="ml-3 inline text-sm sm:text-xl font-bold text-gray-900">Live Classes</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Run a real-time video class with up to 3 students, from an approved lesson.
+            Start a scheduled class, rejoin one that's live, or manage what's coming up.
           </p>
         </div>
         <button
@@ -149,31 +187,20 @@ const TeacherLiveClassIndex = () => {
         </div>
       ) : (
         <>
-          {scheduledOrLive.length > 0 && (
+          {live.length > 0 && (
             <div className="mb-8">
-              <h2 className="mb-3 text-sm font-semibold text-gray-700">In progress</h2>
+              <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                <Radio size={14} className="text-red-500" /> Live now
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {scheduledOrLive.map((liveClass) => (
+                {live.map((liveClass) => (
                   <div key={liveClass.id} className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
-                    <div className={`h-1.5 ${liveClass.status === "Live" ? "bg-red-500" : "bg-amber-400"}`} />
+                    <div className="h-1.5 bg-red-500" />
                     <div className="p-5">
                       <div className="mb-3 flex items-center justify-between">
-                        <span
-                          className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${
-                            liveClass.status === "Live" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"
-                          }`}
-                        >
-                          {liveClass.status === "Live" ? <Radio size={10} /> : <Clock size={10} />}
-                          {liveClass.status}
+                        <span className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-red-600">
+                          <Radio size={10} /> Live
                         </span>
-                        <button
-                          onClick={() => handleCancel(liveClass)}
-                          disabled={busyId === liveClass.id || liveClass.status === "Live"}
-                          title={liveClass.status === "Live" ? "End it from the live room instead" : "Cancel"}
-                          className="text-gray-300 hover:text-red-500 disabled:opacity-30"
-                        >
-                          <X size={16} />
-                        </button>
                       </div>
                       <h3 className="mb-1 line-clamp-2 text-base font-medium text-gray-900">
                         {liveClass.title || `${liveClass.subjectName} class`}
@@ -183,18 +210,10 @@ const TeacherLiveClassIndex = () => {
                         {liveClass.classroomName}
                       </p>
                       <button
-                        onClick={() =>
-                          liveClass.status === "Live" ? handleRejoin(liveClass) : handleStartScheduled(liveClass)
-                        }
-                        disabled={busyId === liveClass.id}
-                        className="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-chestnut to-chestnut/90 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-chestnut/20 transition-all hover:from-chestnut/90 hover:to-chestnut/80 disabled:opacity-50"
+                        onClick={() => handleRejoin(liveClass)}
+                        className="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-chestnut to-chestnut/90 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-chestnut/20 transition-all hover:from-chestnut/90 hover:to-chestnut/80"
                       >
-                        {busyId === liveClass.id ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <Play size={16} />
-                        )}
-                        {liveClass.status === "Live" ? "Rejoin" : "Start now"}
+                        <Play size={16} /> Rejoin
                       </button>
                     </div>
                   </div>
@@ -203,53 +222,231 @@ const TeacherLiveClassIndex = () => {
             </div>
           )}
 
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">Approved lessons</h2>
-          {lessons.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-                <Inbox size={32} className="text-gray-400" />
+          {upcoming.length > 0 && (
+            <div className="mb-8">
+              <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                <CalendarClock size={14} /> Upcoming
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {upcoming.map((liveClass) => {
+                  const offset = serverOffsetMs(liveClass.serverTime);
+                  const waitingApproval = liveClass.lessonStatus === "PendingApproval";
+                  const secondsLeft = liveClass.scheduledStart ? secondsUntil(liveClass.scheduledStart, offset) : 0;
+                  // The backend's `canStartNow` only refreshes on the 15s poll, so once the
+                  // scheduled time has actually passed (checked every second via the ticking
+                  // clock), let the button go live immediately rather than waiting on the next
+                  // poll. If the backend still rejects the click (e.g. lesson not approved),
+                  // handleStartScheduled surfaces that error via toast.
+                  const canStart = liveClass.canStartNow || (secondsLeft <= 0 && !waitingApproval);
+                  return (
+                    <div key={liveClass.id} className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
+                      <div className="h-1.5 bg-amber-400" />
+                      <div className="p-5">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                            <Clock size={10} /> Scheduled
+                          </span>
+                          <button
+                            onClick={() => handleCancel(liveClass)}
+                            disabled={busyId === liveClass.id}
+                            title="Cancel"
+                            className="text-gray-300 hover:text-red-500 disabled:opacity-30"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <h3 className="mb-1 line-clamp-2 text-base font-medium text-gray-900">
+                          {liveClass.title || `${liveClass.subjectName} class`}
+                        </h3>
+                        <p className="mb-2 flex items-center gap-1 text-xs text-gray-400">
+                          <Users size={12} /> {liveClass.students.length} student{liveClass.students.length === 1 ? "" : "s"} ·{" "}
+                          {liveClass.classroomName}
+                        </p>
+
+                        {waitingApproval ? (
+                          <p className="mb-4 text-xs font-medium text-amber-700">Waiting for lesson approval</p>
+                        ) : (
+                          <p className="mb-4 text-xs text-gray-500">
+                            {liveClass.scheduledStart && `Starts ${formatWAT(liveClass.scheduledStart)}`}
+                            {!liveClass.canStartNow && secondsLeft > 0 && (
+                              <span className="ml-1 font-semibold text-gray-700">· in {formatCountdown(secondsLeft)}</span>
+                            )}
+                          </p>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            disabled={busyId === liveClass.id}
+                            onClick={() => setRescheduleTarget(liveClass)}
+                          >
+                            Reschedule
+                          </Button>
+                          <button
+                            onClick={() => handleStartScheduled(liveClass)}
+                            disabled={!canStart || busyId === liveClass.id}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-gradient-to-r from-chestnut to-chestnut/90 px-3 py-2 text-sm font-medium text-white shadow-lg shadow-chestnut/20 transition-all hover:from-chestnut/90 hover:to-chestnut/80 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {busyId === liveClass.id ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                            Start
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <p className="mb-1 text-lg font-semibold text-gray-700">No approved lessons</p>
+            </div>
+          )}
+
+          {live.length === 0 && upcoming.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                <Video size={28} className="text-gray-400" />
+              </div>
+              <p className="mb-1 text-lg font-semibold text-gray-700">Nothing live or scheduled right now</p>
               <p className="max-w-sm text-sm text-gray-400">
-                Submit a lesson for approval first — once approved, you can start a live class from it.
+                Submit a lesson, then choose "Schedule a Live Class" to set one up.
               </p>
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {lessons
-                .filter((lesson) => !classByLessonId.has(lesson.id))
-                .map((lesson) => (
-                  <div
-                    key={lesson.id}
-                    className="group overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all hover:border-chestnut/30 hover:shadow-lg"
-                  >
-                    <div className="h-1.5 bg-gradient-to-r from-chestnut to-chestnut/80" />
-                    <div className="p-5">
-                      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-chestnut/10 transition-colors group-hover:bg-chestnut/20">
-                        <Video size={22} className="text-chestnut" />
+          )}
+
+          {past.length > 0 && (
+            <div>
+              <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                <History size={14} /> Past
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {past.map((liveClass) => {
+                  const missed = liveClass.status === "Cancelled" && liveClass.endReason === "Expired";
+                  const cancelled = liveClass.status === "Cancelled" && !missed;
+                  return (
+                    <div key={liveClass.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-800">
+                          {liveClass.title || `${liveClass.subjectName} class`}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {missed ? "Missed: not started in time" : cancelled ? "Cancelled" : "Ended"}
+                        </p>
                       </div>
-                      <h3 className="mb-2 line-clamp-2 text-base font-medium text-gray-900">
-                        {[lesson.subjectName, lesson.topicName, lesson.subTopic || lesson.subTopicName]
-                          .filter(Boolean)
-                          .join(" - ") || "Lesson"}
-                      </h3>
-                      {lesson.aim && <p className="mb-4 line-clamp-2 text-xs font-medium text-gray-400">{lesson.aim}</p>}
-                      <button
-                        onClick={() => handleStart(lesson)}
-                        className="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-chestnut to-chestnut/90 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-chestnut/20 transition-all hover:from-chestnut/90 hover:to-chestnut/80"
-                      >
-                        <Video size={16} />
-                        Start live class
-                      </button>
+                      {liveClass.status === "Ended" && (
+                        <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
+                          Ended
+                        </span>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
             </div>
           )}
         </>
       )}
+
+      <RescheduleDialog
+        liveClass={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onRescheduled={() => {
+          setRescheduleTarget(null);
+          void load();
+        }}
+      />
     </div>
   );
 };
+
+function RescheduleDialog({
+  liveClass,
+  onClose,
+  onRescheduled,
+}: {
+  liveClass: LiveClassDto | null;
+  onClose: () => void;
+  onRescheduled: () => void;
+}) {
+  const [scheduledStart, setScheduledStart] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(MAX_DURATION);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (liveClass) {
+      setDurationMinutes(liveClass.durationMinutes);
+      setScheduledStart("");
+      setError(null);
+    }
+  }, [liveClass]);
+
+  const handleSave = async () => {
+    if (!liveClass || !scheduledStart) {
+      setError("Pick a new date and time.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await liveClassService.reschedule(liveClass.id, { scheduledStart, durationMinutes });
+      toast.success("Live class rescheduled.");
+      onRescheduled();
+    } catch (err) {
+      setError(getErrorMessage(err, "Could not reschedule the live class."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AlertDialog open={!!liveClass} onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reschedule this class?</AlertDialogTitle>
+          <AlertDialogDescription>Pick a new start time — the students will be notified.</AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="reschedule-start" className="text-xs font-bold text-gray-700">
+              New start time
+            </Label>
+            <Input
+              id="reschedule-start"
+              type="datetime-local"
+              value={scheduledStart}
+              onChange={(e) => setScheduledStart(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reschedule-duration" className="text-xs font-bold text-gray-700">
+              Length (minutes)
+            </Label>
+            <Input
+              id="reschedule-duration"
+              type="number"
+              min={MIN_DURATION}
+              max={MAX_DURATION}
+              value={durationMinutes}
+              onChange={(e) =>
+                setDurationMinutes(Math.min(MAX_DURATION, Math.max(MIN_DURATION, Number(e.target.value) || MAX_DURATION)))
+              }
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-rose-600">{error}</p>}
+
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={saving}>Never mind</AlertDialogCancel>
+          <Button type="button" disabled={saving} onClick={handleSave} className="bg-chestnut text-white hover:bg-chestnut/90">
+            {saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+            Save
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 export default TeacherLiveClassIndex;

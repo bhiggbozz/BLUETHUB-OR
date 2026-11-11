@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, Download, Loader2, Signal } from "lucide-react";
+import { CalendarDays, Clock, Download, Loader2, Radio, Signal } from "lucide-react";
 import { Button } from "@bluethub/ui-kit";
 import Play from '@/assets/svg/play.svg?react'
 import { useNavigate } from "react-router-dom";
@@ -199,6 +199,11 @@ const VideoLessonCard = ({ lesson }: VideoLessonCardProps) => {
                         <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#4255db]">
                             {lesson.status ?? "Approved"}
                         </span>
+                        {lesson.deliveryMode === "Live" && (
+                            <span className="flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600">
+                                <Radio className="h-3 w-3" /> Live session
+                            </span>
+                        )}
                         {lesson.approvedByName && (
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
                                 Approved by {lesson.approvedByName}

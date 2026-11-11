@@ -21,6 +21,10 @@ export interface StrokeSegment {
   w: number;
   ts: number;
   currentBoard: number;
+  /** "eraser" renders with destination-out compositing instead of a normal
+   * stroke. Optional/absent means "stroke" — additive, backward compatible
+   * with any stroke that predates this field. */
+  strokeType?: "stroke" | "eraser";
 }
 
 export interface StrokeSegmenterOptions {
@@ -28,6 +32,7 @@ export interface StrokeSegmenterOptions {
   color: string;
   width: number;
   currentBoard: number;
+  strokeType?: "stroke" | "eraser";
   onSegment: (segment: StrokeSegment) => void;
   /** Max points buffered before an immediate flush. Default 300. */
   maxPointsPerSegment?: number;
@@ -84,7 +89,7 @@ export class StrokeSegmenter {
    * points, so the visual line stays connected across segments). */
   flush(): void {
     if (this.buffer.length === 0) return;
-    const { penId, color, width, currentBoard, onSegment } = this.options;
+    const { penId, color, width, currentBoard, strokeType, onSegment } = this.options;
     const segment: StrokeSegment = {
       id: `${penId}:${this.segmentIndex++}`,
       pts: this.buffer,
@@ -92,6 +97,7 @@ export class StrokeSegmenter {
       w: width,
       ts: Date.now(),
       currentBoard,
+      strokeType,
     };
     // Next segment continues from the last point already sent.
     this.buffer = this.buffer.length > 0 ? [this.buffer[this.buffer.length - 1]] : [];

@@ -53,6 +53,14 @@ export interface MediaFilePayload {
   displayOrder: number;
 }
 
+/** "Live" means the teacher intends to deliver this lesson as a real-time
+ * Live Class (see `services/live-class.ts`) rather than async/recorded
+ * media. Purely informational to the backend — scheduling the actual class
+ * is still a separate `POST /api/live-class` call; this just records intent
+ * up front. Optional/omitted means "Recorded", matching every lesson
+ * submitted before this field existed. */
+export type LessonDeliveryMode = "Recorded" | "Live";
+
 export interface SubmitLessonPayload {
   classroomId: string;
   subjectId: string;
@@ -66,6 +74,7 @@ export interface SubmitLessonPayload {
   accessDate?: string | null;
   accessTime?: string | null;
   durationMinutes?: number | null;
+  deliveryMode?: LessonDeliveryMode;
   // ── AI material generation (optional; default shouldGenerateImage=true, imageCount=1) ──
   shouldGenerateImage?: boolean;
   imageMaterialWords?: string | null;
@@ -121,6 +130,7 @@ export interface LessonItem {
   modifiedAt: string;
   approvedAt: string | null;
   quizId?: string | null;
+  deliveryMode?: LessonDeliveryMode;
 }
 
 export interface LessonSummary {

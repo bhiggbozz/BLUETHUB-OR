@@ -255,7 +255,9 @@ const router = createBrowserRouter([
     {
         path: "teacher/live-class/room/:id",
         element: <ErrorBoundary fallbackMessage="Live class error">
-            <TeacherProtectedRoute><TeacherLiveClassRoom /></TeacherProtectedRoute>
+            <Provider store={store}>
+                <TeacherProtectedRoute><TeacherLiveClassRoom /></TeacherProtectedRoute>
+            </Provider>
         </ErrorBoundary>
     },
     {
@@ -272,7 +274,9 @@ const router = createBrowserRouter([
     {
         path: "student/live-class",
         element: <ErrorBoundary fallbackMessage="Live class error">
-            <StudentProtectedRoute><StudentLiveClassRoom /></StudentProtectedRoute>
+            <Provider store={store}>
+                <StudentProtectedRoute><StudentLiveClassRoom /></StudentProtectedRoute>
+            </Provider>
         </ErrorBoundary>
     },
 

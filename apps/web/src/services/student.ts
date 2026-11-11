@@ -1,5 +1,6 @@
 import { getTenantFromUrl } from "@/utils/subdomain";
 import { API, type TResponse } from ".";
+import type { LessonDeliveryMode } from "@/services/lesson";
 
 
 // import { X_Tenant_ID } from "@/utils/tenant";
@@ -118,6 +119,10 @@ export interface StudentPublishedLesson {
   media?: StudentLessonMedia[];
   quizId?: string | null;
   quizCode?: string | null;
+  /** "Live" means this lesson was originally delivered as a real-time Live
+   * Class (and has since been published with its recording). Omitted/absent
+   * means "Recorded" — a plain uploaded lesson. */
+  deliveryMode?: LessonDeliveryMode;
 }
 
 export interface StudentLessonMedia {

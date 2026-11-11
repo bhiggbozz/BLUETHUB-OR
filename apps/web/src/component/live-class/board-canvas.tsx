@@ -13,6 +13,10 @@ import { Eye } from "lucide-react";
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 
+/** Matches the existing recorder's fixed eraser width (`class.tsx`) — the
+ * eraser doesn't respect the pen-width picker. */
+const ERASER_WIDTH = 30;
+
 export interface BoardCanvasHandle {
   /** Removes the local user's most recently completed stroke (all of its
    * live-transport segments) and reports the removed ids via `onUndoSegments`. */
@@ -24,6 +28,10 @@ interface BoardCanvasProps {
   canDraw: boolean;
   color: string;
   width: number;
+  /** "eraser" ignores `color`, uses a fixed width, and punches through
+   * existing strokes (destination-out) instead of drawing on top of them.
+   * Defaults to "pen". */
+  tool?: "pen" | "eraser";
   currentBoard: number;
   /** Fired as the in-progress stroke is segmented for live transport. */
   onSegment: (segment: StrokeSegment) => void;
@@ -42,6 +50,7 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
     canDraw,
     color,
     width,
+    tool = "pen",
     currentBoard,
     onSegment,
     onUndoSegments,
@@ -51,6 +60,7 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
   },
   ref
 ) {
+  const effectiveWidth = tool === "eraser" ? ERASER_WIDTH : width;
   const { parentRef, dimensions } = useResponsiveStage(minWidth, minHeight);
   const boardW = dimensions.width;
   const boardH = dimensions.height;
@@ -116,13 +126,14 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
       segmenterRef.current = new StrokeSegmenter({
         penId,
         color,
-        width,
+        width: effectiveWidth,
         currentBoard,
+        strokeType: tool === "eraser" ? "eraser" : "stroke",
         onSegment: (segment) => onSegment(segment),
       });
       segmenterRef.current.addPoint(pos.x, pos.y);
     },
-    [color, width, currentBoard, onSegment]
+    [color, effectiveWidth, tool, currentBoard, onSegment]
   );
 
   const updateDrawing = useCallback((pos: Position) => {
@@ -266,11 +277,23 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
               lineJoin="round"
               tension={0.4}
               listening={false}
+              globalCompositeOperation={stroke.strokeType === "eraser" ? "destination-out" : "source-over"}
             />
           ))}
-        </Layer>
-        <Layer listening={false}>
-          <Line ref={activeLineRef} points={[]} stroke={color} strokeWidth={width} lineCap="round" lineJoin="round" tension={0.4} />
+          {/* Live preview while still drawing — rendered as a faint
+           * same-color line, not a real erase, until the segment actually
+           * commits into the strokes above (every ~130ms) and punches through
+           * via destination-out. */}
+          <Line
+            ref={activeLineRef}
+            points={[]}
+            stroke={color}
+            strokeWidth={effectiveWidth}
+            lineCap="round"
+            lineJoin="round"
+            tension={0.4}
+            opacity={tool === "eraser" ? 0.35 : 1}
+          />
         </Layer>
       </Stage>
     </div>

@@ -3,6 +3,13 @@ import { API, type TResponse } from ".";
 
 export type LiveClassStatus = "Scheduled" | "Live" | "Ended" | "Cancelled";
 
+/** TeacherEnded/TimeUp: the class actually ran. Cancelled: the teacher
+ * cancelled it before it started. Expired: the scheduled slot passed with
+ * nobody starting it (a "missed" class, not an error). */
+export type LiveClassEndReason = "TeacherEnded" | "TimeUp" | "Cancelled" | "Expired";
+
+export type LessonApprovalStatus = "PendingApproval" | "Approved" | "Rejected" | "Published";
+
 export interface LiveClassStudent {
   studentId: string;
   name: string;
@@ -28,7 +35,23 @@ export interface LiveClassDto {
   startedAt: string | null;
   endsAt: string | null;
   endedAt: string | null;
-  endReason: string | null;
+  endReason: LiveClassEndReason | null;
+  /** When the class is meant to start (ISO, UTC "Z") — `null` means it was
+   * started on the spot (old instant-start behavior), not scheduled. */
+  scheduledStart: string | null;
+  /** `scheduledStart + durationMinutes` — the slot's end, before the class
+   * has actually started (`endsAt` takes over once it's Live). */
+  scheduledEnd: string | null;
+  /** The underlying lesson's own approval state — students only see this
+   * class once it's "Approved" or later, even if the teacher scheduled it
+   * while still "PendingApproval". */
+  lessonStatus: LessonApprovalStatus;
+  /** The teacher's Start button should be enabled only when this is true —
+   * meaningless/ignored for students. */
+  canStartNow: boolean;
+  /** Server clock at response time (ISO) — every countdown must derive its
+   * offset from this, never the device clock. */
+  serverTime: string;
   students: LiveClassStudent[];
 }
 
@@ -36,6 +59,18 @@ export interface CreateLiveClassRequest {
   lessonId: string;
   studentIds: string[]; // 1-3
   title?: string;
+  /** No offset sends it as bare local time — the backend reads that as
+   * school time (WAT) directly. Omit entirely for the old "start on the
+   * spot" behavior; the new UI always schedules. */
+  scheduledStart?: string;
+  /** 5-40, defaults to 40 server-side if omitted. */
+  durationMinutes?: number;
+}
+
+export interface RescheduleLiveClassRequest {
+  scheduledStart: string;
+  /** Omit to keep the current length. */
+  durationMinutes?: number;
 }
 
 export interface LiveClassJoinAudio {
@@ -76,6 +111,12 @@ export const liveClassService = {
   // POST /api/live-class/{id}/start
   start: (id: string) =>
     API.post<TResponse<LiveClassDto>>(`api/live-class/${id}/start`, {}, {
+      headers: headers(),
+    }),
+
+  // PUT /api/live-class/{id}/schedule — only while still Scheduled.
+  reschedule: (id: string, payload: RescheduleLiveClassRequest) =>
+    API.put<TResponse<LiveClassDto>>(`api/live-class/${id}/schedule`, payload, {
       headers: headers(),
     }),
 

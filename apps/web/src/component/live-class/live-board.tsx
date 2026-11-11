@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@bluethub/ui-kit";
-import { Plus, Undo2, Trash2, Loader2 } from "lucide-react";
+import { Plus, Undo2, Trash2, Loader2, Pencil, Eraser } from "lucide-react";
 import BoardCanvas, { type BoardCanvasHandle } from "./board-canvas";
 import { useLiveBoardStrokes } from "@/hooks/useLiveBoardStrokes";
 import type { LiveBoardHubClient, BoardSnapshot } from "@/services/live-board-hub";
@@ -87,6 +87,7 @@ export default function LiveBoard({
   const canvasRef = useRef<BoardCanvasHandle | null>(null);
   const [color, setColor] = useState(PALETTE[0]);
   const [width, setWidth] = useState(WIDTHS[0]);
+  const [tool, setTool] = useState<"pen" | "eraser">("pen");
   const [isLagging, setIsLagging] = useState(false);
   const schedulerRef = useRef<BoardPlayoutScheduler>(new BoardPlayoutScheduler());
   const lagClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,7 +136,7 @@ export default function LiveBoard({
       const msg = decodeBoardMessage(payload);
       if (!msg) return;
 
-      switch (msg.type) {
+      switch (msg.t) {
         case "stroke": {
           const targetTime = startedAtMs + msg.ts + BOARD_PLAYOUT_DELAY_MS;
           schedulerRef.current.schedule(
@@ -173,7 +174,7 @@ export default function LiveBoard({
     onLocalBoardSwitch?.(board.currentBoard, boardIndex);
     board.switchBoard(boardIndex);
     void hub.switchBoard(boardIndex);
-    dataChannel.sendBoardData(encodeBoardMessage({ type: "switch", b: boardIndex }));
+    dataChannel.sendBoardData(encodeBoardMessage({ t: "switch", b: boardIndex }));
   };
 
   const handleAddBoard = () => {
@@ -181,7 +182,7 @@ export default function LiveBoard({
     const next = board.addBoard();
     onLocalBoardSwitch?.(from, next);
     void hub.switchBoard(next);
-    dataChannel.sendBoardData(encodeBoardMessage({ type: "switch", b: next }));
+    dataChannel.sendBoardData(encodeBoardMessage({ t: "switch", b: next }));
   };
 
   const handleUndo = () => canvasRef.current?.undoLastStroke();
@@ -189,7 +190,7 @@ export default function LiveBoard({
   const handleClear = () => {
     board.clearBoard();
     void hub.clearBoard();
-    dataChannel.sendBoardData(encodeBoardMessage({ type: "clear", b: board.currentBoard }));
+    dataChannel.sendBoardData(encodeBoardMessage({ t: "clear", b: board.currentBoard }));
   };
 
   return (
@@ -197,6 +198,28 @@ export default function LiveBoard({
       {canDraw && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white/90 px-3 py-2 shadow-sm">
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setTool("pen")}
+              aria-label="Pen"
+              title="Pen"
+              className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
+                tool === "pen" ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
+              }`}
+            >
+              <Pencil className="size-3.5 text-slate-700" />
+            </button>
+            <button
+              onClick={() => setTool("eraser")}
+              aria-label="Eraser"
+              title="Eraser"
+              className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
+                tool === "eraser" ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
+              }`}
+            >
+              <Eraser className="size-3.5 text-slate-700" />
+            </button>
+          </div>
+          <div className={`flex items-center gap-1.5 ${tool === "eraser" ? "pointer-events-none opacity-30" : ""}`}>
             {PALETTE.map((c) => (
               <button
                 key={c}
@@ -209,7 +232,7 @@ export default function LiveBoard({
               />
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className={`flex items-center gap-1.5 ${tool === "eraser" ? "pointer-events-none opacity-30" : ""}`}>
             {WIDTHS.map((w) => (
               <button
                 key={w}
@@ -223,7 +246,29 @@ export default function LiveBoard({
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {board.availableBoards.map((n) => (
+              <button
+                key={n}
+                onClick={() => handleSwitchBoard(n)}
+                className={`flex size-8 items-center justify-center rounded-full text-[11px] font-semibold leading-none text-white transition-colors ${
+                  board.currentBoard === n ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+                }`}
+                title={`Switch to board B${n}`}
+                aria-label={`Switch to board B${n}`}
+              >
+                {n >= 10 ? "B" : `B${n}`}
+              </button>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAddBoard}
+              className="size-8 rounded-full border-red-300 bg-white p-0 text-red-600 hover:bg-red-50"
+              title="Create new board"
+            >
+              <Plus className="size-3.5" />
+            </Button>
             <Button size="sm" variant="outline" onClick={handleUndo} title="Undo your last stroke">
               <Undo2 className="size-4" />
             </Button>
@@ -247,6 +292,7 @@ export default function LiveBoard({
           canDraw={canDraw}
           color={color}
           width={width}
+          tool={tool}
           currentBoard={board.currentBoard}
           onSegment={(segment) => {
             board.addStroke(segment); // optimistic local echo — the author never gets one from the hub
@@ -260,32 +306,12 @@ export default function LiveBoard({
             board.removeStrokes(ids);
             ids.forEach((id) => {
               void hub.removeStroke(id);
-              dataChannel.sendBoardData(encodeBoardMessage({ type: "remove", id }));
+              dataChannel.sendBoardData(encodeBoardMessage({ t: "remove", id }));
             });
           }}
-          viewOnlyLabel={canDraw ? undefined : "Teacher's board"}
+          viewOnlyLabel={canDraw ? undefined : `Teacher's board · B${board.currentBoard}`}
         />
       </div>
-
-      {canDraw && (
-        <div className="flex flex-wrap items-center gap-2">
-          {board.availableBoards.map((n) => (
-            <button
-              key={n}
-              onClick={() => handleSwitchBoard(n)}
-              className={`flex size-8 items-center justify-center rounded-full text-[11px] font-semibold leading-none text-white transition-colors ${
-                board.currentBoard === n ? "bg-green-600 hover:bg-green-700" : "bg-slate-500 hover:bg-slate-600"
-              }`}
-              title={`Switch to board B${n}`}
-            >
-              {n >= 10 ? "B" : `B${n}`}
-            </button>
-          ))}
-          <Button size="sm" variant="outline" onClick={handleAddBoard} className="size-8 rounded-full p-0" title="New board">
-            <Plus className="size-3.5" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

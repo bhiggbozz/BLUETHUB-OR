@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Video, Loader2, ArrowLeft, Users } from "lucide-react";
+import { Video, Loader2, ArrowLeft, Users, Calendar as CalendarIcon } from "lucide-react";
 import { Button, Input, Label } from "@bluethub/ui-kit";
 import StudentMultiSelect from "@/component/student-multi-select";
 import { liveClassService } from "@/services/live-class";
@@ -9,6 +9,18 @@ import type { LessonItem } from "@/services/lesson";
 import { getErrorMessage } from "@/utils/errors";
 
 const MAX_STUDENTS = 3;
+const MIN_DURATION = 5;
+const MAX_DURATION = 40;
+const DEFAULT_DURATION = 40;
+
+/** `datetime-local`'s value has no timezone — sent bare (no offset suffix),
+ * the backend reads it as school time (WAT) directly, per the brief. We
+ * never attach our own offset guess here. */
+const toLocalDatetimeMin = (): string => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+};
 
 const CreateLiveClass = () => {
   const navigate = useNavigate();
@@ -17,6 +29,8 @@ const CreateLiveClass = () => {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [title, setTitle] = useState("");
+  const [scheduledStart, setScheduledStart] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,19 +66,25 @@ const CreateLiveClass = () => {
       setError("Pick at least one student.");
       return;
     }
+    if (!scheduledStart) {
+      setError("Pick a date and time to start the class.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      const created = await liveClassService.create({
+      await liveClassService.create({
         lessonId: lesson.id,
         studentIds: Array.from(selectedIds),
         title: title.trim() || undefined,
+        scheduledStart,
+        durationMinutes,
       });
-      const liveClassId = created.data.data.id;
-      await liveClassService.start(liveClassId);
-      navigate(`/teacher/live-class/room/${liveClassId}`);
+      toast.success("Live class scheduled.");
+      navigate("/teacher/live-class");
     } catch (err) {
-      setError(getErrorMessage(err, "Could not start the live class."));
+      setError(getErrorMessage(err, "Could not schedule the live class."));
+    } finally {
       setSubmitting(false);
     }
   };
@@ -84,7 +104,7 @@ const CreateLiveClass = () => {
             <Video size={22} className="text-chestnut" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Start a live class</h1>
+            <h1 className="text-lg font-bold text-gray-900">Schedule a live class</h1>
             <p className="text-sm text-gray-500">{lessonTitle}</p>
           </div>
         </div>
@@ -102,6 +122,38 @@ const CreateLiveClass = () => {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="live-class-start" className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                <CalendarIcon className="size-3.5" /> Starts at
+              </Label>
+              <Input
+                id="live-class-start"
+                type="datetime-local"
+                value={scheduledStart}
+                min={toLocalDatetimeMin()}
+                onChange={(e) => setScheduledStart(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="live-class-duration" className="text-xs font-bold text-gray-700">
+                Length (minutes)
+              </Label>
+              <Input
+                id="live-class-duration"
+                type="number"
+                min={MIN_DURATION}
+                max={MAX_DURATION}
+                value={durationMinutes}
+                onChange={(e) =>
+                  setDurationMinutes(
+                    Math.min(MAX_DURATION, Math.max(MIN_DURATION, Number(e.target.value) || DEFAULT_DURATION))
+                  )
+                }
+              />
+            </div>
+          </div>
+
           <StudentMultiSelect
             selectedIds={selectedIds}
             onToggle={toggleStudent}
@@ -117,8 +169,8 @@ const CreateLiveClass = () => {
           )}
 
           <div className="rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
-            The class runs for up to 40 minutes. Only the students you pick here can join — this can't be changed once
-            the class starts.
+            Only the students you pick here can join, and the time slot can't be changed once the class starts —
+            you can still reschedule or cancel before then from the Live Classes list.
           </div>
 
           <Button
@@ -127,7 +179,7 @@ const CreateLiveClass = () => {
             className="flex w-full items-center justify-center gap-2 bg-chestnut text-white hover:bg-chestnut/90"
           >
             {submitting ? <Loader2 className="size-4 animate-spin" /> : <Users className="size-4" />}
-            {submitting ? "Starting..." : "Start live class"}
+            {submitting ? "Scheduling..." : "Schedule live class"}
           </Button>
         </div>
       </div>
