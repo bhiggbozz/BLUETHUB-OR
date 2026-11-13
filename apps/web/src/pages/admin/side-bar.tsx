@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 // ─── Asset imports ────────────────────────────────────────────────────────────
-import bluethub from "@/assets/png/bluethub.png";
+import bluethub from "@/assets/logo/B_Transparent.png";
 import arrowMenu from "@/assets/svg/arrow_menu_open.svg";
 import arrowMenuOpen from "@/assets/svg/arrow_menu_close.svg";
 import registrationIcon from "@/assets/svg/registration.svg";
@@ -53,6 +53,16 @@ export interface NavItem {
     path?: string;
     children?: NavChild[];
     disabled?: boolean;
+    /** Omitted = visible to every role the admin route guard already allows.
+     * Set to restrict (e.g. `["SuperAdministrator"]`) for sensitive items. */
+    roles?: string[];
+}
+
+/** Items (and dropdown children) whose `roles` doesn't include the current
+ * user's `roleName` are dropped entirely — not just disabled — so e.g. a
+ * plain Administrator never sees "Admin Permissions" in the nav at all. */
+function visibleItems<T extends { roles?: string[] }>(items: T[], roleName?: string): T[] {
+    return items.filter((item) => !item.roles || (!!roleName && item.roles.includes(roleName)));
 }
 
 interface NavGroup {
@@ -97,7 +107,7 @@ const NAV_GROUPS: NavGroup[] = [
                 ],
             },
             // { name: "Admin Role", path: "/admin/registration/admin", icons: UserPlus },
-            { name: "Admin Permissions", path: "/admin/admin-permissions", icons: ShieldCheck },
+            { name: "Admin Permissions", path: "/admin/admin-permissions", icons: ShieldCheck, roles: ["SuperAdministrator"] },
         ],
     },
     {
@@ -106,7 +116,7 @@ const NAV_GROUPS: NavGroup[] = [
             // { name: "Library", icons: libraryIcon, path: "/admin/library" },
             { name: "Module", icons: ModuletIcon, path: "/admin/module" },
             { name: "Lesson Approval", icons: lessonIcon, path: "/admin/lesson-approval" },
-            { name: "School Branding", icons: schoolBrandingIcon, path: "/admin/school-branding" },
+            { name: "School Branding", icons: schoolBrandingIcon, path: "/admin/school-branding", roles: ["SuperAdministrator"] },
         ],
     },
     {
@@ -152,7 +162,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const other_menu_Link: NavItem[] = [
-    { name: "Settings", icons: settingsIcon, path: "/admin/settings" },
+    { name: "Settings", icons: settingsIcon, path: "/admin/settings", roles: ["SuperAdministrator"] },
     { name: "Log Out", icons: logoutIcon, path: "/" },
 ];
 
@@ -197,11 +207,44 @@ export const CloseIcon = () => (
 // ─── Section label ────────────────────────────────────────────────────────────
 
 function SectionLabel({ label, isCollapsed }: { label: string; isCollapsed: boolean }) {
-    if (isCollapsed) return <div className="my-1.5 border-t border-[#29238215]" />;
+    if (isCollapsed) return <div className="my-2 border-t border-chestnut/15" />;
     return (
-        <p className="px-3 mb-1.5 text-[9px] font-bold tracking-widest text-[#29238260] uppercase">
+        <p className="px-3.5 mb-2 text-[10px] font-semibold tracking-[0.16em] text-chestnut/50 uppercase">
             {label}
         </p>
+    );
+}
+
+// ─── Icon tile — gradient-filled "badge" with depth when active/open ────────
+// This (not a left accent bar) is now the primary active-state signal — a
+// flat chip at rest, a chestnut→forestBlue-light gradient with an inset
+// highlight + drop shadow when active, giving real dimension in plain CSS.
+
+function NavIconTile({ src, active, isLogout }: { src: string; active: boolean; isLogout?: boolean }) {
+    if (isLogout) {
+        return (
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/50">
+                <img src={src} alt="" aria-hidden="true" className="h-[15px] w-[15px] object-contain opacity-80" />
+            </span>
+        );
+    }
+    return (
+        <span
+            className={[
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 ease-out",
+                active
+                    ? "bg-gradient-to-br from-chestnut to-forestBlue-light shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35),0_3px_8px_-2px_rgba(41,35,130,0.55)]"
+                    : "bg-chestnut/10 group-hover:bg-chestnut/15",
+            ].join(" ")}
+        >
+            <img
+                src={src}
+                alt=""
+                aria-hidden="true"
+                className={`h-[15px] w-[15px] object-contain transition-all duration-200 ${active ? "brightness-0 invert" : "opacity-80"
+                    }`}
+            />
+        </span>
     );
 }
 
@@ -227,32 +270,26 @@ function PlainNavLink({
             onClick={isLogout ? onLogout : onNavigate}
             className={({ isActive }) =>
                 [
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer group",
+                    "relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl transition-all duration-200 ease-out cursor-pointer group",
                     isLogout
-                        ? "hover:bg-red-50"
+                        ? "hover:bg-red-50 dark:hover:bg-red-950"
                         : isActive
-                            ? "bg-[#292382] text-white shadow-sm"
-                            : "text-[#292382] hover:bg-[#29238210]",
+                            ? "bg-chestnut/10"
+                            : "text-chestnut hover:bg-chestnut/[0.06]",
                     isCollapsed ? "justify-center" : "",
                 ].join(" ")
             }
         >
             {({ isActive }) => (
                 <>
-                    <img
-                        src={link.icons}
-                        alt=""
-                        aria-hidden="true"
-                        className={`w-[15px] h-[15px] shrink-0 object-contain transition-all ${isLogout
-                                ? "opacity-80"
-                                : isActive
-                                    ? "brightness-0 invert"
-                                    : "opacity-70 group-hover:opacity-100"
-                            }`}
-                    />
+                    <NavIconTile src={link.icons} active={isActive} isLogout={isLogout} />
                     {!isCollapsed && (
                         <span
-                            className={`text-xs font-medium truncate ${isLogout ? "text-red-500" : isActive ? "text-white" : "text-[#292382]"
+                            className={`text-xs truncate transition-colors duration-200 ${isLogout
+                                    ? "text-red-500 font-medium"
+                                    : isActive
+                                        ? "text-chestnut font-semibold"
+                                        : "text-chestnut font-medium"
                                 }`}
                         >
                             {link.name}
@@ -285,26 +322,25 @@ function DropdownNavItem({
                 type="button"
                 onClick={onToggle}
                 className={[
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer group",
-                    isOpen ? "bg-[#292382] text-white shadow-sm" : "text-[#292382] hover:bg-[#29238210]",
+                    "relative w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 ease-out cursor-pointer group",
+                    // Always has a faint tinted "container" look — even closed,
+                    // it should read as something that expands, not a plain link.
+                    isOpen
+                        ? "bg-chestnut/10 border-chestnut/15"
+                        : "text-chestnut border-chestnut/[0.08] bg-chestnut/[0.025] hover:bg-chestnut/[0.06] hover:border-chestnut/15",
                     isCollapsed ? "justify-center" : "justify-between",
                 ].join(" ")}
             >
                 <div className="flex items-center gap-3 min-w-0">
-                    <img
-                        src={link.icons}
-                        alt=""
-                        aria-hidden="true"
-                        className={`w-[15px] h-[15px] shrink-0 object-contain transition-all ${isOpen ? "brightness-0 invert" : "opacity-70 group-hover:opacity-100"}`}
-                    />
+                    <NavIconTile src={link.icons} active={isOpen} />
                     {!isCollapsed && (
-                        <span className={`text-xs font-medium truncate ${isOpen ? "text-white" : "text-[#292382]"}`}>
+                        <span className={`text-xs truncate transition-colors duration-200 ${isOpen ? "text-chestnut font-semibold" : "text-chestnut font-medium"}`}>
                             {link.name}
                         </span>
                     )}
                 </div>
                 {!isCollapsed && (
-                    <span className={isOpen ? "text-white" : "text-[#292382] opacity-60"}>
+                    <span className="text-chestnut opacity-50">
                         <ChevronIcon open={isOpen} />
                     </span>
                 )}
@@ -312,7 +348,7 @@ function DropdownNavItem({
 
             <div
                 style={{ display: !isCollapsed && isOpen ? "block" : "none" }}
-                className="mt-1 ml-9 border-l-2 border-[#29238225] space-y-0.5"
+                className="mt-1 ml-9 border-l-2 border-chestnut/15 space-y-0.5"
             >
                 {link.children?.map((child) => {
                     if (child.disabled) {
@@ -321,7 +357,7 @@ function DropdownNavItem({
                                 key={child.name}
                                 aria-disabled="true"
                                 title="Coming soon"
-                                className="block text-xs py-1.5 px-3 rounded-lg font-medium text-[#292382] opacity-40 cursor-not-allowed select-none"
+                                className="block text-xs py-1.5 px-3 rounded-lg font-medium text-chestnut opacity-40 cursor-not-allowed select-none"
                             >
                                 {child.name}
                             </div>
@@ -335,10 +371,10 @@ function DropdownNavItem({
                             onClick={onNavigate}
                             className={({ isActive }) =>
                                 [
-                                    "block text-xs py-1.5 px-3 rounded-lg font-medium transition-all duration-150",
+                                    "block text-xs py-1.5 px-3 rounded-lg transition-all duration-150",
                                     isActive
-                                        ? "bg-[#292382] text-white"
-                                        : "text-[#292382] opacity-80 hover:opacity-100 hover:bg-[#29238212]",
+                                        ? "bg-chestnut/10 text-chestnut font-semibold"
+                                        : "text-chestnut font-medium opacity-80 hover:opacity-100 hover:bg-chestnut/[0.06]",
                                 ].join(" ")
                             }
                         >
@@ -358,16 +394,28 @@ export interface NavContentProps {
     setIsCollapsed: (v: boolean) => void;
     onNavigate?: () => void; // called after any navigation (closes mobile drawer)
     onLogout: () => void;
+    /** Current user's `roleName` — items/groups whose `roles` doesn't
+     * include it are filtered out entirely. */
+    roleName?: string;
 }
 
-export const NavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }: NavContentProps) => {
+export const NavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout, roleName }: NavContentProps) => {
     const location = useLocation();
+
+    const visibleGroups = useMemo(
+        () =>
+            NAV_GROUPS.map((group) => ({ ...group, items: visibleItems(group.items, roleName) })).filter(
+                (group) => group.items.length > 0
+            ),
+        [roleName]
+    );
+    const visibleOtherLinks = useMemo(() => visibleItems(other_menu_Link, roleName), [roleName]);
 
     // Whichever dropdown contains the current route — so landing on a deep
     // link (bookmark, refresh, back button) shows the section you're already
     // in instead of a sidebar with nothing expanded.
     const activeItemKey = useMemo(() => {
-        for (const group of NAV_GROUPS) {
+        for (const group of visibleGroups) {
             for (const item of group.items) {
                 if (!item.children) continue;
                 const isActive = item.children.some((child) => child.path === location.pathname);
@@ -375,7 +423,7 @@ export const NavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
             }
         }
         return null;
-    }, [location.pathname]);
+    }, [location.pathname, visibleGroups]);
 
     const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(activeItemKey);
 
@@ -394,7 +442,7 @@ export const NavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
     };
 
     return (
-        <div className="flex flex-col gap-3 pb-4">
+        <div className="flex flex-col gap-4 pb-4">
             {/* ── MAIN MENU ── */}
             <section className="px-3">
                 <SectionLabel label="Main" isCollapsed={isCollapsed} />
@@ -406,7 +454,7 @@ export const NavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
             </section>
 
             {/* ── GROUPED SECTIONS ── */}
-            {NAV_GROUPS.map((group) => (
+            {visibleGroups.map((group) => (
                 <section key={group.label} className="px-3">
                     <SectionLabel label={group.label} isCollapsed={isCollapsed} />
                     <div className="space-y-0.5">
@@ -436,7 +484,7 @@ export const NavContent = ({ isCollapsed, setIsCollapsed, onNavigate, onLogout }
             <section className="px-3">
                 <SectionLabel label="Account" isCollapsed={isCollapsed} />
                 <div className="space-y-0.5">
-                    {other_menu_Link.map((link) => {
+                    {visibleOtherLinks.map((link) => {
                         const isLogout = link.name === "Log Out";
                         return (
                             <PlainNavLink
@@ -500,23 +548,23 @@ const SideBar = () => {
     return (
         <aside
             className={[
-                "h-full bg-white border-r border-[#29238210] flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
+                "h-full bg-background border-r border-chestnut/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-[68px]" : "w-[252px]",
             ].join(" ")}
         >
             {/* Header */}
             <div
-                className={`flex items-center px-4 py-4 border-b border-[#29238210] shrink-0 ${isCollapsed ? "justify-center" : "justify-between"
+                className={`flex items-center px-4 py-5 border-b border-chestnut/10 shrink-0 ${isCollapsed ? "justify-center" : "justify-between"
                     }`}
             >
                 {!isCollapsed && (
                     <div className="flex items-center gap-6 min-w-0">
-                        <img src={school.logoUrl || bluethub} alt={school.schoolName ||'bluetsch'} className="h-7  rounded-full shrink-0" />
+                        <img src={school.logoUrl || bluethub} alt={school.schoolName ||'bluetsch'} className="h-7 w-auto shrink-0 rounded-sm dark:bg-white dark:p-0.5" />
                         <div className="min-w-0">
-                            <p className="text-[10px] font-semibold text-[#292382] opacity-60 truncate">
+                            <p className="text-[10px] font-semibold text-chestnut/50 truncate">
                                 {school?.schoolName ? school.schoolName : "BB"}
                             </p>
-                            <p className="text-[13px] font-bold text-[#292382] truncate">
+                            <p className="text-[13px] font-bold text-chestnut truncate">
                                 {user?.roleName ? user.roleName : "Administrator"}
                             </p>
                         </div>
@@ -525,7 +573,7 @@ const SideBar = () => {
                 <button
                     type="button"
                     onClick={toggleSidebar}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#29238210] transition-colors shrink-0"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-chestnut/10 active:scale-95 transition-all duration-150 shrink-0"
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                     <img src={isCollapsed ? arrowMenuOpen : arrowMenu} alt="toggle" className="w-4 h-4" />
@@ -533,14 +581,14 @@ const SideBar = () => {
             </div>
 
             {/* Profile card */}
-            <div className={`px-3 pt-3 shrink-0 ${isCollapsed ? "flex justify-center" : ""}`}>
+            <div className={`px-3 pt-4 shrink-0 ${isCollapsed ? "flex justify-center" : ""}`}>
                 {isCollapsed ? (
-                    <div className="w-8 h-8 rounded-full bg-[#292382] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-chestnut ring-2 ring-chestnut/15 shadow-sm flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                         {initials}
                     </div>
                 ) : (
-                    <div className="rounded-xl bg-[#292382] px-3 py-2.5 flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    <div className="rounded-xl bg-gradient-to-br from-chestnut to-chestnut/85 px-3.5 py-3 flex items-center gap-3 shadow-lg shadow-chestnut/20">
+                        <div className="w-9 h-9 rounded-full bg-white/15 ring-2 ring-white/25 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
                             {initials}
                         </div>
                         <div className="min-w-0">
@@ -559,12 +607,13 @@ const SideBar = () => {
           [&::-webkit-scrollbar]:w-1
           [&::-webkit-scrollbar-track]:bg-transparent
           [&::-webkit-scrollbar-thumb]:rounded-full
-          [&::-webkit-scrollbar-thumb]:bg-[#29238230]"
+          [&::-webkit-scrollbar-thumb]:bg-chestnut/30"
             >
                 <NavContent
                     isCollapsed={isCollapsed}
                     setIsCollapsed={handleSetCollapsed}
                     onLogout={handleLogout}
+                    roleName={user?.roleName}
                 />
             </div>
         </aside>
@@ -623,19 +672,19 @@ export const MobileNav = ({ isOpen, setIsOpen }: IMobileNav) => {
             <div
                 ref={drawerRef}
                 className={[
-                    "lg:hidden fixed top-0 left-0 z-50 h-full w-[280px] bg-white flex flex-col shadow-xl transition-transform duration-300 ease-in-out",
+                    "lg:hidden fixed top-0 left-0 z-50 h-full w-[280px] bg-background flex flex-col shadow-xl transition-transform duration-300 ease-in-out",
                     isOpen ? "translate-x-0" : "-translate-x-full",
                 ].join(" ")}
             >
                 {/* Drawer header */}
-                <div className="flex items-center justify-between px-4 py-4 border-b border-[#29238210] shrink-0">
+                <div className="flex items-center justify-between px-4 py-5 border-b border-chestnut/10 shrink-0">
                     <div className="flex items-center gap-2">
-                        <img src={bluethub} alt="Bluethub" className="h-7" />
+                        <img src={bluethub} alt="Bluethub" className="h-7 dark:bg-white dark:p-0.5 dark:rounded-sm" />
                         <div>
-                            <p className="text-[10px] font-semibold text-[#292382] opacity-60">
+                            <p className="text-[10px] font-semibold text-chestnut/50">
                                 {school?.schoolName ? school.schoolName : "BB"}
                             </p>
-                            <p className="text-[13px] font-bold text-[#292382]">
+                            <p className="text-[13px] font-bold text-chestnut">
                                 {user?.roleName ? user.roleName : "Administrator"}
                             </p>
                         </div>
@@ -643,7 +692,7 @@ export const MobileNav = ({ isOpen, setIsOpen }: IMobileNav) => {
                     <button
                         type="button"
                         onClick={() => setIsOpen(false)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#29238210] text-[#292382] transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-chestnut/10 active:scale-95 text-chestnut transition-all duration-150"
                         aria-label="Close navigation"
                     >
                         <CloseIcon />
@@ -655,13 +704,14 @@ export const MobileNav = ({ isOpen, setIsOpen }: IMobileNav) => {
                     className="flex-1 overflow-y-auto py-3
             [&::-webkit-scrollbar]:w-1
             [&::-webkit-scrollbar-thumb]:rounded-full
-            [&::-webkit-scrollbar-thumb]:bg-[#29238230]"
+            [&::-webkit-scrollbar-thumb]:bg-chestnut/30"
                 >
                     <NavContent
                         isCollapsed={false}
                         setIsCollapsed={() => { }}
                         onNavigate={() => setIsOpen(false)}
                         onLogout={handleLogout}
+                        roleName={user?.roleName}
                     />
                 </div>
             </div>

@@ -60,7 +60,7 @@ export function EntryDetailDrawer({ open, onOpenChange, entryId, entryTypeLabels
         </DialogHeader>
 
         {loading && (
-          <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
+          <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="text-sm">Loading…</span>
           </div>
@@ -77,14 +77,14 @@ export function EntryDetailDrawer({ open, onOpenChange, entryId, entryTypeLabels
           <div className="space-y-4">
             <div>
               <EntryTypeBadge type={entry.entryType} label={entryTypeLabels[entry.entryType] ?? entry.entryType} />
-              <h2 className="mt-1.5 text-sm font-bold text-slate-900">{entry.title}</h2>
-              <p className="mt-0.5 text-xs text-slate-500">{formatEntryRange(entry.startDate, entry.endDate)}</p>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <h2 className="mt-1.5 text-sm font-bold text-foreground">{entry.title}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{formatEntryRange(entry.startDate, entry.endDate)}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {scopeLabel(entry)} · {entry.createdByName}, {entry.createdByRole}
               </p>
             </div>
 
-            {entry.description && <p className="text-sm text-slate-700">{entry.description}</p>}
+            {entry.description && <p className="text-sm text-foreground">{entry.description}</p>}
 
             {entry.lastChange && (
               <div role="status" className="rounded-lg bg-violet-50 px-3 py-2.5 text-xs text-violet-700">
@@ -94,14 +94,14 @@ export function EntryDetailDrawer({ open, onOpenChange, entryId, entryTypeLabels
 
             {entry.changes && entry.changes.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-semibold text-slate-600">History</p>
-                <ul className="space-y-2.5 border-l border-slate-200 pl-3">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">History</p>
+                <ul className="space-y-2.5 border-l border-border pl-3">
                   {entry.changes.map((change, idx) => (
-                    <li key={idx} className="text-xs text-slate-600">
-                      <p className="font-medium text-slate-700">
-                        {change.changedByName} <span className="text-slate-400">· {change.changedByRole}</span>
+                    <li key={idx} className="text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">
+                        {change.changedByName} <span className="text-muted-foreground">· {change.changedByRole}</span>
                       </p>
-                      <p className="text-slate-400">{formatLocalDateTime(change.changedAt)}</p>
+                      <p className="text-muted-foreground">{formatLocalDateTime(change.changedAt)}</p>
                       <p className="mt-0.5">{change.message}</p>
                     </li>
                   ))}

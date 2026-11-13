@@ -9,6 +9,17 @@ import toast from "react-hot-toast";
 import { approvalService, getApprovalDisplay, type Approval, type ApprovalPayload } from "@/services/approval";
 import { useLocation, useOutletContext } from "react-router-dom";
 import ApprovalReviewModal from "./approval-review-modal";
+import {
+  Badge,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@bluethub/ui-kit";
+import { cn } from "@/lib/utils";
 
 type Tab = "all" | "pending" | "approved" | "rejected";
 
@@ -43,23 +54,9 @@ export const formatDate = (iso: string) => {
 
 export const StatusBadge = ({ status }: { status: string }) => {
   const s = status?.toLowerCase();
-  if (s === "pending")
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Pending
-      </span>
-    );
-  if (s === "approved")
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Approved
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Rejected
-    </span>
-  );
+  if (s === "pending") return <Badge variant="warning">Pending</Badge>;
+  if (s === "approved") return <Badge variant="success">Approved</Badge>;
+  return <Badge variant="destructive">Rejected</Badge>;
 };
 
 
@@ -141,7 +138,7 @@ const ApprovalsPage = () => {
 
   return (
     <div className="font-poppins">
-      <div className="backdrop-blur-sm  border border-white/20 overflow-hidden">
+      <div className="backdrop-blur-sm border border-border overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 bg-chestnut">
@@ -168,7 +165,7 @@ const ApprovalsPage = () => {
         </div>
 
         {/* Body */}
-        <div className="bg-white/70 backdrop-blur-sm p-3 lg:p-6 min-h-screen">
+        <div className="bg-background/70 backdrop-blur-sm p-3 lg:p-6 min-h-screen">
           <div className="max-w-5xl mx-auto">
 
             {/* Stats */}
@@ -177,18 +174,18 @@ const ApprovalsPage = () => {
                 <p className="text-2xl font-bold">{approvals.length}</p>
                 <p className="text-xs text-white/70 mt-0.5">Total submissions</p>
               </div>
-              <div className="rounded-2xl p-4 bg-white border border-gray-100">
-                <p className="text-2xl font-bold text-gray-900">{pending.length}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Awaiting review</p>
-                <p className="text-[11px] font-medium text-amber-600 mt-0.5">Pending</p>
+              <div className="rounded-2xl p-4 bg-card border border-border">
+                <p className="text-2xl font-bold text-foreground">{pending.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Awaiting review</p>
+                <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mt-0.5">Pending</p>
               </div>
-              <div className="rounded-2xl p-4 bg-white border border-gray-100">
-                <p className="text-2xl font-bold text-gray-900">{approved.length}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Approved</p>
+              <div className="rounded-2xl p-4 bg-card border border-border">
+                <p className="text-2xl font-bold text-foreground">{approved.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Approved</p>
               </div>
-              <div className="rounded-2xl p-4 bg-white border border-gray-100">
-                <p className="text-2xl font-bold text-gray-900">{rejected.length}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Rejected</p>
+              <div className="rounded-2xl p-4 bg-card border border-border">
+                <p className="text-2xl font-bold text-foreground">{rejected.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Rejected</p>
               </div>
             </div>
 
@@ -198,10 +195,12 @@ const ApprovalsPage = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${activeTab === tab.key
-                    ? "bg-chestnut text-white"
-                      : "bg-[#D9D9D9BF] text-gray-500 hover:text-gray-700 border border-[#3A3A3A80]"
-                    }`}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-xs font-medium transition-all",
+                    activeTab === tab.key
+                      ? "bg-chestnut text-white"
+                      : "bg-muted text-muted-foreground hover:text-foreground border border-border"
+                  )}
                 >
                   {tab.label} ({tab.count})
                 </button>
@@ -212,27 +211,27 @@ const ApprovalsPage = () => {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-6 h-6 text-chestnut animate-spin" />
-                <p className="text-sm text-gray-400">Loading approvals...</p>
+                <p className="text-sm text-muted-foreground">Loading approvals...</p>
               </div>
             ) : shown.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-2">
-                <CheckCircle2 className="w-10 h-10 text-gray-200" />
-                <p className="text-sm font-medium text-gray-400">No submissions in this view</p>
+                <CheckCircle2 className="w-10 h-10 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No submissions in this view</p>
               </div>
             ) : (
-              <div className="rounded-2xl border min-h-screen md:h-[70vh] lg:min-h-auto border-gray-300 overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-[#F5F5F1] text-[12px] uppercase tracking-wide text-[#29238280]">
-                      <th className="px-4 py-3 font-semibold">Lesson title</th>
-                      <th className="px-4 py-3 font-semibold">Teacher</th>
-                      <th className="px-4 py-3 font-semibold">Class</th>
-                      <th className="px-4 py-3 font-semibold">Subject</th>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div className="rounded-2xl border min-h-screen md:h-[70vh] lg:min-h-auto border-border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Lesson title</TableHead>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {shown.map((approval) => {
                       const payload = getPayload(approval.payload);
                       const display = getApprovalDisplay(approval);
@@ -240,39 +239,36 @@ const ApprovalsPage = () => {
                       const subjectName = display.subjectName || "—";
                       const s = approval.status?.toLowerCase();
                       const borderColor =
-                        s === "pending" ? "border-l-[#C47C0A]" :
+                        s === "pending" ? "border-l-amber-500" :
                           s === "approved" ? "border-l-emerald-400" :
                             "border-l-red-400";
                       return (
-                        <tr
+                        <TableRow
                           key={approval.id}
-                          className={`border-t-[#D9D9D9] border-t border-gray-50 border-l-2 ${borderColor} hover:bg-gray-50/50 transition-colors`}
+                          className={cn("border-l-2", borderColor)}
                         >
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-semibold text-gray-900">
+                          <TableCell className="whitespace-normal">
+                            <p className="text-sm font-semibold text-foreground">
                               {display.title}
                             </p>
                             {payload.Term && (
-                              <p className="text-[11px] text-gray-400">{payload.Term}</p>
+                              <p className="text-[11px] text-muted-foreground">{payload.Term}</p>
                             )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{approval.requestedByName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{className}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{subjectName}</td>
-                          <td className="px-4 py-3"><StatusBadge status={approval.status} /></td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => setSelectedApproval(approval)}
-                              className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{approval.requestedByName}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{className}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{subjectName}</TableCell>
+                          <TableCell><StatusBadge status={approval.status} /></TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm" onClick={() => setSelectedApproval(approval)}>
                               Review
-                            </button>
-                          </td>
-                        </tr>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>

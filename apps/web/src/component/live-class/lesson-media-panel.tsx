@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger, PopoverClose, Button } from "@bluethub/ui-kit";
-import { Image as ImageIcon, FileText, Video, X, FolderOpen, Loader2, Radio } from "lucide-react";
+import { Image as ImageIcon, FileText, Video, X, FolderOpen, Loader2, Radio, Lock } from "lucide-react";
 import { lessonService, type LessonMediaDto } from "@/services/lesson";
 import { encodeMediaMessage, decodeMediaMessage } from "@/utils/live-media-data-channel";
+import PdfScrollViewer from "@/component/pdf-scroll-viewer";
 
 /** The LiveKit "media" topic surface this panel needs — structurally
  * satisfied by `useLiveClassAudio()`'s return value, passed straight
@@ -51,6 +52,28 @@ export default function LessonMediaPanel({ lessonId, isTeacher, teacherId, media
    * null once they've broadcast "close". Separate from `active`/`open`
    * above so a student's own browsing never gets clobbered by the sync. */
   const [presentedMediaId, setPresentedMediaId] = useState<string | null>(null);
+  /** Teacher side only: their own current page while `active` is a PDF —
+   * fed by `PdfScrollViewer`'s `onPageChange`, and the thing that gets
+   * broadcast below. Sibling of the open/close broadcast, not a replacement. */
+  const [teacherPdfPage, setTeacherPdfPage] = useState(1);
+  /** Student side only: the page the teacher last broadcast for the
+   * currently presented PDF. */
+  const [presentedPage, setPresentedPage] = useState(1);
+  /** Student side only: true while their PDF view should keep jumping to
+   * `presentedPage` — flips off the moment they scroll on their own
+   * (mirrors the existing replay-mode "auto follow" toggle in reply.tsx),
+   * and back on whenever a (possibly new) file opens. */
+  const [followPdf, setFollowPdf] = useState(true);
+  const lastSentPdfPageRef = useRef<number | null>(null);
+
+  // Teacher: a newly-opened file always starts at page 1 — without this,
+  // switching from a page deep in one PDF to a brand new one would briefly
+  // broadcast the old page number tagged with the new file's id.
+  useEffect(() => {
+    if (!isTeacher) return;
+    setTeacherPdfPage(1);
+    lastSentPdfPageRef.current = null;
+  }, [isTeacher, active?.id]);
 
   // Teacher: broadcast whatever they're currently viewing — "viewing a file
   // in this panel" and "showing it to the class" are treated as the same
@@ -61,6 +84,15 @@ export default function LessonMediaPanel({ lessonId, isTeacher, teacherId, media
     mediaChannel.sendMediaData(encodeMediaMessage(msg));
   }, [isTeacher, mediaChannel, active]);
 
+  // Teacher: broadcast their current PDF page separately — only while a PDF
+  // is actually open, and only when it actually changes.
+  useEffect(() => {
+    if (!isTeacher || !mediaChannel || !active) return;
+    if (lastSentPdfPageRef.current === teacherPdfPage) return;
+    lastSentPdfPageRef.current = teacherPdfPage;
+    mediaChannel.sendMediaData(encodeMediaMessage({ t: "page", mediaId: active.id, page: teacherPdfPage }));
+  }, [isTeacher, mediaChannel, active, teacherPdfPage]);
+
   // Teacher: a student who joins mid-class has no way to know what's
   // already open — send them the current state directly (the brief's
   // "media-state message with what is open now" on ParticipantConnected).
@@ -69,8 +101,14 @@ export default function LessonMediaPanel({ lessonId, isTeacher, teacherId, media
     return mediaChannel.onParticipantConnected((identity) => {
       const msg = active ? ({ t: "open", mediaId: active.id } as const) : ({ t: "close" } as const);
       mediaChannel.sendMediaData(encodeMediaMessage(msg), [identity]);
+      if (active) {
+        mediaChannel.sendMediaData(
+          encodeMediaMessage({ t: "page", mediaId: active.id, page: teacherPdfPage }),
+          [identity]
+        );
+      }
     });
-  }, [isTeacher, mediaChannel, active]);
+  }, [isTeacher, mediaChannel, active, teacherPdfPage]);
 
   // Student: follow whatever the teacher broadcasts, auto-opening this
   // panel to match — if the file isn't in `media` yet (still downloading
@@ -85,10 +123,16 @@ export default function LessonMediaPanel({ lessonId, isTeacher, teacherId, media
         setPresentedMediaId(null);
         return;
       }
+      if (msg.t === "page") {
+        if (msg.mediaId === presentedMediaId) setPresentedPage(msg.page);
+        return;
+      }
       setPresentedMediaId(msg.mediaId);
+      setPresentedPage(1);
+      setFollowPdf(true);
       setOpen(true);
     });
-  }, [isTeacher, mediaChannel, teacherId]);
+  }, [isTeacher, mediaChannel, teacherId, presentedMediaId]);
 
   // Student: once the presented file shows up in the downloaded list,
   // jump the detail view to it.
@@ -173,15 +217,34 @@ export default function LessonMediaPanel({ lessonId, isTeacher, teacherId, media
               if (kind === "video") {
                 return <video src={active.cloudinaryUrl} controls className="max-h-64 w-full rounded" />;
               }
+              // PDF: an inline, page-synced viewer instead of a plain "open
+              // in a new tab" link — the teacher's own scroll position
+              // drives `onPageChange` (broadcast above); the student's view
+              // is driven back by `controlledPage`, reusing the exact same
+              // controller/follower wiring `component/reply.tsx` already
+              // uses for replay playback (`mode="replay"` + `controlledPage`
+              // + `onScrollRatioChange` to drop out of auto-follow).
               return (
-                <a
-                  href={active.cloudinaryUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block rounded border border-gray-200 p-4 text-center text-sm text-blue-600 hover:bg-gray-50"
-                >
-                  Open {active.originalFileName}
-                </a>
+                <div className="space-y-1.5">
+                  {!isTeacher && !followPdf && (
+                    <button
+                      type="button"
+                      onClick={() => setFollowPdf(true)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-md bg-amber-50 px-2 py-1.5 text-[11px] font-medium text-amber-700 hover:bg-amber-100"
+                    >
+                      <Lock className="size-3" /> Paused — tap to follow your teacher again
+                    </button>
+                  )}
+                  <div className="h-64 overflow-hidden rounded border border-gray-200">
+                    <PdfScrollViewer
+                      fileUrl={active.cloudinaryUrl}
+                      mode={isTeacher ? "live" : "replay"}
+                      controlledPage={!isTeacher && followPdf ? presentedPage : undefined}
+                      onPageChange={isTeacher ? setTeacherPdfPage : undefined}
+                      onScrollRatioChange={!isTeacher ? () => setFollowPdf(false) : undefined}
+                    />
+                  </div>
+                </div>
               );
             })()}
           </div>

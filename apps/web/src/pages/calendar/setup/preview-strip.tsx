@@ -17,10 +17,10 @@ export function PreviewStrip({ session, terms, rowErrors }: PreviewStripProps) {
 
   return (
     <div>
-      <p className="mb-1.5 text-xs font-semibold text-slate-500">Preview</p>
-      <div className="flex h-9 w-full gap-0.5 overflow-hidden rounded-lg bg-slate-100 p-0.5">
+      <p className="mb-1.5 text-xs font-semibold text-muted-foreground">Preview</p>
+      <div className="flex h-9 w-full gap-0.5 overflow-hidden rounded-lg bg-muted p-0.5">
         {terms.length === 0 && (
-          <div className="flex w-full items-center justify-center text-xs text-slate-400">Add a term to see it here</div>
+          <div className="flex w-full items-center justify-center text-xs text-muted-foreground">Add a term to see it here</div>
         )}
         {terms.map((term, idx) => {
           const errored = rowHasError(rowErrors[idx]);
@@ -35,7 +35,7 @@ export function PreviewStrip({ session, terms, rowErrors }: PreviewStripProps) {
               title={errored ? rowErrors[idx]?.overlap ?? rowErrors[idx]?.startDate ?? rowErrors[idx]?.endDate ?? rowErrors[idx]?.name : term.name}
               className={[
                 "flex h-full min-w-6 items-center justify-center overflow-hidden rounded-md text-[10px] font-semibold",
-                errored ? "bg-rose-500 text-white" : complete ? "bg-[#4F61E8] text-white" : "bg-slate-300 text-slate-600",
+                errored ? "bg-rose-500 text-white" : complete ? "bg-forestBlue-light text-white" : "bg-muted text-muted-foreground",
               ].join(" ")}
             >
               <span className="truncate px-1">{term.name || "Untitled"}</span>

@@ -45,7 +45,7 @@ export function EntryCard({ entry, entryTypeLabel, onOpenDetail, onEdit, onDelet
 
   return (
     <li
-      className={`rounded-xl border border-slate-200 p-3 ${isPast ? "bg-slate-50/70 opacity-75" : "bg-white"}`}
+      className={`rounded-xl border border-border p-3 ${isPast ? "bg-muted/70 opacity-75" : "bg-card"}`}
     >
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpenDetail} className="min-w-0 flex-1 text-left">
@@ -58,11 +58,11 @@ export function EntryCard({ entry, entryTypeLabel, onOpenDetail, onEdit, onDelet
               </span>
             )}
           </div>
-          <p className="mt-1 truncate text-sm font-semibold text-slate-800" title={entry.title}>
+          <p className="mt-1 truncate text-sm font-semibold text-foreground" title={entry.title}>
             {entry.title}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">{formatEntryRange(entry.startDate, entry.endDate)}</p>
-          <p className="mt-0.5 truncate text-[11px] text-slate-400" title={`${scopeLabel(entry)} · ${entry.createdByName}, ${entry.createdByRole}`}>
+          <p className="mt-0.5 text-xs text-muted-foreground">{formatEntryRange(entry.startDate, entry.endDate)}</p>
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground" title={`${scopeLabel(entry)} · ${entry.createdByName}, ${entry.createdByRole}`}>
             {scopeLabel(entry)} · {entry.createdByName}, {entry.createdByRole}
           </p>
           {changeLine && (
@@ -76,7 +76,7 @@ export function EntryCard({ entry, entryTypeLabel, onOpenDetail, onEdit, onDelet
         {entry.canEdit && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-slate-400 hover:text-slate-700" aria-label={`Entry actions for ${entry.title}`}>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground" aria-label={`Entry actions for ${entry.title}`}>
                 <EllipsisVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

@@ -3,6 +3,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { AxiosError } from "axios";
 import {
   Button,
+  DatePicker,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -169,7 +170,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
               <Button type="button" variant="outline" disabled={saving} onClick={() => setConfirmingOthersEdit(false)}>
                 Back
               </Button>
-              <Button type="button" disabled={saving} onClick={() => void runSave()} className="bg-[#4F61E8] hover:bg-[#4F61E8]/90">
+              <Button type="button" disabled={saving} onClick={() => void runSave()} className="bg-forestBlue-light hover:bg-forestBlue-light/90">
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {saving ? "Saving…" : "Confirm and save"}
               </Button>
@@ -189,7 +190,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
                 <Label>Scope</Label>
                 <RadioGroup value={scopeType} onValueChange={(v) => setScopeType(v as CalendarEntryScope)} className="flex flex-wrap gap-3">
                   {access.scopes.map((scope) => (
-                    <label key={scope} className="flex items-center gap-1.5 text-sm text-slate-700">
+                    <label key={scope} className="flex items-center gap-1.5 text-sm text-foreground">
                       <RadioGroupItem value={scope} />
                       {scope}
                     </label>
@@ -199,7 +200,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
             )}
 
             {isEditing && (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Scope: {existing!.scopeType === "School" ? "School" : existing!.scopeType === "Subject" ? existing!.subjectName ?? "Subject" : existing!.classroomName ?? "Classroom"} (can't be changed)
               </p>
             )}
@@ -208,7 +209,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
               <div className="space-y-1.5">
                 <Label htmlFor="entry-classroom">Class</Label>
                 <Select value={classroomId} onValueChange={setClassroomId}>
-                  <SelectTrigger id="entry-classroom"><SelectValue placeholder="Select a class" /></SelectTrigger>
+                  <SelectTrigger id="entry-classroom" className="w-full"><SelectValue placeholder="Select a class" /></SelectTrigger>
                   <SelectContent>
                     {access.classroomOptions.map((c) => (
                       <SelectItem key={c.classroomId} value={c.classroomId}>{c.className}</SelectItem>
@@ -224,7 +225,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
                 <div className="space-y-1.5">
                   <Label htmlFor="entry-subject">Subject</Label>
                   <Select value={subjectId} onValueChange={setSubjectId}>
-                    <SelectTrigger id="entry-subject"><SelectValue placeholder="Select a subject" /></SelectTrigger>
+                    <SelectTrigger id="entry-subject" className="w-full"><SelectValue placeholder="Select a subject" /></SelectTrigger>
                     <SelectContent>
                       {access.subjectOptions.map((s) => (
                         <SelectItem key={s.subjectId} value={s.subjectId}>{s.subjectName}</SelectItem>
@@ -237,7 +238,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
                   <div className="space-y-1.5">
                     <Label htmlFor="entry-subject-classroom">Class (optional)</Label>
                     <Select value={classroomId || "__none"} onValueChange={(v) => setClassroomId(v === "__none" ? "" : v)}>
-                      <SelectTrigger id="entry-subject-classroom"><SelectValue placeholder="All classes" /></SelectTrigger>
+                      <SelectTrigger id="entry-subject-classroom" className="w-full"><SelectValue placeholder="All classes" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none">All classes</SelectItem>
                         {access.classroomOptions.map((c) => (
@@ -253,7 +254,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
             <div className="space-y-1.5">
               <Label htmlFor="entry-type">Type</Label>
               <Select value={entryType} onValueChange={(v) => setEntryType(v as CalendarEntryTypeKey)}>
-                <SelectTrigger id="entry-type"><SelectValue placeholder="Select a type" /></SelectTrigger>
+                <SelectTrigger id="entry-type" className="w-full"><SelectValue placeholder="Select a type" /></SelectTrigger>
                 <SelectContent>
                   {availableTypes.map((t) => (
                     <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
@@ -272,12 +273,12 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="entry-start">Start date</Label>
-                <Input id="entry-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <DatePicker id="entry-start" value={startDate} onChange={setStartDate} />
                 {errors.startDate && <p role="alert" aria-live="polite" className="text-xs text-rose-600">{errors.startDate}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="entry-end">End date</Label>
-                <Input id="entry-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <DatePicker id="entry-end" value={endDate} onChange={setEndDate} />
                 {errors.endDate && <p role="alert" aria-live="polite" className="text-xs text-rose-600">{errors.endDate}</p>}
               </div>
             </div>
@@ -292,7 +293,7 @@ export function EntryModal({ open, onOpenChange, session, access, entryTypes, mo
               <Button type="button" variant="outline" disabled={saving} onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="button" disabled={saving} onClick={handleSave} className="bg-[#4F61E8] hover:bg-[#4F61E8]/90">
+              <Button type="button" disabled={saving} onClick={handleSave} className="bg-forestBlue-light hover:bg-forestBlue-light/90">
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {saving ? "Saving…" : isEditing ? "Save changes" : "Add entry"}
               </Button>

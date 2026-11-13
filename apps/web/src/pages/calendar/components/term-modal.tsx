@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { AxiosError } from "axios";
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label } from "@bluethub/ui-kit";
+import { Button, DatePicker, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label } from "@bluethub/ui-kit";
 import calendarService, { type CalendarSessionDto, type CalendarTermDto } from "@/services/calendar";
 import { validateTerms, type TermRowErrors } from "../utils";
 
@@ -99,12 +99,12 @@ export function TermModal({ open, onOpenChange, session, term, onSaved }: TermMo
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="term-start">Start date</Label>
-              <Input id="term-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <DatePicker id="term-start" value={startDate} onChange={setStartDate} />
               {errors.startDate && <p role="alert" aria-live="polite" className="text-xs text-rose-600">{errors.startDate}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="term-end">End date</Label>
-              <Input id="term-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <DatePicker id="term-end" value={endDate} onChange={setEndDate} />
               {errors.endDate && <p role="alert" aria-live="polite" className="text-xs text-rose-600">{errors.endDate}</p>}
             </div>
           </div>
@@ -114,7 +114,7 @@ export function TermModal({ open, onOpenChange, session, term, onSaved }: TermMo
           <Button type="button" variant="outline" disabled={saving} onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" disabled={saving} onClick={handleSave} className="bg-[#4F61E8] hover:bg-[#4F61E8]/90">
+          <Button type="button" disabled={saving} onClick={handleSave} className="bg-forestBlue-light hover:bg-forestBlue-light/90">
             {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
             {saving ? "Saving…" : isEditing ? "Save changes" : "Add term"}
           </Button>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CalendarRange, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, CalendarRange } from "lucide-react";
 import { AxiosError } from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { Button } from "@bluethub/ui-kit";
+import { Skeleton } from "@bluethub/ui-kit";
 import type { RootState } from "@/store";
 import { useAuthContext } from "@/contexts/auth-context";
 import { parentService, type ParentChild } from "@/services/parent";
@@ -15,12 +15,13 @@ import calendarService, {
 } from "@/services/calendar";
 import { useCanManageCalendar } from "./hooks/use-can-manage-calendar";
 import { useEntryWriteAccess } from "./hooks/use-entry-write-access";
-import { formatDisplayRange, MAX_TERMS, pickDefaultSession } from "./utils";
+import { formatDisplayRange, pickDefaultSession } from "./utils";
 import StatusChip from "./components/status-chip";
 import SessionSwitcher from "./components/session-switcher";
 import YearTimeline from "./components/year-timeline";
 import TermCard from "./components/term-card";
 import CalendarEmptyState from "./components/empty-state";
+import CalendarAdminPanel from "./components/admin-panel";
 import EditYearModal from "./components/edit-year-modal";
 import TermModal from "./components/term-modal";
 import DeleteTermDialog from "./components/delete-term-dialog";
@@ -40,11 +41,11 @@ function getErrorMessage(error: unknown): string {
 function CalendarSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-28 animate-pulse rounded-2xl bg-slate-100" />
-      <div className="h-10 animate-pulse rounded-full bg-slate-100" />
+      <Skeleton className="h-28 rounded-2xl" />
+      <Skeleton className="h-10 rounded-full" />
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+          <Skeleton key={i} className="h-24 rounded-2xl" />
         ))}
       </div>
     </div>
@@ -167,11 +168,11 @@ const CalendarPage = () => {
   if (loadError && sessions.length === 0) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6">
-        <div role="alert" className="flex items-start gap-3 rounded-2xl bg-rose-50 p-5 text-rose-700">
+        <div role="alert" className="flex items-start gap-3 rounded-2xl bg-rose-50 p-5 text-rose-700 dark:bg-rose-950 dark:text-rose-400">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
           <div>
             <p className="text-sm font-semibold">Couldn't load the school calendar</p>
-            <p className="mt-0.5 text-xs text-rose-600">{loadError}</p>
+            <p className="mt-0.5 text-xs text-rose-600 dark:text-rose-400/80">{loadError}</p>
           </div>
         </div>
       </div>
@@ -187,102 +188,83 @@ const CalendarPage = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-5 sm:px-6">
-      {/* ── Session header ───────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-lg font-bold text-slate-900" title={session.name}>
-                {session.name}
-              </h1>
-              <StatusChip status={session.status} />
+    <div className={`mx-auto w-full px-4 py-5 sm:px-6 ${canManage ? "max-w-5xl" : "max-w-3xl"}`}>
+      <div className={canManage ? "lg:grid lg:grid-cols-[1fr_260px] lg:items-start lg:gap-5" : undefined}>
+        <div className="space-y-5">
+          {/* ── Session header ───────────────────────────────────────────── */}
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-lg font-bold text-foreground" title={session.name}>
+                  {session.name}
+                </h1>
+                <StatusChip status={session.status} />
+              </div>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CalendarRange className="h-3.5 w-3.5 shrink-0" />
+                {formatDisplayRange(session.startDate, session.endDate)}
+              </p>
             </div>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-              <CalendarRange className="h-3.5 w-3.5 shrink-0" />
-              {formatDisplayRange(session.startDate, session.endDate)}
-            </p>
+
+            {sessions.length > 1 && (
+              <div className="mt-3">
+                <SessionSwitcher
+                  sessions={sessions}
+                  selectedId={session.id}
+                  onSelect={(id) => dispatch(selectSession(id))}
+                />
+              </div>
+            )}
+
+            {isParent && children.length > 1 && (
+              <div className="mt-3">
+                <ChildSwitcher children={children} selectedId={selectedChildId} onSelect={setSelectedChildId} />
+              </div>
+            )}
           </div>
 
-          {canManage && (
-            <div className="flex shrink-0 items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setEditYearOpen(true)}>
-                <Pencil className="h-3.5 w-3.5" />
-                Edit year
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                onClick={() => setDeleteYearOpen(true)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </Button>
+          {/* ── Timeline (decorative — term cards below carry the same info) ── */}
+          <div className="mt-2">
+            <YearTimeline session={session} entries={entries} />
+          </div>
+
+          {/* ── Terms ────────────────────────────────────────────────────── */}
+          <div>
+            <div className="mb-3">
+              <span className="text-sm font-semibold text-foreground">Terms</span>
             </div>
-          )}
+
+            <ol className="space-y-3">
+              {sortedTerms.map((term) => (
+                <TermCard
+                  key={term.id}
+                  term={term}
+                  canManage={canManage}
+                  onlyTermLeft={sortedTerms.length === 1}
+                  onEdit={() => setTermModal({ term })}
+                  onDelete={() => setDeleteTermTarget(term)}
+                  onDeleteYearInstead={() => setDeleteYearOpen(true)}
+                  entries={entries.filter((e) => e.termId === term.id)}
+                  entryTypeLabels={entryTypeLabels}
+                  canAddEntry={canAddEntry}
+                  onAddEntry={() => setEntryModal({ kind: "create", term })}
+                  onOpenEntryDetail={(entry) => setDetailEntryId(entry.id)}
+                  onEditEntry={(entry) => setEntryModal({ kind: "edit", entry })}
+                  onDeleteEntry={(entry) => setDeleteEntryTarget(entry)}
+                />
+              ))}
+            </ol>
+          </div>
         </div>
 
-        {sessions.length > 1 && (
-          <div className="mt-3">
-            <SessionSwitcher
-              sessions={sessions}
-              selectedId={session.id}
-              onSelect={(id) => dispatch(selectSession(id))}
-            />
-          </div>
+        {canManage && (
+          <CalendarAdminPanel
+            termCount={sortedTerms.length}
+            onEditYear={() => setEditYearOpen(true)}
+            onAddTerm={() => setTermModal({})}
+            onDeleteYear={() => setDeleteYearOpen(true)}
+          />
         )}
-
-        {isParent && children.length > 1 && (
-          <div className="mt-3">
-            <ChildSwitcher children={children} selectedId={selectedChildId} onSelect={setSelectedChildId} />
-          </div>
-        )}
-      </div>
-
-      {/* ── Timeline (decorative — term cards below carry the same info) ──── */}
-      <YearTimeline session={session} entries={entries} />
-
-      {/* ── Terms ────────────────────────────────────────────────────────── */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-700">Terms</span>
-          {canManage && (
-            <Button
-              type="button"
-              size="sm"
-              disabled={sortedTerms.length >= MAX_TERMS}
-              title={sortedTerms.length >= MAX_TERMS ? `A session can have at most ${MAX_TERMS} terms` : undefined}
-              onClick={() => setTermModal({})}
-              className="bg-[#4F61E8] hover:bg-[#4F61E8]/90"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add term
-            </Button>
-          )}
-        </div>
-
-        <ol className="space-y-3">
-          {sortedTerms.map((term) => (
-            <TermCard
-              key={term.id}
-              term={term}
-              canManage={canManage}
-              onlyTermLeft={sortedTerms.length === 1}
-              onEdit={() => setTermModal({ term })}
-              onDelete={() => setDeleteTermTarget(term)}
-              onDeleteYearInstead={() => setDeleteYearOpen(true)}
-              entries={entries.filter((e) => e.termId === term.id)}
-              entryTypeLabels={entryTypeLabels}
-              canAddEntry={canAddEntry}
-              onAddEntry={() => setEntryModal({ kind: "create", term })}
-              onOpenEntryDetail={(entry) => setDetailEntryId(entry.id)}
-              onEditEntry={(entry) => setEntryModal({ kind: "edit", entry })}
-              onDeleteEntry={(entry) => setDeleteEntryTarget(entry)}
-            />
-          ))}
-        </ol>
       </div>
 
       {/* ── Modals ───────────────────────────────────────────────────────── */}

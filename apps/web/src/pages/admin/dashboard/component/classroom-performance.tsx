@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { performanceService, type ClassroomPerformanceDto } from "@/services/performance";
 import { ChevronDown, ChevronUp, Loader2, Building2 } from "lucide-react";
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@bluethub/ui-kit";
+
+/** Pass rate is a good/bad metric, not just "another column" — it wears
+ * status tokens (dataviz: a series that means good/bad wears status, never
+ * plain text) instead of sitting as flat gray text like the rest. */
+function passRateBadge(passRate: number) {
+  if (passRate >= 75) return <Badge variant="success">{passRate.toFixed(1)}%</Badge>;
+  if (passRate >= 50) return <Badge variant="warning">{passRate.toFixed(1)}%</Badge>;
+  return <Badge variant="destructive">{passRate.toFixed(1)}%</Badge>;
+}
 
 export function ClassroomPerformance() {
   const [classrooms, setClassrooms] = useState<ClassroomPerformanceDto[]>([]);
@@ -26,8 +36,8 @@ export function ClassroomPerformance() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+      <div className="bg-card rounded-2xl border border-border p-5 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -37,39 +47,41 @@ export function ClassroomPerformance() {
   const display = expanded ? classrooms : classrooms.slice(0, 5);
 
   return (
-    <div className="bg-white rounded-md border border-gray-100 p-5">
+    <div className="bg-card rounded-md border border-border p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Building2 className="w-4 h-4 text-slate-500" />
-        <h3 className="text-sm font-semibold text-gray-900">Classroom Performance</h3>
+        <Building2 className="w-4 h-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">Classroom Performance</h3>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="text-slate-400 border-b border-gray-100">
-              <th className="pb-2 font-semibold">Classroom</th>
-              <th className="pb-2 font-semibold">Students</th>
-              <th className="pb-2 font-semibold">Avg Score</th>
-              <th className="pb-2 font-semibold">Pass Rate</th>
-              <th className="pb-2 font-semibold">Attempts</th>
-              <th className="pb-2 font-semibold">Completed</th>
-              <th className="pb-2 font-semibold">Lesson Watches</th>
-            </tr>
-          </thead>
-          <tbody className="text-slate-700">
-            {display.map((c) => (
-              <tr key={c.classroomId} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                <td className="py-2.5 pr-3 font-medium text-slate-800">{c.classroomName}</td>
-                <td className="py-2.5 pr-3">{c.studentCount}</td>
-                <td className="py-2.5 pr-3">{c.averageScorePercent.toFixed(1)}%</td>
-                <td className="py-2.5 pr-3">{c.passRate.toFixed(1)}%</td>
-                <td className="py-2.5 pr-3">{c.totalAttempts}</td>
-                <td className="py-2.5 pr-3">{c.completedAttempts}</td>
-                <td className="py-2.5">{c.lessonWatchCount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="min-w-[560px] overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/60 hover:bg-muted/60">
+                <TableHead className="text-foreground">Classroom</TableHead>
+                <TableHead className="text-foreground">Students</TableHead>
+                <TableHead className="text-foreground">Avg Score</TableHead>
+                <TableHead className="text-foreground">Pass Rate</TableHead>
+                <TableHead className="text-foreground">Attempts</TableHead>
+                <TableHead className="text-foreground">Completed</TableHead>
+                <TableHead className="text-foreground">Lesson Watches</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {display.map((c, i) => (
+                <TableRow key={c.classroomId} className={i % 2 === 1 ? "bg-muted/25" : undefined}>
+                  <TableCell className="font-medium text-foreground">{c.classroomName}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.studentCount}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.averageScorePercent.toFixed(1)}%</TableCell>
+                  <TableCell>{passRateBadge(c.passRate)}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.totalAttempts}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.completedAttempts}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.lessonWatchCount}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {classrooms.length > 5 && (

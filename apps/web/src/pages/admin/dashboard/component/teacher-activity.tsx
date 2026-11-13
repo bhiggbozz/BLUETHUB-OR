@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { performanceService, type TeacherActivityDto } from "@/services/performance";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@bluethub/ui-kit";
 
 // const trustBadge = (level: string) => {
 //   switch (level.toLowerCase()) {
@@ -36,8 +37,8 @@ export function TeacherActivity() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+      <div className="bg-card rounded-2xl border border-border p-5 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -47,60 +48,53 @@ export function TeacherActivity() {
   const displayTeachers = expanded ? teachers : teachers.slice(0, 5);
 
  return (
-    <div className="bg-white rounded-md border border-gray-100 p-5">
+    <div className="bg-card rounded-md border border-border p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Teacher Activity</h3>
-          <p className="text-xs text-gray-400 mt-0.5">Lesson creation and trust scores</p>
+          <h3 className="text-sm font-semibold text-foreground">Teacher Activity</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Lesson creation and trust scores</p>
         </div>
       </div>
 
       <div className="overflow-x-auto -mx-5 px-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <table className="w-full text-left text-xs min-w-[480px]">
-          <thead>
-            <tr className="text-slate-400 border-b border-gray-100">
-              <th className="pb-2.5 font-semibold whitespace-nowrap pr-4 min-w-[90px]">Teacher</th>
-              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Created</th>
-              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Published</th>
-              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Draft</th>
-              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Pending</th>
-              <th className="pb-2.5 font-semibold whitespace-nowrap pr-3 text-center">Rejected</th>
-              {/* <th className="pb-2.5 font-semibold whitespace-nowrap text-center">Trust</th> */}
-            </tr>
-          </thead>
-          <tbody className="text-slate-700">
-            {displayTeachers.map((t) => (
-              <tr
-                key={t.teacherId}
-                className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
-              >
-                <td className="py-3 pr-4 font-medium text-slate-800 whitespace-nowrap">
-                  {t.teacherName}
-                </td>
-                <td className="py-3 pr-3 text-center">{t.totalLessonsCreated}</td>
-                <td className="py-3 pr-3 text-center text-green-600 font-medium">
-                  {t.publishedLessons}
-                </td>
-                <td className="py-3 pr-3 text-center">{t.draftLessons}</td>
-                <td className="py-3 pr-3 text-center text-amber-600">
-                  {t.pendingApprovalLessons}
-                </td>
-                <td className="py-3 pr-3 text-center">
-                  {t.rejectedLessons > 0 ? (
-                    <span className="text-red-500 font-medium">{t.rejectedLessons}</span>
-                  ) : (
-                    <span className="text-slate-400">{t.rejectedLessons}</span>
-                  )}
-                </td>
-                {/* <td className="py-3 text-center">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${trustBadge(t.trustLevel)}`}>
-                    {t.trustScore.toFixed(0)}% · {t.trustLevel}
-                  </span>
-                </td> */}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="min-w-[480px] overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/60 hover:bg-muted/60">
+                <TableHead className="min-w-[90px] text-foreground">Teacher</TableHead>
+                <TableHead className="text-center text-foreground">Created</TableHead>
+                <TableHead className="text-center text-foreground">Published</TableHead>
+                <TableHead className="text-center text-foreground">Draft</TableHead>
+                <TableHead className="text-center text-foreground">Pending</TableHead>
+                <TableHead className="text-center text-foreground">Rejected</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {displayTeachers.map((t, i) => (
+                <TableRow key={t.teacherId} className={i % 2 === 1 ? "bg-muted/25" : undefined}>
+                  <TableCell className="font-medium text-foreground whitespace-nowrap">
+                    {t.teacherName}
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">{t.totalLessonsCreated}</TableCell>
+                  <TableCell className="text-center font-medium text-emerald-600 dark:text-emerald-400">
+                    {t.publishedLessons}
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">{t.draftLessons}</TableCell>
+                  <TableCell className="text-center text-amber-600 dark:text-amber-400">
+                    {t.pendingApprovalLessons}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {t.rejectedLessons > 0 ? (
+                      <span className="text-rose-500 dark:text-rose-400 font-medium">{t.rejectedLessons}</span>
+                    ) : (
+                      <span className="text-muted-foreground">{t.rejectedLessons}</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {teachers.length > 5 && (

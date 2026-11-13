@@ -3,11 +3,11 @@ import { performanceService, type AdminDashboardOverviewDto } from "@/services/p
 import { Users, GraduationCap, BookOpen, School, Video, Loader2 } from "lucide-react";
 
 const statConfig = [
-  { key: "totalStudents", label: "Total Students", icon: GraduationCap, bg: "bg-blue-50", iconColor: "text-blue-600" },
-  { key: "totalTeachers", label: "Total Teachers", icon: Users, bg: "bg-chestnut/10", iconColor: "text-chestnut" },
-  { key: "totalClassrooms", label: "Active Classes", icon: School, bg: "bg-emerald-50", iconColor: "text-emerald-600" },
-  { key: "totalSubjects", label: "Subjects", icon: BookOpen, bg: "bg-violet-50", iconColor: "text-violet-600" },
-  { key: "totalLessonsPublished", label: "Published Lessons", icon: Video, bg: "bg-amber-50", iconColor: "text-amber-600" },
+  { key: "totalStudents", label: "Total Students", icon: GraduationCap },
+  { key: "totalTeachers", label: "Total Teachers", icon: Users },
+  { key: "totalClassrooms", label: "Active Classes", icon: School },
+  { key: "totalSubjects", label: "Subjects", icon: BookOpen },
+  { key: "totalLessonsPublished", label: "Published Lessons", icon: Video },
 ];
 
 const SchoolProgress = () => {
@@ -34,14 +34,14 @@ const SchoolProgress = () => {
   if (loading) {
     return (
       <section className="flex items-center justify-center py-6">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </section>
     );
   }
 
   if (!overview) {
     return (
-      <section className="flex items-center justify-center py-6 text-xs text-slate-400">
+      <section className="flex items-center justify-center py-6 text-xs text-muted-foreground">
         Could not load dashboard data.
       </section>
     );
@@ -56,16 +56,16 @@ const SchoolProgress = () => {
           return (
             <div
               key={stat.key}
-              className="bg-white rounded-md p-3 shadow-sm border border-gray-100 flex flex-col gap-2"
+              className="bg-card rounded-md p-3 shadow-sm border border-border flex flex-col gap-2 transition-shadow hover:shadow-md"
             >
-              <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                <Icon className={stat.iconColor} size={16} />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-chestnut to-forestBlue-light shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35),0_2px_6px_-2px_rgba(41,35,130,0.45)] flex items-center justify-center">
+                <Icon className="text-white" size={16} />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900 leading-none">
+                <p className="text-xl font-bold text-foreground leading-none">
                   {typeof value === "number" ? value.toLocaleString() : value}
                 </p>
-                <p className="text-[11px] text-gray-500 mt-0.5">{stat.label}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
               </div>
             </div>
           );

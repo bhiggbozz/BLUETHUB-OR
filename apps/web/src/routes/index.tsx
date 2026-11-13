@@ -31,7 +31,6 @@ import CreateParentPage from '@/pages/admin/registration/parent/create-parent';
 import SearchParentsPage from '@/pages/admin/registration/parent/search-parents';
 import AttachStudentPage from '@/pages/admin/registration/parent/attach-student';
 import Student from '@/pages/admin/registration/student/student';
-import NewStudent from '@/pages/admin/registration/student/new-student';
 import Enrollment from '@/pages/admin/registration/student/enrollment';
 import EditStudent from '@/pages/admin/registration/student/edit-student';
 // import CourseLayout from '@/pages/admin/registration/course/layout';
@@ -107,7 +106,6 @@ import AdminSettings from '@/pages/admin/settings';
 import AdminRole from '@/pages/admin/registration/admin-role-management/admin-role';
 import ViewAllSubject from '@/pages/admin/registration/course/class/view-all-subject';
 import RegisterTeacherRole from '@/pages/admin/registration/teacher/assign-role';
-import ViewStudent from '@/pages/admin/registration/student/view-student';
 import UnlockUser from '@/pages/admin/registration/student/unlock-user';
 import RegisterNewSubject from '@/pages/admin/registration/course/class/register-new-subject';
 import RegisterNewClass from '@/pages/admin/registration/course/class/register-new-class';
@@ -324,7 +322,7 @@ const router = createBrowserRouter([
                             },
                             {
                                 path: 'new',
-                                element: <NewStudent />,
+                                element: <Navigate to="/admin/registration/student/enrollment" replace />,
                             },
                             {
                                 path: "enrollment",
@@ -336,7 +334,7 @@ const router = createBrowserRouter([
                             },
                             {
                                 path: "all",
-                                element: <ViewStudent />,
+                                element: <Navigate to="/admin/registration/student" replace />,
                             },
                             {
                                 path: "edit",

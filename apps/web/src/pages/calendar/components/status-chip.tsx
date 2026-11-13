@@ -17,7 +17,7 @@ const STYLES: Record<CalendarSessionStatus, { label: string; className: string; 
   },
   Past: {
     label: "Past",
-    className: "bg-slate-100 text-slate-500 border border-slate-200",
+    className: "bg-muted text-muted-foreground border border-border",
     icon: <CheckCircle2 className="h-3 w-3 shrink-0" />,
   },
 };

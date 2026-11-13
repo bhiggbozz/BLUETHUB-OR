@@ -17,7 +17,7 @@ export function ChildSwitcher({ children, selectedId, onSelect }: ChildSwitcherP
         type="button"
         onClick={() => onSelect(null)}
         className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-          selectedId === null ? "bg-[#4F61E8] text-white" : "border border-slate-200 text-slate-600 hover:border-[#4F61E8]/40"
+          selectedId === null ? "bg-forestBlue-light text-white" : "border border-border text-muted-foreground hover:border-forestBlue-light/40"
         }`}
       >
         All children
@@ -30,7 +30,7 @@ export function ChildSwitcher({ children, selectedId, onSelect }: ChildSwitcherP
             type="button"
             onClick={() => onSelect(child.studentId)}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-              active ? "bg-[#4F61E8] text-white" : "border border-slate-200 text-slate-600 hover:border-[#4F61E8]/40"
+              active ? "bg-forestBlue-light text-white" : "border border-border text-muted-foreground hover:border-forestBlue-light/40"
             }`}
           >
             <GraduationCap className="h-3 w-3" />

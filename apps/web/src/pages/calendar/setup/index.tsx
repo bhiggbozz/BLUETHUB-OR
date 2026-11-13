@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AxiosError } from "axios";
 import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { Button } from "@bluethub/ui-kit";
+import { Button, Stepper, StepperIndicator, StepperItem, StepperNav, StepperSeparator } from "@bluethub/ui-kit";
 import calendarService, {
   type CalendarTemplateDto,
   type CalendarTemplateKey,
@@ -165,37 +165,28 @@ const CalendarSetupWizard = () => {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 px-4 py-5 sm:px-6">
       {/* ── Step header ──────────────────────────────────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between">
+      {/* Display-only — no StepperTrigger, so clicking a step can't skip the
+          wizard's own validation gating (goNext/goBack are the only way to
+          move between steps, exactly as before). */}
+      <Stepper value={step}>
+        <StepperNav>
           {STEPS.map((label, idx) => {
             const num = idx + 1;
-            const state = num < step ? "done" : num === step ? "active" : "pending";
             return (
-              <div key={label} className="flex flex-1 items-center">
+              <StepperItem key={label} step={num} completed={num < step}>
                 <div className="flex flex-col items-center gap-1">
-                  <span
-                    className={[
-                      "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
-                      state === "done" ? "bg-[#4F61E8] text-white" : state === "active" ? "border-2 border-[#4F61E8] text-[#4F61E8]" : "border border-slate-300 text-slate-400",
-                    ].join(" ")}
-                  >
-                    {state === "done" ? <Check className="h-3.5 w-3.5" /> : num}
-                  </span>
-                  <span className={`hidden text-[10px] font-medium sm:block ${state === "pending" ? "text-slate-400" : "text-slate-600"}`}>
-                    {label}
-                  </span>
+                  <StepperIndicator>{num < step ? <Check className="h-3.5 w-3.5" /> : num}</StepperIndicator>
+                  <span className="hidden text-[10px] font-medium text-muted-foreground sm:block">{label}</span>
                 </div>
-                {idx < STEPS.length - 1 && (
-                  <div className={`mx-1.5 h-0.5 flex-1 ${num < step ? "bg-[#4F61E8]" : "bg-slate-200"}`} />
-                )}
-              </div>
+                {idx < STEPS.length - 1 && <StepperSeparator />}
+              </StepperItem>
             );
           })}
-        </div>
-      </div>
+        </StepperNav>
+      </Stepper>
 
       {/* ── Step content ─────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
         {step === 1 && (
           <StepTemplate
             templates={templates}
@@ -239,12 +230,12 @@ const CalendarSetupWizard = () => {
         </Button>
 
         {step < STEPS.length ? (
-          <Button type="button" disabled={nextDisabled} onClick={goNext} className="bg-[#4F61E8] hover:bg-[#4F61E8]/90">
+          <Button type="button" disabled={nextDisabled} onClick={goNext} className="bg-forestBlue-light hover:bg-forestBlue-light/90">
             Next
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         ) : (
-          <Button type="button" disabled={submitting} onClick={handleCreate} className="bg-[#4F61E8] hover:bg-[#4F61E8]/90">
+          <Button type="button" disabled={submitting} onClick={handleCreate} className="bg-forestBlue-light hover:bg-forestBlue-light/90">
             {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {submitting ? "Creating…" : "Create calendar"}
           </Button>

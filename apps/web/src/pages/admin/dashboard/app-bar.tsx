@@ -26,7 +26,7 @@ const AdminAppbar = () => {
 
   return (
     <>
-      <div className="hidden w-full mx-auto border-0 bg-white rounded-lg md:flex h-[64px] justify-between items-center py-3 px-5">
+      <div className="hidden w-full mx-auto border-0 bg-card rounded-lg md:flex h-[64px] justify-between items-center py-3 px-5">
         <section>
           <h2 className="font-poppins font-medium text-[13px] leading-tight text-chestnut ">
             Hello, <span className="font-semibold capitalize ">{user?.firstName},</span> Welcome Back!
@@ -43,8 +43,8 @@ const AdminAppbar = () => {
             <img src={schoolProfile?.logoUrl} alt="" className=" bg-white border-2 border-chestnut  rounded-full  w-full h-full cursor-pointer" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-gray-400 leading-none mb-0.5">{greeting()}</p>
-            <h2 className="text-sm font-semibold text-gray-900 truncate">
+            <p className="text-xs text-muted-foreground leading-none mb-0.5">{greeting()}</p>
+            <h2 className="text-sm font-semibold text-foreground truncate">
               {user?.firstName} {user?.lastName}
             </h2>
             <p className="text-[11px] text-chestnut font-medium hidden sm:block">{formattedDate}</p>
@@ -54,15 +54,15 @@ const AdminAppbar = () => {
         {/* Right: school info + actions */}
         <div className="flex items-center gap-3 shrink-0">
           {/* Date (mobile) */}
-          <p className="text-[10px] text-gray-400 sm:hidden leading-tight text-right">
+          <p className="text-[10px] text-muted-foreground sm:hidden leading-tight text-right">
             {today.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </p>
 
           {/* School name */}
           {schoolProfile?.schoolName && (
             <div className="hidden md:flex flex-col items-end">
-              <span className="text-xs font-semibold text-gray-800 leading-tight">{schoolProfile.schoolName}</span>
-              <span className="text-[10px] text-gray-400">{user?.roleName}</span>
+              <span className="text-xs font-semibold text-foreground leading-tight">{schoolProfile.schoolName}</span>
+              <span className="text-[10px] text-muted-foreground">{user?.roleName}</span>
             </div>
           )}
 
@@ -82,10 +82,10 @@ const AdminAppbar = () => {
           )}
 
           {/* Action icons */}
-          <button className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
+          <button className="w-8 h-8 rounded-full bg-muted hover:bg-accent flex items-center justify-center text-muted-foreground transition-colors">
             <Bell className="w-4 h-4" />
           </button>
-          <button className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 hidden sm:flex items-center justify-center text-gray-500 transition-colors">
+          <button className="w-8 h-8 rounded-full bg-muted hover:bg-accent hidden sm:flex items-center justify-center text-muted-foreground transition-colors">
             <Settings className="w-4 h-4" />
           </button>
         </div>

@@ -74,16 +74,16 @@ export function CalendarTermDashboardCard() {
     <button
       type="button"
       onClick={() => navigate("/calendar")}
-      className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-[#4F61E8]/40"
+      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-forestBlue-light/40"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4F61E8]/10">
-        <CalendarDays className="h-5 w-5 text-[#4F61E8]" />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forestBlue-light/10">
+        <CalendarDays className="h-5 w-5 text-forestBlue-light" />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-800">{term.name}</p>
-        <p className="text-xs text-slate-500">{detail}</p>
+        <p className="truncate text-sm font-semibold text-foreground">{term.name}</p>
+        <p className="text-xs text-muted-foreground">{detail}</p>
         {nextEntry && (
-          <p className="mt-0.5 truncate text-xs text-[#4F61E8]">
+          <p className="mt-0.5 truncate text-xs text-forestBlue-light">
             {nextEntry.title} {nextEntry.status === "Current" ? "is on now" : `starts in ${daysUntil(today, nextEntry.startDate)} day${daysUntil(today, nextEntry.startDate) !== 1 ? "s" : ""}`}
           </p>
         )}

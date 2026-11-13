@@ -48,14 +48,14 @@ export function TermCard({
   const progress = isCurrent ? currentWeekOf(term, todayISO()) : null;
 
   return (
-    <li className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <li className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-800" title={term.name}>
+          <p className="truncate text-sm font-semibold text-foreground" title={term.name}>
             {term.name}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">{formatDisplayRange(term.startDate, term.endDate)}</p>
-          <p className="mt-0.5 text-xs text-slate-400">{weeks} week{weeks !== 1 ? "s" : ""}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{formatDisplayRange(term.startDate, term.endDate)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{weeks} week{weeks !== 1 ? "s" : ""}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
@@ -67,7 +67,7 @@ export function TermCard({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-slate-400 hover:text-slate-700"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
                   aria-label={`Term actions for ${term.name}`}
                 >
                   <EllipsisVertical className="h-4 w-4" />
@@ -97,11 +97,11 @@ export function TermCard({
 
       {isCurrent && progress && (
         <div className="mt-3">
-          <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-slate-500">
+          <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
             <span>Week {progress.week} of {progress.total}</span>
             <span>{Math.round((progress.week / progress.total) * 100)}%</span>
           </div>
-          <Progress value={(progress.week / progress.total) * 100} className="h-1.5 bg-slate-100" />
+          <Progress value={(progress.week / progress.total) * 100} className="h-1.5 bg-muted" />
         </div>
       )}
 

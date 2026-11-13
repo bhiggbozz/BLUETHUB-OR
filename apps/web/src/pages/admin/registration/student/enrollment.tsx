@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EllipsisVertical, Camera, Plus, CircleAlert, CalendarIcon, Loader2, Info, LayoutGrid, Menu, ArrowLeft } from "lucide-react";
 import { format } from "date-fns"
-import { Calendar, Input, Label, Popover, PopoverContent, PopoverTrigger } from "@bluethub/ui-kit";
+import { Button, Calendar, Input, Label, Popover, PopoverContent, PopoverTrigger } from "@bluethub/ui-kit";
 import { cn } from "@/lib/utils";
 import { type IcreateUserRequest } from "@/services/auth";
 
@@ -131,14 +131,14 @@ const Enrollment = () => {
     return (
         <>
             <div className="lg:p-3 font-poppins">
-                <div className="backdrop-blur-sm lg:rounded-2xl border border-white/70  overflow-hidden">
+                <div className="backdrop-blur-sm lg:rounded-2xl border border-border/40 overflow-hidden">
                     <div
                         className="flex items-center justify-between px-5 h-12 sticky top-0 z-30 bg-chestnut">
                         <div className="flex items-center gap-2.5">
                             <LayoutGrid className="w-5 h-5 text-white lg:inline hidden" />
                             <Menu className="lg:hidden text-white" onClick={openMobileNav} />
                             <ArrowLeft  className="lg:hidden text-white"  onClick={() => navigate(-1)}/>
-                            <span className="text-white font-semibold text-sm">Register Subject</span>
+                            <span className="text-white font-semibold text-sm">Register Student</span>
                         </div>
                         <EllipsisVertical className="text-white" />
                     </div>
@@ -146,7 +146,7 @@ const Enrollment = () => {
                     {successfully ? (
                         <StudentRegisteredSuccessfully firstName={firstName} lastName={lastName} setSuccessfully={setSuccessfully} onReset={onReset} />
                     ) : (
-                        <div className="bg-white/35 backdrop-blur-sm px-8 pb-8 pt-6">
+                        <div className="bg-background/70 backdrop-blur-sm px-8 pb-8 pt-6">
 
                             {/* Step badge */}
                             <div className="inline-flex items-center gap-2 bg-chestnut/8 rounded-full pl-1.5 pr-3 py-1 mb-5">
@@ -177,7 +177,7 @@ const Enrollment = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-chestnut mb-0.5">Profile Picture</h3>
-                                    <p className="text-xs text-gray-400">JPG or PNG · max 2MB · passport-style photo</p>
+                                    <p className="text-xs text-muted-foreground">JPG or PNG · max 2MB · passport-style photo</p>
                                     <span className="mt-1.5 inline-block text-[10px] font-bold text-chestnut bg-chestnut/8 border border-chestnut/20 rounded-full px-3 py-0.5 tracking-wide uppercase">
                                         Click to upload
                                     </span>
@@ -196,9 +196,9 @@ const Enrollment = () => {
                                 {errorMsg && (
                                     <div
                                         role="alert"
-                                        className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3 text-sm mb-5"
+                                        className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3 text-sm mb-5 dark:bg-red-950 dark:border-red-900 dark:text-red-400"
                                     >
-                                        <Info className="w-4 h-4 mt-0.5 shrink-0 text-red-50" />
+                                        <Info className="w-4 h-4 mt-0.5 shrink-0 text-red-500 dark:text-red-400" />
                                         <span>{errorMsg}</span>
                                     </div>
                                 )}
@@ -206,34 +206,33 @@ const Enrollment = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label className="text-chestnut text-sm font-semibold">First Name</Label>
-                                        <Input {...register("firstName")} placeholder="student name " className="relative ring-2 ring-chestnut/40 w-full font-medium border-0 px-4 py-2 text-base rounded-md shadow-sm placeholder:text-chestnut text-chestnut placeholder:font-normal outline-none" />
+                                        <Input {...register("firstName")} placeholder="student name" />
                                         {errors.firstName && (
-                                            <p className="text-red-500 text-xs mt-1 pl-2">{errors.firstName.message}</p>
+                                            <p className="text-red-500 dark:text-red-400 text-xs mt-1 pl-2">{errors.firstName.message}</p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-chestnut text-sm font-semibold">Last  Name</Label>
-                                        <Input {...register("lastName")} placeholder="student last name " className="relative ring-2 ring-chestnut/40 w-full font-medium border-0 px-4 py-2 text-base rounded-md shadow-sm placeholder:text-chestnut text-chestnut placeholder:font-normal outline-none" />
+                                        <Input {...register("lastName")} placeholder="student last name" />
                                         {errors.lastName && (
-                                            <p className="text-red-500 text-xs mt-1 pl-2">{errors.lastName.message}</p>
+                                            <p className="text-red-500 dark:text-red-400 text-xs mt-1 pl-2">{errors.lastName.message}</p>
                                         )}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-chestnut text-sm font-semibold">Middle Name </Label>
-                                    <Input {...register("middleName")} placeholder="student middle name " className="relative ring-2 ring-chestnut/40 w-full font-medium border-0 px-4 py-2 text-base rounded-md shadow-sm placeholder:text-chestnut text-chestnut placeholder:font-normal outline-none" />
+                                    <Input {...register("middleName")} placeholder="student middle name" />
                                     {errors.middleName && (
-                                        <p className="text-red-500 text-xs mt-1 pl-2">{errors.middleName.message}</p>
+                                        <p className="text-red-500 dark:text-red-400 text-xs mt-1 pl-2">{errors.middleName.message}</p>
                                     )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
                                     <div className="space-y-2">
                                         <Label className="text-chestnut text-sm font-semibold">Username</Label>
-                                        <Input readOnly
-                                            placeholder="Auto-generated" {...register("username")} className="relative ring-2 ring-chestnut/40 w-full font-medium border-0 px-4 py-2 text-base rounded-md shadow-sm placeholder:text-chestnut text-chestnut placeholder:font-normal outline-none" />
+                                        <Input readOnly placeholder="Auto-generated" {...register("username")} />
                                         {errors.username && (
-                                            <p className="text-red-500 text-xs mt-1 pl-2">{errors.username.message}</p>
+                                            <p className="text-red-500 dark:text-red-400 text-xs mt-1 pl-2">{errors.username.message}</p>
                                         )}
                                     </div>
 
@@ -249,18 +248,19 @@ const Enrollment = () => {
 
                                                 <Popover>
                                                     <PopoverTrigger asChild>
-                                                        <div
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
                                                             className={cn(
-                                                                "w-full ring-2 ring-chestnut/40 bg-transparent rounded-md px-3 py-2 text-sm font-medium flex items-center gap-2 outline-none hover:ring-chestnut/50 transition",
-                                                                field.value ? "text-chestnut" : "text-chestnut/30"
+                                                                "w-full justify-start gap-2 font-normal",
+                                                                !field.value && "text-muted-foreground"
                                                             )}
                                                         >
-                                                            <CalendarIcon className="w-4 h-4 text-chestnut/50 shrink-0" />
+                                                            <CalendarIcon className="w-4 h-4 shrink-0" />
                                                             {field.value
                                                                 ? format(new Date(field.value), "dd MMM yyyy")  // ← wrap in new Date() to be safe
                                                                 : "Select date of birth"}
-
-                                                        </div>
+                                                        </Button>
                                                     </PopoverTrigger>
 
                                                     <PopoverContent className="w-auto p-0" align="start">
@@ -276,7 +276,7 @@ const Enrollment = () => {
                                                     </PopoverContent>
                                                 </Popover>
                                                 {errors.dateOfBirth && (
-                                                    <p className="text-red-500 text-xs mt-1 pl-2">{errors.dateOfBirth.message}</p>
+                                                    <p className="text-red-500 dark:text-red-400 text-xs mt-1 pl-2">{errors.dateOfBirth.message}</p>
                                                 )}
                                             </div>
                                         )}
@@ -285,18 +285,18 @@ const Enrollment = () => {
 
                                 <div className="space-y-2">
                                     <Label className="text-chestnut text-sm font-semibold">Guardian  Name (optional)</Label>
-                                    <Input {...register("guardianName")} placeholder="student Guardian  name" className="relative ring-2 ring-chestnut/40 w-full font-medium border-0 px-4 py-2 text-base rounded-md shadow-sm placeholder:text-chestnut text-chestnut placeholder:font-normal outline-none" />
+                                    <Input {...register("guardianName")} placeholder="student Guardian name" />
                                     {errors.guardianName && (
-                                        <p className="text-red-500 text-xs mt-1 pl-2">{errors.guardianName.message}</p>
+                                        <p className="text-red-500 dark:text-red-400 text-xs mt-1 pl-2">{errors.guardianName.message}</p>
                                     )}
                                 </div>
 
                                 <div className="mt-7 flex items-center justify-center flex-col">
                                     {/* Register button */}
-                                    <button
+                                    <Button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex items-center justify-center w-full md:w-auto gap-2 text-white font-semibold text-sm px-8 py-3 rounded-md transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed mb-3 bg-chestnut"
+                                        className="w-full md:w-auto gap-2 px-8 py-3 mb-3"
                                     >
                                         {loading ? (
                                             <>
@@ -309,12 +309,12 @@ const Enrollment = () => {
                                                 <span>Continue</span>
                                             </>
                                         )}
-                                    </button>
+                                    </Button>
 
                                     {/* Hint */}
                                     <div className="flex items-center gap-1.5">
-                                        <CircleAlert className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                        <span className="text-[11px] text-gray-400">
+                                        <CircleAlert className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                        <span className="text-[11px] text-muted-foreground">
                                             You can add multiple student one after another
                                         </span>
                                     </div>
@@ -407,7 +407,7 @@ const AnimatedSuccessIcon = () => {
 const StudentRegisteredSuccessfully = ({ onReset, firstName, lastName }: {firstName: string, lastName: string, setSuccessfully: (boolean: false) => void; onReset: () => void }) => {
     const navigate = useNavigate()
     return (
-        <div className="min-h-[80vh] bg-white/35 backdrop-blur-sm flex items-center justify-center px-4">
+        <div className="min-h-[80vh] bg-background/70 backdrop-blur-sm flex items-center justify-center px-4">
             <div className="w-full max-w-md text-center space-y-6">
 
                 {/* 🔥 Animated Success Icon */}
@@ -415,17 +415,17 @@ const StudentRegisteredSuccessfully = ({ onReset, firstName, lastName }: {firstN
 
                 {/* TEXT */}
                 <div className="space-y-2">
-                    <h3 className="text-gray-900 font-semibold text-xl">
+                    <h3 className="text-foreground font-semibold text-xl">
                         Student registered successfully!
                     </h3>
 
-                    <p className="text-gray-500 text-sm leading-relaxed">
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                         {firstName} {lastName} has been added to{" "}
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-foreground">
                             JSS 1A Section
                         </span>{" "}
                         for the{" "}
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-foreground">
                             2026 / 2027
                         </span>{" "}
                         session.
@@ -434,16 +434,14 @@ const StudentRegisteredSuccessfully = ({ onReset, firstName, lastName }: {firstN
 
                 {/* ACTIONS */}
                 <div className="space-y-3 pt-2">
-                    <button onClick={() => {
-                        onReset();
-                    }} className="w-full flex items-center justify-center gap-2.5 border border-gray-200 text-gray-600 font-medium text-sm py-3 rounded-xl hover:bg-gray-50 transition">
+                    <Button variant="outline" onClick={() => { onReset(); }} className="w-full gap-2.5 py-3 rounded-xl">
                         <Plus className="w-4 h-4" />
                         Add Another Student
-                    </button>
+                    </Button>
 
-                    <button onClick={() => navigate("/admin/registration/student")} className="w-full py-3 rounded-xl bg-chestnut text-white font-medium text-sm hover:opacity-90 transition">
+                    <Button onClick={() => navigate("/admin/registration/student")} className="w-full py-3 rounded-xl">
                         View All Students
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Headphones,
   Loader2,
+  LogOut,
   Mic,
   MicOff,
   RefreshCw,
@@ -209,6 +210,12 @@ export default function StudentLiveClassRoom() {
     setMicEnabledUi(next && audio.canPublishMic);
   };
 
+  // Just navigating away is enough — `useLiveBoardHub`/`useLiveClassAudio`
+  // both disconnect on unmount already; no separate "leave" endpoint exists
+  // (the class keeps running for everyone else), and rejoining later just
+  // goes through the normal resolve/join flow again.
+  const handleLeave = () => navigate("/student");
+
   // ── Resolving / none / priming / joining / error states ──────────────────
 
   if (status === "resolving") {
@@ -336,6 +343,9 @@ export default function StudentLiveClassRoom() {
           </span>
         )}
         <CountdownBanner endsAt={join.endsAt} serverOffsetMs={serverOffsetMs} />
+        <Button variant="outline" size="sm" onClick={handleLeave} className="gap-1.5 text-slate-600">
+          <LogOut className="size-3.5" /> Leave
+        </Button>
       </div>
 
       <div className="flex items-center gap-2 border-b bg-white px-4 py-2">
