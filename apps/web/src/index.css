@@ -37,6 +37,8 @@
   --font-Shrikhand: "Shrikhand", "cursive";
   --color-student-chestnut: #4F61E8;
   --font-space-grotesk: "Space Grotesk", sans-serif;
+  /* Admin shell background — was a raw bg-[#9C94AB40] in admin-layout.tsx. */
+  --color-admin-shell: #9c94ab40;
 }
 
 :root {
@@ -47,7 +49,10 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  /* Brand (chestnut #292382) instead of shadcn's default near-black, so every
+     packages/ui primitive (Button, Badge, active Tabs/Pagination, etc.) is
+     on-brand with no per-component override. */
+  --primary: #292382;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -58,7 +63,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: rgba(41, 35, 130, 0.5);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -66,7 +71,7 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: #292382;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -115,15 +120,24 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.dark {
+/* Was `.dark { }` — nothing in the app ever set a `dark` class, so these
+   overrides were unreachable dead code. `@custom-variant dark` above (line
+   15) matches `[data-theme=dark]`, so the override selector now matches
+   that instead — this activates dark mode for the first time, with zero
+   behavior change for anyone until something actually sets the attribute
+   (see `component/shared/app-theme.tsx`). */
+[data-theme="dark"] {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  /* Chestnut (#292382) is too dark to read as text/icons on a dark
+     surface — use the lighter brand tint instead, while filled primary
+     buttons/badges keep white text so they stay on-brand and readable. */
+  --primary: #7b74e0;
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -133,7 +147,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: #7b74e0;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -141,12 +155,18 @@
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: #7b74e0;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Same brand-tint swap for direct `chestnut`/`lowchest` utility usage
+     (e.g. `bg-chestnut/10`, `text-chestnut`) across admin pages, so the
+     mechanical hex→token sweep stays correct in dark mode without each
+     call site needing its own `dark:` override. */
+  --color-chestnut: #7b74e0;
+  --color-lowchest: rgba(123, 116, 224, 0.5);
 }
 
 @theme {

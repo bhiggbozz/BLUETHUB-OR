@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
+  DatePicker,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@bluethub/ui-kit";
+import {
   AlertTriangle,
   BarChart3,
   BookOpen,
@@ -45,7 +59,7 @@ const TYPE_OPTIONS = [
 ] as const;
 
 const inputCls =
-  "w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white text-[#12122A] font-medium focus:outline-none focus:ring-2 focus:ring-chestnut/30 focus:border-transparent disabled:opacity-50";
+  "w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-card text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-chestnut/30 focus:border-transparent disabled:opacity-50";
 
 interface Option {
   id: string;
@@ -96,7 +110,7 @@ function aggregateItems(
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block min-w-0">
-      <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{label}</span>
+      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
       <div className="mt-1">{children}</div>
     </label>
   );
@@ -116,11 +130,11 @@ function Kpi({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
-      <div className="flex items-center gap-1.5 text-slate-400">{icon}</div>
-      <p className={`mt-2 text-xl sm:text-2xl font-bold leading-none ${valueClass ?? "text-[#12122A]"}`}>{value}</p>
-      <p className="mt-1 text-[11px] font-medium text-slate-500">{label}</p>
-      {hint && <p className="mt-0.5 text-[10px] text-slate-400">{hint}</p>}
+    <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+      <div className="flex items-center gap-1.5 text-muted-foreground">{icon}</div>
+      <p className={`mt-2 text-xl sm:text-2xl font-bold leading-none ${valueClass ?? "text-foreground"}`}>{value}</p>
+      <p className="mt-1 text-[11px] font-medium text-muted-foreground">{label}</p>
+      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -130,16 +144,16 @@ function PresentAbsentBar({ present, absent }: { present: number; absent: number
   if (total <= 0) return null;
   const pPct = round1((present / total) * 100);
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-800">In school vs not in school</h3>
-        <span className="text-[11px] text-slate-400">{total} students accounted for</span>
+        <h3 className="text-sm font-semibold text-foreground">In school vs not in school</h3>
+        <span className="text-[11px] text-muted-foreground">{total} students accounted for</span>
       </div>
-      <div className="mt-3 flex h-4 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-3 flex h-4 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pPct}%` }} />
         <div className="h-full bg-rose-400 transition-all" style={{ width: `${100 - pPct}%` }} />
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500">
+      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
           {present} present ({pPct}%)
@@ -163,7 +177,7 @@ function RateBarList({
   emptyText: string;
 }) {
   if (items.length === 0) {
-    return <p className="py-10 text-center text-sm text-slate-400">{emptyText}</p>;
+    return <p className="py-10 text-center text-sm text-muted-foreground">{emptyText}</p>;
   }
   return (
     <div className="space-y-3">
@@ -172,21 +186,21 @@ function RateBarList({
         return (
           <div key={it.id} className="flex items-center gap-2 sm:gap-3">
             <div className="w-24 sm:w-44 shrink-0 min-w-0">
-              <p className="truncate text-xs font-semibold text-slate-700" title={it.name}>
+              <p className="truncate text-xs font-semibold text-foreground" title={it.name}>
                 {it.name}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-muted-foreground">
                 {it.sessions} session{it.sessions === 1 ? "" : "s"} · {it.present}/{it.expected} present
               </p>
             </div>
-            <div className="relative h-5 flex-1 overflow-hidden rounded-md bg-slate-100">
+            <div className="relative h-5 flex-1 overflow-hidden rounded-md bg-muted">
               <div
                 className="absolute inset-y-0 left-0 rounded-md transition-all"
                 style={{ width: `${rate}%`, backgroundColor: fill }}
               />
             </div>
             <div className="w-11 shrink-0 text-right">
-              <p className="text-xs font-bold text-slate-800">{it.attendanceRate}%</p>
+              <p className="text-xs font-bold text-foreground">{it.attendanceRate}%</p>
               <p className="text-[10px] font-medium text-rose-500">{it.absent} absent</p>
             </div>
           </div>
@@ -208,14 +222,14 @@ function TrendBars({ buckets }: { buckets: AttendanceAnalyticsBucket[] }) {
         const h = Math.max(3, Math.min(100, r.rate));
         return (
           <div key={r.label} className="flex h-full min-w-0 flex-1 flex-col items-center">
-            <span className="text-[10px] font-bold text-slate-700">{r.rate}%</span>
+            <span className="text-[10px] font-bold text-foreground">{r.rate}%</span>
             <div className="flex min-h-0 w-full flex-1 items-end justify-center">
               <div
-                className="w-full max-w-10 rounded-t-md bg-gradient-to-t from-[#4255db] to-[#546cdb]"
+                className="w-full max-w-10 rounded-t-md bg-gradient-to-t from-forestBlue-light to-forestBlue-light/70"
                 style={{ height: `${h}%` }}
               />
             </div>
-            <span className="mt-1 w-full truncate text-center text-[9px] text-slate-500" title={r.label}>
+            <span className="mt-1 w-full truncate text-center text-[9px] text-muted-foreground" title={r.label}>
               {r.label}
             </span>
             {r.absent > 0 && (
@@ -233,42 +247,44 @@ function TrendBars({ buckets }: { buckets: AttendanceAnalyticsBucket[] }) {
 function MonthlyTable({ buckets }: { buckets: AttendanceAnalyticsBucket[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] text-sm">
-        <thead>
-          <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-400">
-            <th className="py-2 pr-3 font-semibold">Period</th>
-            <th className="py-2 pr-3 text-right font-semibold">Sessions</th>
-            <th className="py-2 pr-3 text-right font-semibold">Expected</th>
-            <th className="py-2 pr-3 text-right font-semibold">Present</th>
-            <th className="py-2 pr-3 text-right font-semibold">Absent</th>
-            <th className="py-2 text-right font-semibold">Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          {buckets.map((b) => (
-            <tr key={b.label} className="border-b border-slate-50">
-              <td className="py-2 pr-3 font-medium text-slate-700">{b.label}</td>
-              <td className="py-2 pr-3 text-right text-slate-600">{b.totals.sessions}</td>
-              <td className="py-2 pr-3 text-right text-slate-600">{b.totals.expected}</td>
-              <td className="py-2 pr-3 text-right font-medium text-emerald-600">{b.totals.present}</td>
-              <td className="py-2 pr-3 text-right font-medium text-rose-500">{b.totals.absent}</td>
-              <td className="py-2 text-right font-bold text-slate-800">{round1(b.totals.attendanceRate)}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="min-w-[560px] overflow-hidden rounded-lg border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/60 hover:bg-muted/60">
+              <TableHead className="text-foreground">Period</TableHead>
+              <TableHead className="text-right text-foreground">Sessions</TableHead>
+              <TableHead className="text-right text-foreground">Expected</TableHead>
+              <TableHead className="text-right text-foreground">Present</TableHead>
+              <TableHead className="text-right text-foreground">Absent</TableHead>
+              <TableHead className="text-right text-foreground">Rate</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {buckets.map((b, i) => (
+              <TableRow key={b.label} className={i % 2 === 1 ? "bg-muted/25" : undefined}>
+                <TableCell className="font-medium text-foreground">{b.label}</TableCell>
+                <TableCell className="text-right text-muted-foreground">{b.totals.sessions}</TableCell>
+                <TableCell className="text-right text-muted-foreground">{b.totals.expected}</TableCell>
+                <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-400">{b.totals.present}</TableCell>
+                <TableCell className="text-right font-medium text-rose-500 dark:text-rose-400">{b.totals.absent}</TableCell>
+                <TableCell className="text-right font-bold text-foreground">{round1(b.totals.attendanceRate)}%</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 py-16 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted px-6 py-16 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <ClipboardX className="h-6 w-6" />
       </div>
-      <p className="mt-3 text-sm font-semibold text-slate-700">No attendance captured</p>
-      <p className="mt-1 max-w-md text-xs text-slate-400">
+      <p className="mt-3 text-sm font-semibold text-foreground">No attendance captured</p>
+      <p className="mt-1 max-w-md text-xs text-muted-foreground">
         There are no attendance records for the selected period and filters. Try a different date range, or a
         class / subject that has already taken attendance.
       </p>
@@ -282,7 +298,7 @@ function ErrorBanner({ message }: { message: string }) {
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       <div className="min-w-0">
         <p className="font-semibold">Could not load attendance analytics</p>
-        <p className="mt-0.5 text-xs text-red-600/80">{message}</p>
+        <p className="mt-0.5 text-xs text-red-600/80 dark:text-red-400/80">{message}</p>
       </div>
     </div>
   );
@@ -499,7 +515,7 @@ const AttendanceAnalytics = () => {
 
   return (
     <div className="lg:py-1 lg:px-2 font-poppins">
-      <div className="border border-white/20 overflow-hidden bg-white/75 backdrop-blur-sm">
+      <div className="border border-border/40 overflow-hidden bg-background/75 backdrop-blur-sm">
         {/* ── Top bar ── */}
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-30 bg-chestnut">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -520,10 +536,10 @@ const AttendanceAnalytics = () => {
 
         <div className="p-4 sm:p-6 space-y-5">
           {/* ── Filters ── */}
-          <section className="rounded-xl border border-slate-200 bg-white p-4">
+          <section className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#4255db]" />
-              <h3 className="text-sm font-semibold text-slate-800">Report filters</h3>
+              <Filter className="h-4 w-4 text-forestBlue-light" />
+              <h3 className="text-sm font-semibold text-foreground">Report filters</h3>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -536,7 +552,7 @@ const AttendanceAnalytics = () => {
                   className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
                     period === p.value
                       ? "border-chestnut/60 bg-chestnut/[0.06] text-chestnut ring-1 ring-chestnut/30"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30"
                   }`}
                 >
                   {p.label}
@@ -547,24 +563,12 @@ const AttendanceAnalytics = () => {
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {period === 0 && (
                 <Field label="Day">
-                  <input
-                    type="date"
-                    value={dailyDate}
-                    max={today}
-                    onChange={(e) => setDailyDate(e.target.value)}
-                    className={inputCls}
-                  />
+                  <DatePicker value={dailyDate} max={today} onChange={setDailyDate} className={inputCls} />
                 </Field>
               )}
               {period === 1 && (
                 <Field label="Week containing">
-                  <input
-                    type="date"
-                    value={weekDate}
-                    max={today}
-                    onChange={(e) => setWeekDate(e.target.value)}
-                    className={inputCls}
-                  />
+                  <DatePicker value={weekDate} max={today} onChange={setWeekDate} className={inputCls} />
                 </Field>
               )}
               {period === 2 && (
@@ -602,56 +606,59 @@ const AttendanceAnalytics = () => {
               )}
 
               <Field label="Attendance type">
-                <select
-                  value={attType}
-                  onChange={(e) => setAttType(e.target.value)}
-                  className={inputCls}
-                >
-                  {TYPE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <Select value={attType || "__all"} onValueChange={(v) => setAttType(v === "__all" ? "" : v)}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value || "__all"}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field label="Class (optional)">
-                <select
-                  value={classroomId}
-                  onChange={(e) => {
-                    setClassroomId(e.target.value);
+                <Select
+                  value={classroomId || "__all"}
+                  onValueChange={(v) => {
+                    setClassroomId(v === "__all" ? "" : v);
                     setSubjectId("");
                   }}
-                  className={inputCls}
                 >
-                  <option value="">All classes</option>
-                  {classrooms.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All classes</SelectItem>
+                    {classrooms.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field label="Subject (optional)">
-                <select
-                  value={subjectId}
-                  onChange={(e) => setSubjectId(e.target.value)}
+                <Select
+                  value={subjectId || "__all"}
+                  onValueChange={(v) => setSubjectId(v === "__all" ? "" : v)}
                   disabled={!classroomId}
-                  className={inputCls}
                 >
-                  <option value="">All subjects</option>
-                  {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All subjects</SelectItem>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
 
             {!rangeValid && (
-              <p className="mt-3 flex items-center gap-1.5 text-xs text-amber-700">
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 The “From month” must be on or before the “To month”.
               </p>
@@ -663,9 +670,9 @@ const AttendanceAnalytics = () => {
 
           {/* ── Loading ── */}
           {loading && (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-[#4255db]" />
-              <p className="mt-3 text-sm text-slate-500">Loading attendance analytics…</p>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-forestBlue-light" />
+              <p className="mt-3 text-sm text-muted-foreground">Loading attendance analytics…</p>
             </div>
           )}
 
@@ -675,19 +682,19 @@ const AttendanceAnalytics = () => {
           {/* ── Results ── */}
           {!loading && !error && data && !isEmpty && (
             <>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
-                <CalendarDays className="h-4 w-4 text-slate-400" />
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  Showing <span className="font-semibold text-slate-700">{data.periodLabel}</span>
+                  Showing <span className="font-semibold text-foreground">{data.periodLabel}</span>
                 </span>
                 {classroomName && (
                   <span>
-                    · class <b className="text-slate-700">{classroomName}</b>
+                    · class <b className="text-foreground">{classroomName}</b>
                   </span>
                 )}
                 {subjectName && (
                   <span>
-                    · subject <b className="text-slate-700">{subjectName}</b>
+                    · subject <b className="text-foreground">{subjectName}</b>
                   </span>
                 )}
               </div>
@@ -715,10 +722,10 @@ const AttendanceAnalytics = () => {
                   hint="Absent = expected − present"
                 />
                 <Kpi
-                  icon={<TrendingUp className="h-4 w-4 text-[#4255db]" />}
+                  icon={<TrendingUp className="h-4 w-4 text-forestBlue-light" />}
                   label="Attendance rate"
                   value={`${round1(totals!.attendanceRate)}%`}
-                  valueClass="text-[#4255db]"
+                  valueClass="text-forestBlue-light"
                 />
               </section>
 
@@ -727,49 +734,49 @@ const AttendanceAnalytics = () => {
 
               {/* ── Trend (multi-bucket periods) ── */}
               {data.buckets.length > 1 && (
-                <section className="rounded-xl border border-slate-200 bg-white p-4">
-                  <h3 className="text-sm font-semibold text-slate-800">Attendance trend</h3>
-                  <p className="mb-3 text-[11px] text-slate-400">Attendance rate per period</p>
+                <section className="rounded-xl border border-border bg-card p-4">
+                  <h3 className="text-sm font-semibold text-foreground">Attendance trend</h3>
+                  <p className="mb-3 text-[11px] text-muted-foreground">Attendance rate per period</p>
                   <TrendBars buckets={data.buckets} />
                 </section>
               )}
 
               {/* ── By class / by subject ── */}
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <section className="rounded-xl border border-slate-200 bg-white p-4">
+                <section className="rounded-xl border border-border bg-card p-4">
                   <div className="mb-4 flex items-center gap-2">
-                    <School className="h-4 w-4 text-[#4255db]" />
-                    <h3 className="text-sm font-semibold text-slate-800">By Class</h3>
-                    <span className="ml-auto text-[11px] text-slate-400">{byClass.length} classes</span>
+                    <School className="h-4 w-4 text-forestBlue-light" />
+                    <h3 className="text-sm font-semibold text-foreground">By Class</h3>
+                    <span className="ml-auto text-[11px] text-muted-foreground">{byClass.length} classes</span>
                   </div>
                   <RateBarList
                     items={byClass}
-                    fill="#4255db"
+                    fill="var(--color-forestBlue-light)"
                     emptyText="No class-level attendance captured for this period."
                   />
                 </section>
 
-                <section className="rounded-xl border border-slate-200 bg-white p-4">
+                <section className="rounded-xl border border-border bg-card p-4">
                   <div className="mb-4 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-sky-500" />
-                    <h3 className="text-sm font-semibold text-slate-800">By Subject</h3>
-                    <span className="ml-auto text-[11px] text-slate-400">{bySubject.length} subjects</span>
+                    <BookOpen className="h-4 w-4 text-forestBlue-strong" />
+                    <h3 className="text-sm font-semibold text-foreground">By Subject</h3>
+                    <span className="ml-auto text-[11px] text-muted-foreground">{bySubject.length} subjects</span>
                   </div>
                   <RateBarList
                     items={bySubject}
-                    fill="#0ea5e9"
+                    fill="var(--color-forestBlue-strong)"
                     emptyText="No subject-level attendance captured for this period."
                   />
                 </section>
               </div>
 
               {/* ── Students not in school ── */}
-              <section className="rounded-xl border border-slate-200 bg-white p-4">
+              <section className="rounded-xl border border-border bg-card p-4">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   <UserX className="h-4 w-4 text-rose-500" />
-                  <h3 className="text-sm font-semibold text-slate-800">Students not in school</h3>
+                  <h3 className="text-sm font-semibold text-foreground">Students not in school</h3>
                   {absentData && (
-                    <span className="ml-auto text-[11px] text-slate-400">
+                    <span className="ml-auto text-[11px] text-muted-foreground">
                       {absentData.students.length} of {absentData.totalStudents} students ·{" "}
                       {absentData.periodLabel}
                     </span>
@@ -777,24 +784,24 @@ const AttendanceAnalytics = () => {
                 </div>
 
                 {!absentScope ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-xs text-slate-400">
+                  <p className="rounded-lg border border-dashed border-border bg-muted px-4 py-8 text-center text-xs text-muted-foreground">
                     Select a specific class or subject in the filters above to see which students were absent.
                   </p>
                 ) : absentLoading ? (
                   <div className="flex flex-col items-center justify-center gap-3 py-10">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#4255db]" />
-                    <p className="text-xs text-slate-500">Loading absent students…</p>
+                    <Loader2 className="h-6 w-6 animate-spin text-forestBlue-light" />
+                    <p className="text-xs text-muted-foreground">Loading absent students…</p>
                   </div>
                 ) : absentError ? (
                   <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <p className="text-xs text-red-600/80">{absentError}</p>
+                    <p className="text-xs text-red-600/80 dark:text-red-400/80">{absentError}</p>
                   </div>
                 ) : !absentData || absentData.students.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
                     <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-                    <p className="text-sm font-medium text-slate-600">All students attended</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-sm font-medium text-muted-foreground">All students attended</p>
+                    <p className="text-xs text-muted-foreground">
                       No absences recorded for {absentData?.classroomName ?? absentData?.subjectName} in this period.
                     </p>
                   </div>
@@ -807,18 +814,18 @@ const AttendanceAnalytics = () => {
                         onClick={() =>
                           setSelectedStudent({ studentId: s.studentId, studentName: s.studentName })
                         }
-                        className="flex w-full items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2.5 text-left transition-colors hover:border-[#4255db]/40 hover:bg-[#4255db]/[0.04]"
+                        className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-forestBlue-light/40 hover:bg-forestBlue-light/[0.04]"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-slate-800">{s.studentName}</p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="truncate text-sm font-medium text-foreground">{s.studentName}</p>
+                          <p className="text-[10px] text-muted-foreground">
                             {s.sessions} sessions · present {s.presentCount}/{s.sessions}
                           </p>
                         </div>
-                        <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-600">
+                        <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:bg-rose-950 dark:text-rose-400">
                           absent {s.absentCount}
                         </span>
-                        <span className="w-10 shrink-0 text-right text-xs font-bold text-slate-700">
+                        <span className="w-10 shrink-0 text-right text-xs font-bold text-foreground">
                           {s.attendanceRate}%
                         </span>
                       </button>
@@ -829,8 +836,8 @@ const AttendanceAnalytics = () => {
 
               {/* ── Period breakdown (monthly range) ── */}
               {data.buckets.length > 1 && (
-                <section className="rounded-xl border border-slate-200 bg-white p-4">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-800">Period breakdown</h3>
+                <section className="rounded-xl border border-border bg-card p-4">
+                  <h3 className="mb-3 text-sm font-semibold text-foreground">Period breakdown</h3>
                   <MonthlyTable buckets={data.buckets} />
                 </section>
               )}

@@ -1,4 +1,14 @@
-import { Button, Input, Label } from "@bluethub/ui-kit";
+import {
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+} from "@bluethub/ui-kit";
 import {
   authService,
   type IEditUserRequest,
@@ -337,10 +347,15 @@ const EditStudent = () => {
 
   if (loading) {
     return (
-      <div className="md:p-6 p-3 font-poppins">
+      <div className="md:p-6 p-3 font-poppins space-y-4">
         <div className="rounded-2xl bg-chestnut px-5 py-4 text-white">
-          <div className="h-4 w-40 rounded bg-white/20" />
-          <div className="mt-2 h-3 w-64 rounded bg-white/15" />
+          <Skeleton className="h-4 w-40 bg-white/20" />
+          <Skeleton className="mt-2 h-3 w-64 bg-white/15" />
+        </div>
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-5">
+          {[1, 2, 3].map((item) => (
+            <Skeleton key={item} className="h-10 rounded-lg" />
+          ))}
         </div>
       </div>
     );
@@ -349,24 +364,24 @@ const EditStudent = () => {
   if (errorMsg || !student) {
     return (
       <div className="md:p-6 p-3 font-poppins">
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
           {errorMsg || "Unable to load student."}
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
           onClick={() => navigate("/admin/registration/student")}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600"
+          className="mt-4 gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Students
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="p-3 font-poppins">
-      <div className="overflow-hidden border border-white/20 bg-white/75 backdrop-blur-sm">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card/75 backdrop-blur-sm">
         <div className="flex items-center justify-between px-5 py-4 bg-chestnut text-white">
           <div className="flex items-center gap-2.5 min-w-0">
             <SquarePen className="h-5 w-5" />
@@ -384,60 +399,60 @@ const EditStudent = () => {
           </button>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-5 bg-white">
+        <div className="p-5 sm:p-6 space-y-5 bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-chestnut text-sm font-semibold">First Name</Label>
-              <Input value={form.firstName} onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))} className="border-slate-200" />
+              <Input value={form.firstName} onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <Label className="text-chestnut text-sm font-semibold">Last Name</Label>
-              <Input value={form.lastName} onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))} className="border-slate-200" />
+              <Input value={form.lastName} onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-chestnut text-sm font-semibold">Guardian Name</Label>
-              <Input value={form.guardianName} onChange={(e) => setForm((prev) => ({ ...prev, guardianName: e.target.value }))} className="border-slate-200" />
+              <Input value={form.guardianName} onChange={(e) => setForm((prev) => ({ ...prev, guardianName: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <Label className="text-chestnut text-sm font-semibold">Username</Label>
-              <Input value={student.userName} readOnly className="bg-slate-50 text-slate-500 border-slate-200" />
+              <Input value={student.userName} readOnly className="bg-muted text-muted-foreground" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label className="text-chestnut text-sm font-semibold">Assigned Class</Label>
-            <select
-              value={selectedClassroomId}
-              onChange={(e) => setSelectedClassroomId(e.target.value)}
-              className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm text-slate-700 bg-white"
-            >
-              <option value="">Select classroom</option>
-              {allClassrooms.map((classroom) => (
-                <option key={classroom.id} value={classroom.id}>
-                  {classroom.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-slate-500">Current class: {selectedClassName}</p>
+            <Select value={selectedClassroomId || undefined} onValueChange={(value) => setSelectedClassroomId(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select classroom" />
+              </SelectTrigger>
+              <SelectContent>
+                {allClassrooms.map((classroom) => (
+                  <SelectItem key={classroom.id} value={classroom.id}>
+                    {classroom.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Current class: {selectedClassName}</p>
           </div>
 
           <div className="space-y-2">
             <Label className="text-chestnut text-sm font-semibold">Minor Subjects</Label>
             {availableMinorSubjects.length === 0 ? (
-              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+              <p className="rounded-lg border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
                 No minor subjects available for this class.
               </p>
             ) : (
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 space-y-1">
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-card p-2 space-y-1">
                 {availableMinorSubjects.map((subject) => (
                   <label
                     key={subject.subjectId}
-                    className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 cursor-pointer"
+                    className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-accent cursor-pointer"
                   >
-                    <span className="text-sm text-slate-700">{subject.subjectName}</span>
+                    <span className="text-sm text-foreground">{subject.subjectName}</span>
                     <input
                       type="checkbox"
                       checked={selectedMinorSubjectIds.includes(subject.subjectId)}
@@ -455,18 +470,18 @@ const EditStudent = () => {
                 ))}
               </div>
             )}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Major subjects remain class-based. Only minor subjects are editable here.
             </p>
           </div>
 
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))} />
+          <label className="inline-flex items-center gap-2 text-sm text-foreground cursor-pointer">
+            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))} className="accent-chestnut" />
             Active Student
           </label>
 
           {errorMsg && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
               {errorMsg}
             </p>
           )}
@@ -475,7 +490,7 @@ const EditStudent = () => {
             <button
               type="button"
               onClick={() => navigate("/admin/registration/student")}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-700"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
               Cancel
@@ -484,7 +499,7 @@ const EditStudent = () => {
               <Button
                 onClick={handleSaveProfile}
                 disabled={savingProfile || savingAssignment}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-chestnut px-5 py-2.5 text-white font-semibold hover:opacity-90"
+                className="w-full sm:w-auto gap-2"
               >
                 {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Profile
@@ -493,7 +508,7 @@ const EditStudent = () => {
                 onClick={handleSaveAssignment}
                 disabled={savingAssignment || savingProfile}
                 variant="outline"
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg border border-chestnut/30 bg-[#F3F4FF] px-5 py-2.5 text-chestnut font-semibold hover:bg-[#E8EAFF]"
+                className="w-full sm:w-auto gap-2 border-chestnut/30 text-chestnut hover:bg-chestnut/10"
               >
                 {savingAssignment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Classroom & Subjects

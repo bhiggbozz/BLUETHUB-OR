@@ -6,7 +6,13 @@
  * discriminant key `t`) purely for consistency; nothing here is shared code.
  */
 
-export type MediaDataMessage = { t: "open"; mediaId: string } | { t: "close" };
+export type MediaDataMessage =
+  | { t: "open"; mediaId: string }
+  | { t: "close" }
+  /** Teacher's current PDF page for whichever file is open — additive, a
+   * sibling of "open"/"close", never replaces them. Only meaningful while
+   * the named file is the one currently open. */
+  | { t: "page"; mediaId: string; page: number };
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -18,7 +24,7 @@ export function encodeMediaMessage(msg: MediaDataMessage): Uint8Array {
 export function decodeMediaMessage(payload: Uint8Array): MediaDataMessage | null {
   try {
     const parsed = JSON.parse(decoder.decode(payload));
-    if (parsed && (parsed.t === "open" || parsed.t === "close")) {
+    if (parsed && (parsed.t === "open" || parsed.t === "close" || parsed.t === "page")) {
       return parsed as MediaDataMessage;
     }
     return null;

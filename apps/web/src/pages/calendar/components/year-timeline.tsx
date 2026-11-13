@@ -17,8 +17,11 @@ type Segment =
 
 const TERM_FILL: Record<CalendarSessionDto["status"], string> = {
   Current: "bg-emerald-500",
-  Upcoming: "bg-amber-200 bg-[repeating-linear-gradient(135deg,transparent,transparent_4px,rgba(217,153,0,0.35)_4px,rgba(217,153,0,0.35)_8px)]",
-  Past: "bg-slate-200",
+  // Flat, not striped — the diagonal stripe is reserved for actual gaps
+  // (nothing scheduled) below, so it means one specific thing instead of
+  // two different things that happened to look alike.
+  Upcoming: "bg-amber-200",
+  Past: "bg-muted",
 };
 
 function useSegments(session: CalendarSessionDto): Segment[] {
@@ -90,7 +93,7 @@ function HorizontalTimeline({ session, entries }: { session: CalendarSessionDto;
   return (
     <div aria-hidden="true" className="hidden sm:block select-none">
       <div className="relative">
-        <div className="flex h-7 w-full overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+        <div className="flex h-7 w-full overflow-hidden rounded-full border border-border bg-muted">
           {segments.map((seg, i) => {
             const widthPct = (daysInclusive(seg.startDate, seg.endDate) / totalDays) * 100;
             const isGap = seg.kind === "gap";
@@ -100,12 +103,12 @@ function HorizontalTimeline({ session, entries }: { session: CalendarSessionDto;
                 style={{ width: `${widthPct}%` }}
                 title={isGap ? `Break, ${seg.weeks} week${seg.weeks !== 1 ? "s" : ""}` : `${seg.name}`}
                 className={[
-                  "flex h-full items-center justify-center border-r border-white/60 last:border-r-0 overflow-hidden",
-                  isGap ? "bg-[repeating-linear-gradient(135deg,#f1f5f9,#f1f5f9_4px,#e2e8f0_4px,#e2e8f0_8px)]" : TERM_FILL[seg.status],
+                  "flex h-full items-center justify-center border-r border-background/60 last:border-r-0 overflow-hidden",
+                  isGap ? "bg-[repeating-linear-gradient(135deg,var(--muted),var(--muted)_4px,var(--border)_4px,var(--border)_8px)]" : TERM_FILL[seg.status],
                 ].join(" ")}
               >
                 {widthPct > 10 && (
-                  <span className={`truncate px-1.5 text-[10px] font-semibold ${isGap ? "text-slate-500" : seg.status === "Upcoming" ? "text-amber-800" : "text-white"}`}>
+                  <span className={`truncate px-1.5 text-[10px] font-semibold ${isGap ? "text-muted-foreground" : seg.status === "Upcoming" ? "text-amber-800" : "text-white"}`}>
                     {isGap ? `Break, ${seg.weeks}w` : seg.name}
                   </span>
                 )}
@@ -116,8 +119,8 @@ function HorizontalTimeline({ session, entries }: { session: CalendarSessionDto;
 
         {showToday && (
           <div className="absolute top-0 h-7" style={{ left: `${todayPct}%` }}>
-            <div className="h-7 w-0.5 bg-[#4F61E8]" />
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-[#4F61E8] px-1.5 py-0.5 text-[9px] font-bold text-white whitespace-nowrap">
+            <div className="h-7 w-0.5 bg-forestBlue-light" />
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-forestBlue-light px-1.5 py-0.5 text-[9px] font-bold text-white whitespace-nowrap">
               Today
             </div>
           </div>
@@ -132,7 +135,7 @@ function HorizontalTimeline({ session, entries }: { session: CalendarSessionDto;
           <span
             key={i}
             style={{ left: `${tick.leftPct}%` }}
-            className="absolute -translate-x-1/2 text-[10px] font-medium text-slate-400"
+            className="absolute -translate-x-1/2 text-[10px] font-medium text-muted-foreground"
           >
             {tick.label}
           </span>
@@ -148,13 +151,13 @@ function VerticalStepper({ session }: { session: CalendarSessionDto }) {
 
   return (
     <div aria-hidden="true" className="sm:hidden select-none">
-      <ol className="relative ml-2 space-y-0 border-l-2 border-slate-200 pl-4">
+      <ol className="relative ml-2 space-y-0 border-l-2 border-border pl-4">
         {segments.map((seg, i) => {
           if (seg.kind === "gap") {
             return (
               <li key={`gap-${i}`} className="relative py-2">
-                <span className="absolute -left-[21px] top-3 h-2 w-2 rounded-full border-2 border-slate-300 bg-white" />
-                <p className="text-xs font-medium text-slate-400">Break, {seg.weeks} week{seg.weeks !== 1 ? "s" : ""}</p>
+                <span className="absolute -left-[21px] top-3 h-2 w-2 rounded-full border-2 border-border bg-background" />
+                <p className="text-xs font-medium text-muted-foreground">Break, {seg.weeks} week{seg.weeks !== 1 ? "s" : ""}</p>
               </li>
             );
           }
@@ -164,12 +167,12 @@ function VerticalStepper({ session }: { session: CalendarSessionDto }) {
               <span
                 className={[
                   "absolute -left-[21px] top-3 h-2.5 w-2.5 rounded-full border-2",
-                  seg.status === "Current" ? "border-emerald-500 bg-emerald-500" : seg.status === "Upcoming" ? "border-amber-400 bg-white" : "border-slate-300 bg-slate-200",
+                  seg.status === "Current" ? "border-emerald-500 bg-emerald-500" : seg.status === "Upcoming" ? "border-amber-400 bg-background" : "border-border bg-muted",
                 ].join(" ")}
               />
-              <p className="text-xs font-semibold text-slate-700">{seg.name}</p>
-              <p className="text-[11px] text-slate-400">{formatDisplayRange(seg.startDate, seg.endDate)}</p>
-              {isToday && <p className="mt-0.5 text-[10px] font-bold text-[#4F61E8]">Today</p>}
+              <p className="text-xs font-semibold text-foreground">{seg.name}</p>
+              <p className="text-[11px] text-muted-foreground">{formatDisplayRange(seg.startDate, seg.endDate)}</p>
+              {isToday && <p className="mt-0.5 text-[10px] font-bold text-forestBlue-light">Today</p>}
             </li>
           );
         })}

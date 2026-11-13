@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
-import { Button, Input, Label } from "@bluethub/ui-kit";
+import { Button, DatePicker, Input, Label } from "@bluethub/ui-kit";
 import type { CalendarTermPayload } from "@/services/calendar";
 import { MAX_TERMS, MIN_TERMS, type TermRowErrors } from "../utils";
 import PreviewStrip from "./preview-strip";
@@ -34,9 +34,9 @@ export function StepTerms({ session, terms, rowErrors, onChange }: StepTermsProp
         {terms.map((term, idx) => {
           const errors = rowErrors[idx] ?? {};
           return (
-            <div key={idx} className="rounded-xl border border-slate-200 p-3">
+            <div key={idx} className="rounded-xl border border-border p-3">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor={`term-name-${idx}`} className="text-xs font-semibold text-slate-500">
+                <Label htmlFor={`term-name-${idx}`} className="text-xs font-semibold text-muted-foreground">
                   Term {idx + 1}
                 </Label>
                 {terms.length > MIN_TERMS && (
@@ -44,7 +44,7 @@ export function StepTerms({ session, terms, rowErrors, onChange }: StepTermsProp
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-slate-400 hover:text-rose-600"
+                    className="h-6 w-6 text-muted-foreground hover:text-rose-600"
                     aria-label={`Remove term ${idx + 1}`}
                     onClick={() => removeTerm(idx)}
                   >
@@ -64,20 +64,18 @@ export function StepTerms({ session, terms, rowErrors, onChange }: StepTermsProp
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Input
-                      type="date"
+                    <DatePicker
                       aria-label={`Term ${idx + 1} start date`}
                       value={term.startDate}
-                      onChange={(e) => updateTerm(idx, { startDate: e.target.value })}
+                      onChange={(v) => updateTerm(idx, { startDate: v })}
                     />
                     {errors.startDate && <p role="alert" aria-live="polite" className="mt-1 text-xs text-rose-600">{errors.startDate}</p>}
                   </div>
                   <div>
-                    <Input
-                      type="date"
+                    <DatePicker
                       aria-label={`Term ${idx + 1} end date`}
                       value={term.endDate}
-                      onChange={(e) => updateTerm(idx, { endDate: e.target.value })}
+                      onChange={(v) => updateTerm(idx, { endDate: v })}
                     />
                     {errors.endDate && <p role="alert" aria-live="polite" className="mt-1 text-xs text-rose-600">{errors.endDate}</p>}
                   </div>

@@ -9,7 +9,7 @@ const STYLES: Record<CalendarEntryTypeKey, { icon: React.ReactNode; className: s
   MidTerm: { icon: <Flag className="h-3 w-3 shrink-0" />, className: "bg-amber-50 text-amber-700" },
   Exam: { icon: <GraduationCap className="h-3 w-3 shrink-0" />, className: "bg-rose-50 text-rose-700" },
   Holiday: { icon: <Palmtree className="h-3 w-3 shrink-0" />, className: "bg-emerald-50 text-emerald-700" },
-  Other: { icon: <Tag className="h-3 w-3 shrink-0" />, className: "bg-slate-100 text-slate-600" },
+  Other: { icon: <Tag className="h-3 w-3 shrink-0" />, className: "bg-muted text-muted-foreground" },
 };
 
 export function entryTypeIcon(type: CalendarEntryTypeKey) {

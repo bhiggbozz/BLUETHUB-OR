@@ -41,7 +41,7 @@ const AdminDashboard = () => {
           </div>
           <EllipsisVertical className="text-white hidden md:block" />
           <div className="flex gap-[3px] md:hidden items-center justify-between ">
-             <div className="w-full h-full px-2.5 py-2 rounded-full flex items-center justify-center bg-[#FFFFFF80]">
+             <div className="w-full h-full px-2.5 py-2 rounded-full flex items-center justify-center bg-white/50">
               <span className="text-white font-medium text-xs leading-5">{initials}</span>
              </div>
              <div className="w-full h-full p-2 rounded-full flex items-center justify-center bg-white">
@@ -51,7 +51,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* ── Page Body ── */}
-        <div className="flex flex-col gap-3 p-3 md:p-4 bg-white/70 backdrop-blur-sm">
+        <div className="flex flex-col gap-3 p-3 md:p-4 bg-background/70 backdrop-blur-sm">
           <AdminAppbar />
           <SchoolProgress />
           <TeacherActivity />

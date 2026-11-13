@@ -1,4 +1,4 @@
-import { Input, Label } from "@bluethub/ui-kit";
+import { DatePicker, Input, Label } from "@bluethub/ui-kit";
 import type { SessionFormErrors } from "../utils";
 
 interface StepSessionProps {
@@ -26,21 +26,19 @@ export function StepSession({ name, startDate, endDate, errors, onChange }: Step
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="wizard-session-start">Start date</Label>
-          <Input
+          <DatePicker
             id="wizard-session-start"
-            type="date"
             value={startDate}
-            onChange={(e) => onChange({ startDate: e.target.value })}
+            onChange={(v) => onChange({ startDate: v })}
           />
           {errors.startDate && <p role="alert" aria-live="polite" className="text-xs text-rose-600">{errors.startDate}</p>}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="wizard-session-end">End date</Label>
-          <Input
+          <DatePicker
             id="wizard-session-end"
-            type="date"
             value={endDate}
-            onChange={(e) => onChange({ endDate: e.target.value })}
+            onChange={(v) => onChange({ endDate: v })}
           />
           {errors.endDate && <p role="alert" aria-live="polite" className="text-xs text-rose-600">{errors.endDate}</p>}
         </div>

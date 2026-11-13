@@ -7,6 +7,11 @@ import type { LiveBoardHubClient, HubStroke } from "@/services/live-board-hub";
 
 const PALETTE = ["#000000", "#ef4444", "#3b82f6", "#22c55e", "#eab308"];
 const WIDTHS = [2, 4, 8];
+/** Fixed, deliberately outside `PALETTE` so a teacher's annotation on a
+ * student's board can never collide with a color the student themself
+ * could pick — the two authors stay visually distinguishable on the same
+ * board without needing to tag/transmit an explicit author field per stroke. */
+const TEACHER_INK_COLOR = "#f97316";
 
 interface LiveStudentBoardProps {
   hub: LiveBoardHubClient;
@@ -45,7 +50,10 @@ export default function LiveStudentBoard({
 }: LiveStudentBoardProps) {
   const board = useLiveBoardStrokes(initialSnapshot?.currentBoard ?? 1);
   const canvasRef = useRef<BoardCanvasHandle | null>(null);
-  const [color, setColor] = useState(PALETTE[0]);
+  // Teacher annotating a student's board always draws in the fixed teacher
+  // ink color (no picker, no risk of matching whatever the student used on
+  // their own board) — the student's own board keeps the full palette.
+  const [color, setColor] = useState(isOwnBoard ? PALETTE[0] : TEACHER_INK_COLOR);
   const [width, setWidth] = useState(WIDTHS[0]);
 
   useEffect(() => {
@@ -111,19 +119,26 @@ export default function LiveStudentBoard({
     <div className={`flex h-full flex-col gap-2 ${className ?? ""}`}>
       {canDraw && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white/90 px-3 py-2 shadow-sm">
-          <div className="flex items-center gap-1.5">
-            {PALETTE.map((c) => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                aria-label={`Use colour ${c}`}
-                className={`size-7 rounded-full border-2 transition-transform ${
-                  color === c ? "scale-110 border-slate-800" : "border-transparent hover:scale-105"
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
+          {isOwnBoard ? (
+            <div className="flex items-center gap-1.5">
+              {PALETTE.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  aria-label={`Use colour ${c}`}
+                  className={`size-7 rounded-full border-2 transition-transform ${
+                    color === c ? "scale-110 border-slate-800" : "border-transparent hover:scale-105"
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
+              <span className="size-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: TEACHER_INK_COLOR }} />
+              Teacher's ink
+            </div>
+          )}
           <div className="flex items-center gap-1.5">
             {WIDTHS.map((w) => (
               <button
