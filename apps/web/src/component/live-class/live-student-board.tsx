@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@bluethub/ui-kit";
-import { Plus, Undo2, Trash2 } from "lucide-react";
+import { Plus, Undo2, Trash2, Pencil, Eraser } from "lucide-react";
 import BoardCanvas, { type BoardCanvasHandle } from "./board-canvas";
 import { useLiveBoardStrokes } from "@/hooks/useLiveBoardStrokes";
 import type { LiveBoardHubClient, HubStroke } from "@/services/live-board-hub";
@@ -37,7 +37,10 @@ interface LiveStudentBoardProps {
  * One student's private board. Used three ways: a student drawing on their
  * own board, a teacher drawing on a chosen student's board, and a read-only
  * view (e.g. the board currently "shared to class"). Self-contained like
- * `LiveBoard` — mount one per focused student, not one per student at once.
+ * `LiveBoard`. Callers should mount one instance per student for the whole
+ * class and just toggle visibility/`canDraw` — unmounting on every focus
+ * change throws away the live stroke cache and forces a refetch, which reads
+ * to the user as the board losing everything.
  */
 export default function LiveStudentBoard({
   hub,
@@ -55,15 +58,26 @@ export default function LiveStudentBoard({
   // their own board) — the student's own board keeps the full palette.
   const [color, setColor] = useState(isOwnBoard ? PALETTE[0] : TEACHER_INK_COLOR);
   const [width, setWidth] = useState(WIDTHS[0]);
+  const [tool, setTool] = useState<"pen" | "eraser">("pen");
+  // The authoritative board number only becomes known once GetStudentBoard
+  // resolves (or `initialSnapshot` is handed in). Drawing before that would
+  // stamp strokes with whatever `currentBoard` defaulted to (1), which can
+  // silently diverge from the student's real current board and land the
+  // stroke in a bucket nobody's looking at. Gate actual drawing on it.
+  const [loaded, setLoaded] = useState(!!initialSnapshot);
 
   useEffect(() => {
     if (initialSnapshot) {
       board.loadSnapshot(initialSnapshot.strokes, initialSnapshot.currentBoard);
+      setLoaded(true);
       return;
     }
     let cancelled = false;
+    setLoaded(false);
     void hub.getStudentBoard(studentId).then((data) => {
-      if (!cancelled && data) board.loadSnapshot(data.strokes, data.currentBoard);
+      if (cancelled) return;
+      if (data) board.loadSnapshot(data.strokes, data.currentBoard);
+      setLoaded(true);
     });
     return () => {
       cancelled = true;
@@ -119,8 +133,30 @@ export default function LiveStudentBoard({
     <div className={`flex h-full flex-col gap-2 ${className ?? ""}`}>
       {canDraw && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white/90 px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setTool("pen")}
+              aria-label="Pen"
+              title="Pen"
+              className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
+                tool === "pen" ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
+              }`}
+            >
+              <Pencil className="size-3.5 text-slate-700" />
+            </button>
+            <button
+              onClick={() => setTool("eraser")}
+              aria-label="Eraser"
+              title="Eraser"
+              className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
+                tool === "eraser" ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
+              }`}
+            >
+              <Eraser className="size-3.5 text-slate-700" />
+            </button>
+          </div>
           {isOwnBoard ? (
-            <div className="flex items-center gap-1.5">
+            <div className={`flex items-center gap-1.5 ${tool === "eraser" ? "pointer-events-none opacity-30" : ""}`}>
               {PALETTE.map((c) => (
                 <button
                   key={c}
@@ -134,12 +170,16 @@ export default function LiveStudentBoard({
               ))}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
+            <div
+              className={`flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 ${
+                tool === "eraser" ? "pointer-events-none opacity-30" : ""
+              }`}
+            >
               <span className="size-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: TEACHER_INK_COLOR }} />
               Teacher's ink
             </div>
           )}
-          <div className="flex items-center gap-1.5">
+          <div className={`flex items-center gap-1.5 ${tool === "eraser" ? "pointer-events-none opacity-30" : ""}`}>
             {WIDTHS.map((w) => (
               <button
                 key={w}
@@ -168,9 +208,10 @@ export default function LiveStudentBoard({
         <BoardCanvas
           ref={canvasRef}
           strokes={board.strokes}
-          canDraw={canDraw}
+          canDraw={canDraw && loaded}
           color={color}
           width={width}
+          tool={tool}
           currentBoard={board.currentBoard}
           onSegment={(segment) => {
             board.addStroke(segment); // optimistic local echo — no server echo for the author
@@ -180,7 +221,7 @@ export default function LiveStudentBoard({
             board.removeStrokes(ids);
             ids.forEach((id) => void removeStroke(id));
           }}
-          viewOnlyLabel={viewOnlyLabel}
+          viewOnlyLabel={canDraw && !loaded ? "Loading board…" : viewOnlyLabel}
         />
       </div>
 

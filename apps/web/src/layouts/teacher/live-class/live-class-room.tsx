@@ -22,6 +22,7 @@ import LiveStudentBoard from "@/component/live-class/live-student-board";
 import SpeakToggle from "@/component/live-class/speak-toggle";
 import CountdownBanner from "@/component/live-class/countdown-banner";
 import LessonMediaPanel from "@/component/live-class/lesson-media-panel";
+import { HandOrderBadge, RaisedHandsPanel } from "@/component/live-class/raised-hands";
 import { getErrorMessage } from "@/utils/errors";
 import { withTimeout } from "@/utils/with-timeout";
 import {
@@ -32,9 +33,12 @@ import {
   setEnded,
   resetLiveClassRuntime,
 } from "@/store/live-class-slice";
-import type { BoardSnapshot } from "@/services/live-board-hub";
+import type { BoardSnapshot, HandQueueEntry, StudentBoardInfo } from "@/services/live-board-hub";
 
 type RoomStatus = "joining" | "ready" | "error";
+
+const boardsToMap = (boards?: StudentBoardInfo[]): Record<string, number> =>
+  Object.fromEntries((boards ?? []).map((b) => [b.studentId, b.currentBoard]));
 
 const ConnectionPill = ({ ok, label }: { ok: boolean; label: string }) => (
   <span
@@ -65,6 +69,8 @@ export default function TeacherLiveClassRoom() {
   const [focusedStudentId, setFocusedStudentId] = useState<string | null>(null);
   const [sharedStudentId, setSharedStudentIdState] = useState<string | null>(null);
   const [canSpeakMap, setCanSpeakMap] = useState<Record<string, boolean>>({});
+  const [handQueue, setHandQueue] = useState<HandQueueEntry[]>([]);
+  const [studentBoardNumbers, setStudentBoardNumbers] = useState<Record<string, number>>({});
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [ending, setEnding] = useState(false);
 
@@ -118,6 +124,8 @@ export default function TeacherLiveClassRoom() {
         if (cancelled) return;
         setBoardSnapshot(snapshot);
         setSharedStudentIdState(snapshot.sharedStudentId);
+        setHandQueue(snapshot.handQueue ?? []);
+        setStudentBoardNumbers(boardsToMap(snapshot.studentBoards));
 
         await withTimeout(
           audio.connect(joinData.audio.url, joinData.audio.token, joinData.canSpeak),
@@ -212,14 +220,33 @@ export default function TeacherLiveClassRoom() {
     const unsubPresence = hub.on("Presence", ({ role, joined }) => {
       if (role === "Student") toast(joined ? "A student joined." : "A student left.", { icon: joined ? "👋" : "👋" });
     });
+    const unsubHandQueue = hub.on("HandQueueChanged", ({ queue }) => {
+      setHandQueue((prev) => {
+        const prevIds = new Set(prev.map((e) => e.studentId));
+        queue
+          .filter((entry) => !prevIds.has(entry.studentId))
+          .forEach((entry) => toast(`${entry.studentName} raised their hand`, { icon: "✋" }));
+        return queue;
+      });
+    });
+    const unsubStudentBoardChanged = hub.on("StudentBoardChanged", ({ studentId, board }) => {
+      setStudentBoardNumbers((prev) => ({ ...prev, [studentId]: board }));
+    });
     const unsubEnded = hub.on("ClassEnded", ({ reason }) => handleClassEnded(reason));
+    const unsubSnapshot = hub.onSnapshot((snapshot) => {
+      setHandQueue(snapshot.handQueue ?? []);
+      setStudentBoardNumbers(boardsToMap(snapshot.studentBoards));
+    });
 
     return () => {
       unsubShared();
       unsubSpeak();
       unsubWarning();
       unsubPresence();
+      unsubHandQueue();
+      unsubStudentBoardChanged();
       unsubEnded();
+      unsubSnapshot();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub, handleClassEnded]);
@@ -257,6 +284,13 @@ export default function TeacherLiveClassRoom() {
     } catch (err) {
       toast.error(getErrorMessage(err, "Could not update that student's mic permission."));
     }
+  };
+
+  const handleLowerStudentHand = (studentId: string) => {
+    // Optimistic — the server's HandQueueChanged broadcast reconciles right
+    // after, same as the rest of the hub's fire-and-forget invokes.
+    setHandQueue((prev) => prev.filter((entry) => entry.studentId !== studentId));
+    void hub.lowerStudentHand(studentId);
   };
 
   const handleConfirmEnd = async () => {
@@ -307,6 +341,7 @@ export default function TeacherLiveClassRoom() {
         </div>
         <ConnectionPill ok={hubStatus === "connected"} label="Board" />
         <ConnectionPill ok={audio.status === "connected"} label="Audio" />
+        <RaisedHandsPanel queue={handQueue} isTeacher onLowerStudent={handleLowerStudentHand} />
         <LessonMediaPanel
           lessonId={liveClass.lessonId}
           isTeacher
@@ -331,18 +366,30 @@ export default function TeacherLiveClassRoom() {
       {/* Student strip — kept compact so the main board below gets close to
           as much height as the student's own full-size board view. */}
       <div className="flex items-center gap-2.5 overflow-x-auto border-b bg-white px-4 py-1.5">
-        {liveClass.students.map((student) => (
-          <div key={student.studentId} className="flex shrink-0 flex-col gap-1">
-            <div className="flex items-center gap-1.5">
+        {liveClass.students.map((student) => {
+          const handOrder = handQueue.findIndex((entry) => entry.studentId === student.studentId);
+          return (
+            <div key={student.studentId} className="flex shrink-0 items-center gap-1.5">
+              {handOrder >= 0 && <HandOrderBadge order={handOrder + 1} />}
               <button
                 onClick={() => setFocusedStudentId(student.studentId)}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                title="The number after the name is the board this student is currently on"
+                className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                   focusedStudentId === student.studentId
                     ? "bg-slate-800 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
                 {student.name}
+                <span
+                  className={`rounded-full px-1.5 py-[1px] text-[10px] font-bold ${
+                    focusedStudentId === student.studentId
+                      ? "bg-white/20 text-white"
+                      : "bg-chestnut text-white"
+                  }`}
+                >
+                  B{studentBoardNumbers[student.studentId] ?? 1}
+                </span>
               </button>
               <SpeakToggle
                 name={student.name}
@@ -351,47 +398,13 @@ export default function TeacherLiveClassRoom() {
                 onToggle={(allow) => handleSetSpeak(student.studentId, allow)}
               />
             </div>
-            {focusedStudentId !== student.studentId && (
-              <div className="h-12 w-20 overflow-hidden rounded-lg border border-slate-200">
-                <LiveStudentBoard
-                  hub={hub}
-                  studentId={student.studentId}
-                  canDraw={false}
-                  isOwnBoard={false}
-                  className="h-full"
-                />
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Main board */}
       <div className="min-h-0 flex-1 p-3">
-        {focusedStudentId ? (
-          <div className="flex h-full flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => setFocusedStudentId(null)} className="gap-1.5">
-                <ArrowLeft className="size-4" /> Shared board
-              </Button>
-              <Button
-                size="sm"
-                variant={sharedStudentId === focusedStudentId ? "default" : "outline"}
-                onClick={() => handleToggleShare(focusedStudentId)}
-              >
-                {sharedStudentId === focusedStudentId ? "Stop showing to class" : "Show to class"}
-              </Button>
-            </div>
-            <LiveStudentBoard
-              key={focusedStudentId}
-              hub={hub}
-              studentId={focusedStudentId}
-              canDraw
-              isOwnBoard={false}
-              className="flex-1"
-            />
-          </div>
-        ) : (
+        <div className={focusedStudentId === null ? "h-full" : "hidden"}>
           <LiveBoard
             hub={hub}
             canDraw
@@ -404,7 +417,52 @@ export default function TeacherLiveClassRoom() {
             startedAtMs={startedAtMs}
             serverOffsetMs={serverOffsetMs}
           />
-        )}
+        </div>
+
+        {/* Every student's board is mounted once, for the whole class, and only
+            ever hidden/shown via CSS — never unmounted on focus changes. Each
+            instance owns its own live stroke cache fed by the hub in real time
+            (see LiveStudentBoard); tearing it down and remounting it on every
+            focus click threw that cache away and forced a fresh fetch, which is
+            what made a student's board appear to "lose" everything the moment
+            the teacher looked away and back. */}
+        <div className={focusedStudentId !== null ? "flex h-full flex-col gap-2" : "hidden"}>
+          <div className="flex items-center justify-between">
+            <Button variant="outline" size="sm" onClick={() => setFocusedStudentId(null)} className="gap-1.5">
+              <ArrowLeft className="size-4" /> Shared board
+            </Button>
+            {focusedStudentId && (
+              <span className="rounded-full bg-chestnut/10 px-3 py-1 text-xs font-semibold text-chestnut">
+                {liveClass.students.find((s) => s.studentId === focusedStudentId)?.name}&apos;s board · Board B
+                {studentBoardNumbers[focusedStudentId] ?? 1}
+              </span>
+            )}
+            {focusedStudentId && (
+              <Button
+                size="sm"
+                variant={sharedStudentId === focusedStudentId ? "default" : "outline"}
+                onClick={() => handleToggleShare(focusedStudentId)}
+              >
+                {sharedStudentId === focusedStudentId ? "Stop showing to class" : "Show to class"}
+              </Button>
+            )}
+          </div>
+          {liveClass.students.map((student) => (
+            <div
+              key={student.studentId}
+              className={focusedStudentId === student.studentId ? "min-h-0 flex-1" : "hidden"}
+            >
+              <LiveStudentBoard
+                hub={hub}
+                studentId={student.studentId}
+                canDraw={focusedStudentId === student.studentId}
+                isOwnBoard={false}
+                viewOnlyLabel={`${student.name}'s board · B${studentBoardNumbers[student.studentId] ?? 1}`}
+                className="h-full"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <AlertDialog open={endDialogOpen} onOpenChange={(open) => !ending && setEndDialogOpen(open)}>

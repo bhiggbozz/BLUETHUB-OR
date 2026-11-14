@@ -160,14 +160,23 @@ const TeacherLiveClassIndex = () => {
             Start a scheduled class, rejoin one that's live, or manage what's coming up.
           </p>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50"
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/teacher/live-class/new")}
+            className="flex items-center gap-2 rounded-xl bg-chestnut px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-chestnut/90"
+          >
+            <CalendarClock size={14} />
+            Schedule a live class
+          </button>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -307,9 +316,13 @@ const TeacherLiveClassIndex = () => {
                 <Video size={28} className="text-gray-400" />
               </div>
               <p className="mb-1 text-lg font-semibold text-gray-700">Nothing live or scheduled right now</p>
-              <p className="max-w-sm text-sm text-gray-400">
-                Submit a lesson, then choose "Schedule a Live Class" to set one up.
+              <p className="mb-4 max-w-sm text-sm text-gray-400">
+                Schedule a class, pick your students and a time, and it'll show up here.
               </p>
+              <Button onClick={() => navigate("/teacher/live-class/new")} className="gap-2 bg-chestnut text-white hover:bg-chestnut/90">
+                <CalendarClock size={14} />
+                Schedule a live class
+              </Button>
             </div>
           )}
 
