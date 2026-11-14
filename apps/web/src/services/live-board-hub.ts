@@ -33,6 +33,10 @@ export interface BoardSnapshot {
   sharedStudentId: string | null;
   myBoard?: { currentBoard: number; strokes: HubStroke[]; seq: number };
   studentBoards?: StudentBoardInfo[];
+  /** Current raised-hand queue, in raise order — present so a (re)joining
+   * client is in sync immediately, without waiting for the next
+   * `HandQueueChanged` broadcast. */
+  handQueue?: HandQueueEntry[];
 }
 
 export interface StudentBoardSnapshot {
@@ -40,6 +44,14 @@ export interface StudentBoardSnapshot {
   currentBoard: number;
   strokes: HubStroke[];
   seq: number;
+}
+
+/** One entry in the raised-hand queue — index in the array (not a permanent
+ * ticket number) is the display order everyone sees: "1" for whoever raised
+ * first, "2" for the next, and so on. If #1 lowers their hand, #2 becomes #1. */
+export interface HandQueueEntry {
+  studentId: string;
+  studentName: string;
 }
 
 interface ServerEventMap {
@@ -55,6 +67,11 @@ interface ServerEventMap {
   Presence: { userId: string; role: string; joined: boolean };
   Warning: { minutesLeft: number };
   SpeakChanged: { studentId: string; canSpeak: boolean };
+  /** Broadcast to the whole class every time the raised-hand queue changes
+   * (raise, lower, teacher-lower, or a student leaving) — always the full,
+   * ordered queue, never a delta, so a missed message self-corrects on the
+   * next one instead of leaving anyone's view stale. */
+  HandQueueChanged: { queue: HandQueueEntry[] };
   ClassEnded: { reason: string };
 }
 
@@ -74,6 +91,7 @@ const EVENT_NAMES: LiveBoardEvent[] = [
   "Presence",
   "Warning",
   "SpeakChanged",
+  "HandQueueChanged",
   "ClassEnded",
 ];
 
@@ -283,5 +301,21 @@ export class LiveBoardHubClient {
   // ── Teacher: "show to class" ──────────────────────────────────────────────
   shareStudentBoard(studentId: string | null) {
     return this.safeInvoke("ShareStudentBoard", this.liveClassId, studentId);
+  }
+
+  // ── Raised hands ───────────────────────────────────────────────────────────
+  /** Student: joins the raised-hand queue (appended to the end — first to
+   * raise is first in line). No-op server-side if already queued. */
+  raiseHand() {
+    return this.safeInvoke("RaiseHand", this.liveClassId);
+  }
+  /** Student: leaves the queue voluntarily. */
+  lowerHand() {
+    return this.safeInvoke("LowerHand", this.liveClassId);
+  }
+  /** Teacher: removes any student from the queue — e.g. after calling on
+   * them, or to dismiss a stale raise. */
+  lowerStudentHand(studentId: string) {
+    return this.safeInvoke("LowerStudentHand", this.liveClassId, studentId);
   }
 }

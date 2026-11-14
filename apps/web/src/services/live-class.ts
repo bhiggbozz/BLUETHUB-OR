@@ -17,6 +17,23 @@ export interface LiveClassStudent {
   canSpeak: boolean;
 }
 
+/** A lesson media file as returned alongside the live class itself (join
+ * response, `getById`, `getMine`) — the student-safe path. Distinct from
+ * `LessonMediaDto` (`services/lesson.ts`), which only comes back from the
+ * teacher-only `GET api/lessons/{id}/class` endpoint; students must never
+ * call that one (403 by design), so this is the shape they actually get. */
+export interface LiveClassMedia {
+  id: string;
+  name: string;
+  mediaType: string;
+  fileExtension: string;
+  url: string;
+  sizeBytes: number;
+  duration: number | null;
+  displayOrder: number;
+  metaData: string | null;
+}
+
 export interface LiveClassDto {
   id: string;
   lessonId: string;
@@ -53,18 +70,48 @@ export interface LiveClassDto {
    * offset from this, never the device clock. */
   serverTime: string;
   students: LiveClassStudent[];
+  /** `null`, not `[]`, when nothing's attached — always guard with `?? []`. */
+  media: LiveClassMedia[] | null;
+  /** The practice quiz attached at scheduling, if any. */
+  quizCode?: string | null;
 }
 
-export interface CreateLiveClassRequest {
-  lessonId: string;
-  studentIds: string[]; // 1-3
+/** Media file shape for `schedule()` — a sibling of `MediaFilePayload`
+ * (`services/lesson.ts`), not a reuse of it: this endpoint's documented
+ * contract has no `mediaType` field and adds `metaData`. */
+export interface ScheduleMediaFilePayload {
+  fileName: string;
+  originalFileName: string;
+  fileExtension: string;
+  cloudinaryUrl: string;
+  publicId: string;
+  fileSizeBytes: number;
+  duration?: number | null;
+  displayOrder: number;
+  metaData?: string;
+}
+
+export interface ScheduleLiveClassRequest {
+  classroomId: string;
+  subjectId: string;
+  topicId: string;
+  subTopicId: string;
+  aim: string;
+  description: string;
+  /** Defaults to the aim server-side if omitted. */
   title?: string;
-  /** No offset sends it as bare local time — the backend reads that as
-   * school time (WAT) directly. Omit entirely for the old "start on the
-   * spot" behavior; the new UI always schedules. */
-  scheduledStart?: string;
+  studentIds: string[]; // 1-3 active students of that classroom
+  /** Must carry its own offset (or "Z") — sent bare with no offset, this is
+   * read as school time (WAT), unlike the local `datetime-local` value the
+   * form collects, so callers must attach the browser's own offset before
+   * sending. Must be in the future, up to 90 days ahead. */
+  scheduledStart: string;
   /** 5-40, defaults to 40 server-side if omitted. */
   durationMinutes?: number;
+  mediaFiles?: ScheduleMediaFilePayload[];
+  /** A quiz code from `quizService.createQuiz()`. A teacher can only use one
+   * they created themselves; a head teacher can use any in the school. */
+  quizCode?: string | null;
 }
 
 export interface RescheduleLiveClassRequest {
@@ -97,14 +144,18 @@ export interface LiveClassJoinResponse {
   secondsRemaining: number;
   serverTime: string;
   canSpeak: boolean;
+  /** `null`, not `[]`, when nothing's attached — always guard with `?? []`. */
+  media: LiveClassMedia[] | null;
+  quizCode?: string | null;
 }
 
 const headers = () => ({ "X-Tenant-ID": getTenantFromUrl() });
 
 export const liveClassService = {
-  // POST /api/live-class
-  create: (payload: CreateLiveClassRequest) =>
-    API.post<TResponse<LiveClassDto>>("api/live-class", payload, {
+  // POST /api/live-class/schedule — creates the underlying lesson and
+  // schedules the live class in one call (no pre-existing lessonId needed).
+  schedule: (payload: ScheduleLiveClassRequest) =>
+    API.post<TResponse<LiveClassDto>>("api/live-class/schedule", payload, {
       headers: headers(),
     }),
 

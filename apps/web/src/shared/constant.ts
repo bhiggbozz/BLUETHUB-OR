@@ -51,7 +51,10 @@ export const TACADEMIC_GROUPS = [
       {
         icons: LiveClassIcon,
         name: "Live Class",
-        path: "/teacher/live-class",
+        children: [
+          { name: "Schedule a Live Class", path: "/teacher/live-class/new" },
+          { name: "My Live Classes", path: "/teacher/live-class" },
+        ],
       },
       {
         icons: AttendanceIcon,

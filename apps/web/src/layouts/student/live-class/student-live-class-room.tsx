@@ -24,8 +24,10 @@ import LiveBoard from "@/component/live-class/live-board";
 import LiveStudentBoard from "@/component/live-class/live-student-board";
 import CountdownBanner from "@/component/live-class/countdown-banner";
 import LessonMediaPanel from "@/component/live-class/lesson-media-panel";
+import { RaiseHandButton, RaisedHandsPanel } from "@/component/live-class/raised-hands";
 import { getErrorMessage } from "@/utils/errors";
 import { withTimeout } from "@/utils/with-timeout";
+import { warmLiveClassMediaCache } from "@/utils/lesson-media-cache";
 import {
   setLiveClass,
   setJoinResponse,
@@ -33,7 +35,7 @@ import {
   setEnded,
   resetLiveClassRuntime,
 } from "@/store/live-class-slice";
-import type { BoardSnapshot } from "@/services/live-board-hub";
+import type { BoardSnapshot, HandQueueEntry } from "@/services/live-board-hub";
 
 type RoomStatus = "resolving" | "none" | "priming" | "joining" | "ready" | "ended" | "error";
 type BoardTab = "teacher" | "mine" | "shared";
@@ -67,6 +69,7 @@ export default function StudentLiveClassRoom() {
   const [sharedStudentId, setSharedStudentIdState] = useState<string | null>(null);
   const [canSpeak, setCanSpeak] = useState(false);
   const [micEnabled, setMicEnabledUi] = useState(false);
+  const [handQueue, setHandQueue] = useState<HandQueueEntry[]>([]);
   const joiningRef = useRef(false);
 
   // Memoized against the fixed `join.serverTime`/`liveClass.startedAt`
@@ -112,6 +115,20 @@ export default function StudentLiveClassRoom() {
     return () => clearInterval(interval);
   }, [status, pendingClass?.status, resolveActiveClass]);
 
+  // Start pulling the lesson's media into the Cache API the moment the
+  // class is visible at all — don't wait for the student to join, let alone
+  // for the teacher to open a file. `getMine()` already carries `media[]`,
+  // so this needs no extra request.
+  useEffect(() => {
+    if (!pendingClass) return;
+    const classMedia = pendingClass.media ?? [];
+    if (classMedia.length === 0) return;
+    void warmLiveClassMediaCache(
+      pendingClass.id,
+      classMedia.map((m) => ({ id: m.id, url: m.url }))
+    );
+  }, [pendingClass]);
+
   const handleJoin = async () => {
     if (!pendingClass || joiningRef.current) return;
     if (pendingClass.status !== "Live") {
@@ -134,6 +151,7 @@ export default function StudentLiveClassRoom() {
       const snapshot = await withTimeout(hub.connect(pendingClass.id), 15000, "Connecting to the live board");
       setBoardSnapshot(snapshot);
       setSharedStudentIdState(snapshot.sharedStudentId);
+      setHandQueue(snapshot.handQueue ?? []);
 
       await withTimeout(
         audio.connect(joinData.audio.url, joinData.audio.token, joinData.canSpeak),
@@ -176,13 +194,17 @@ export default function StudentLiveClassRoom() {
     const unsubWarning = hub.on("Warning", ({ minutesLeft }) => {
       toast(`${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left in this class.`, { icon: "⏰" });
     });
+    const unsubHandQueue = hub.on("HandQueueChanged", ({ queue }) => setHandQueue(queue));
     const unsubEnded = hub.on("ClassEnded", ({ reason }) => handleClassEnded(reason));
+    const unsubSnapshot = hub.onSnapshot((snapshot) => setHandQueue(snapshot.handQueue ?? []));
 
     return () => {
       unsubShared();
       unsubSpeak();
       unsubWarning();
+      unsubHandQueue();
       unsubEnded();
+      unsubSnapshot();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub, status, user?.id, activeTab, handleClassEnded]);
@@ -208,6 +230,18 @@ export default function StudentLiveClassRoom() {
     const next = !micEnabled;
     await audio.setMicEnabled(next);
     setMicEnabledUi(next && audio.canPublishMic);
+  };
+
+  const myHandIndex = handQueue.findIndex((entry) => entry.studentId === user?.id);
+  const handRaised = myHandIndex >= 0;
+
+  const handleToggleHand = () => {
+    if (handRaised) {
+      setHandQueue((prev) => prev.filter((entry) => entry.studentId !== user?.id));
+      void hub.lowerHand();
+    } else {
+      void hub.raiseHand();
+    }
   };
 
   // Just navigating away is enough — `useLiveBoardHub`/`useLiveClassAudio`
@@ -332,8 +366,15 @@ export default function StudentLiveClassRoom() {
         </div>
         <ConnectionPill ok={hubStatus === "connected"} label="Board" />
         <ConnectionPill ok={audio.status === "connected"} label="Audio" />
+        <RaisedHandsPanel
+          queue={handQueue}
+          selfId={user?.id}
+          isTeacher={false}
+          onLowerSelf={handleToggleHand}
+        />
         <LessonMediaPanel
-          lessonId={liveClass.lessonId}
+          media={join.media}
+          liveClassId={liveClass.id}
           teacherId={liveClass.teacherId}
           mediaChannel={audio}
         />
@@ -377,6 +418,11 @@ export default function StudentLiveClassRoom() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          <RaiseHandButton
+            raised={handRaised}
+            order={handRaised ? myHandIndex + 1 : null}
+            onToggle={handleToggleHand}
+          />
           {!canSpeak ? (
             <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
               <MicOff className="size-3.5" /> Waiting for your teacher to let you speak
