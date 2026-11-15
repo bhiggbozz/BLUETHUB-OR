@@ -122,6 +122,7 @@ import ApprovalsPage from '@/pages/admin/approvals';
 import GroupRecordingViewer from '@/pages/admin/approvals/group-recording-viewer';
 import TeacherProtectedRoute from '@/component/protected-routes/teacher-routes';
 // import IdbViewer from '@/pages/dev/idb-viewer';
+import BoardPreview from '@/pages/dev/board-preview';
 import DraftLessons from '@/pages/teacher/drafts';
 import PendingUploads from '@/pages/teacher/pending-uploads';
 import ModulePage from '@/pages/module';
@@ -279,6 +280,10 @@ const router = createBrowserRouter([
     },
 
     // ── Dev routes (no auth) ─────────────────────────────────────────────────
+    {
+        path: "/dev/board-preview",
+        element: <BoardPreview />,
+    },
     // {
     //     path: "/dev/lesson-approval",
     //     element: <LessonApproval />,

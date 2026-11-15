@@ -48,12 +48,12 @@ export default function CountdownBanner({ endsAt, serverOffsetMs, onEnded, class
 
   return (
     <div
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums transition-colors ${
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold tabular-nums transition-colors ${
         isCritical
-          ? "bg-red-100 text-red-700"
+          ? "border-red-200 bg-red-100 text-red-700"
           : isWarning
-            ? "bg-amber-100 text-amber-800"
-            : "bg-slate-100 text-slate-700"
+            ? "border-amber-200 bg-amber-100 text-amber-800"
+            : "border-slate-200 bg-slate-100 text-slate-700"
       } ${className ?? ""}`}
       role="timer"
       aria-live="polite"

@@ -270,7 +270,16 @@ const CreateLiveClass = () => {
     await runConcurrent(incoming, UPLOAD_CONCURRENCY, async ({ uid, file }) => {
       const isPdf = file.type === "application/pdf";
       if (!isPdf) {
-        if (!cloudinarySig) return;
+        if (!cloudinarySig) {
+          // Without this, a falsy signature (fetch resolved but came back
+          // empty, rather than throwing) left the file silently stuck in
+          // "idle" forever — no error, no retry button — which blocked the
+          // submit button with no way for the user to tell why.
+          setUploadFiles((p) =>
+            p.map((f) => (f.uid === uid ? { ...f, status: "error", error: "Could not get upload credentials" } : f))
+          );
+          return;
+        }
         return runUpload(uid, file, cloudinarySig);
       }
       try {

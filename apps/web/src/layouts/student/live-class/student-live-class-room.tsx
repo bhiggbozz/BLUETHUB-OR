@@ -12,8 +12,6 @@ import {
   MicOff,
   RefreshCw,
   Video,
-  Wifi,
-  WifiOff,
   Volume2,
 } from "lucide-react";
 import { liveClassService, type LiveClassDto, type LiveClassJoinResponse } from "@/services/live-class";
@@ -22,6 +20,7 @@ import { useLiveBoardHub } from "@/hooks/useLiveBoardHub";
 import { useLiveClassAudio } from "@/hooks/useLiveClassAudio";
 import LiveBoard from "@/component/live-class/live-board";
 import LiveStudentBoard from "@/component/live-class/live-student-board";
+import ConnectionPill from "@/component/live-class/connection-pill";
 import CountdownBanner from "@/component/live-class/countdown-banner";
 import LessonMediaPanel from "@/component/live-class/lesson-media-panel";
 import { RaiseHandButton, RaisedHandsPanel } from "@/component/live-class/raised-hands";
@@ -39,17 +38,6 @@ import type { BoardSnapshot, HandQueueEntry } from "@/services/live-board-hub";
 
 type RoomStatus = "resolving" | "none" | "priming" | "joining" | "ready" | "ended" | "error";
 type BoardTab = "teacher" | "mine" | "shared";
-
-const ConnectionPill = ({ ok, label }: { ok: boolean; label: string }) => (
-  <span
-    className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${
-      ok ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-700"
-    }`}
-  >
-    {ok ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-    {label}
-  </span>
-);
 
 export default function StudentLiveClassRoom() {
   const navigate = useNavigate();
@@ -359,6 +347,7 @@ export default function StudentLiveClassRoom() {
 
   return (
     <div className="flex h-dvh flex-col bg-slate-100 font-poppins">
+      <div className="h-[3px] shrink-0 bg-chestnut" />
       <div className="flex flex-wrap items-center gap-3 border-b bg-white px-4 py-2.5">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-800">{liveClass.title || "Live class"}</p>
@@ -379,7 +368,7 @@ export default function StudentLiveClassRoom() {
           mediaChannel={audio}
         />
         {audio.activeSpeakerIds.size > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600">
+          <span className="flex items-center gap-1 rounded-full bg-forestBlue/10 px-2 py-1 text-[11px] font-medium text-forestBlue-strong">
             <Volume2 className="size-3" /> Someone's talking
           </span>
         )}
@@ -393,7 +382,7 @@ export default function StudentLiveClassRoom() {
         <button
           onClick={() => setActiveTab("teacher")}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-            activeTab === "teacher" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"
+            activeTab === "teacher" ? "bg-chestnut text-white" : "text-slate-600 hover:bg-slate-100"
           }`}
         >
           Teacher's board
@@ -401,7 +390,7 @@ export default function StudentLiveClassRoom() {
         <button
           onClick={() => setActiveTab("mine")}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-            activeTab === "mine" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"
+            activeTab === "mine" ? "bg-chestnut text-white" : "text-slate-600 hover:bg-slate-100"
           }`}
         >
           My board
@@ -410,7 +399,7 @@ export default function StudentLiveClassRoom() {
           <button
             onClick={() => setActiveTab("shared")}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-              activeTab === "shared" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"
+              activeTab === "shared" ? "bg-chestnut text-white" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             Shared board

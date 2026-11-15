@@ -28,7 +28,7 @@ export default function SpeakToggle({ name, canSpeak, isSpeaking, onToggle, disa
   };
 
   return (
-    <div className="flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-sm">
+    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
       <span className="relative flex items-center">
         {isSpeaking && <span className="absolute inset-0 -m-1 animate-ping rounded-full bg-green-400/60" />}
         <span className={`relative size-2 rounded-full ${isSpeaking ? "bg-green-500" : "bg-slate-300"}`} />

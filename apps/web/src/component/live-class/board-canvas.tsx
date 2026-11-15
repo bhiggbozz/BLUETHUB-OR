@@ -242,7 +242,8 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
   );
 
   return (
-    <div ref={parentRef} className="relative h-full w-full overflow-hidden rounded-xl bg-white">
+    <div className="h-full w-full rounded-xl bg-slate-100 p-1.5">
+    <div ref={parentRef} className="relative h-full w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_8px_24px_-8px_rgba(15,23,42,0.15)]">
       {viewOnlyLabel && (
         <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
           <Eye className="size-3.5" />
@@ -280,10 +281,11 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
               globalCompositeOperation={stroke.strokeType === "eraser" ? "destination-out" : "source-over"}
             />
           ))}
-          {/* Live preview while still drawing — rendered as a faint
-           * same-color line, not a real erase, until the segment actually
-           * commits into the strokes above (every ~130ms) and punches through
-           * via destination-out. */}
+          {/* Live preview while still drawing — rendered as a faint line,
+           * not a real erase, until the segment actually commits into the
+           * strokes above (every ~130ms) and punches through via
+           * destination-out. No preview at all for the eraser, by request —
+           * the erased result just appears in short bursts as it commits. */}
           <Line
             ref={activeLineRef}
             points={[]}
@@ -292,10 +294,11 @@ const BoardCanvas = forwardRef<BoardCanvasHandle, BoardCanvasProps>(function Boa
             lineCap="round"
             lineJoin="round"
             tension={0.4}
-            opacity={tool === "eraser" ? 0.35 : 1}
+            opacity={tool === "eraser" ? 0 : 1}
           />
         </Layer>
       </Stage>
+    </div>
     </div>
   );
 });

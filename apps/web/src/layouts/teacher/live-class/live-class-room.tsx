@@ -12,13 +12,14 @@ import {
   AlertDialogCancel,
   Button,
 } from "@bluethub/ui-kit";
-import { ArrowLeft, Loader2, LogOut, Mic, MicOff, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Mic, MicOff } from "lucide-react";
 import { liveClassService, type LiveClassDto, type LiveClassJoinResponse } from "@/services/live-class";
 import { useLiveBoardHub } from "@/hooks/useLiveBoardHub";
 import { useLiveClassAudio } from "@/hooks/useLiveClassAudio";
 import { useLiveClassRecorder, fetchLiveClassLessonMeta } from "@/hooks/useLiveClassRecorder";
 import LiveBoard from "@/component/live-class/live-board";
 import LiveStudentBoard from "@/component/live-class/live-student-board";
+import ConnectionPill from "@/component/live-class/connection-pill";
 import SpeakToggle from "@/component/live-class/speak-toggle";
 import CountdownBanner from "@/component/live-class/countdown-banner";
 import LessonMediaPanel from "@/component/live-class/lesson-media-panel";
@@ -39,17 +40,6 @@ type RoomStatus = "joining" | "ready" | "error";
 
 const boardsToMap = (boards?: StudentBoardInfo[]): Record<string, number> =>
   Object.fromEntries((boards ?? []).map((b) => [b.studentId, b.currentBoard]));
-
-const ConnectionPill = ({ ok, label }: { ok: boolean; label: string }) => (
-  <span
-    className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${
-      ok ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-700"
-    }`}
-  >
-    {ok ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-    {label}
-  </span>
-);
 
 export default function TeacherLiveClassRoom() {
   const { id } = useParams<{ id: string }>();
@@ -331,6 +321,7 @@ export default function TeacherLiveClassRoom() {
 
   return (
     <div className="flex h-dvh flex-col bg-slate-100 font-poppins">
+      <div className="h-[3px] shrink-0 bg-chestnut" />
       {/* Top bar */}
       <div className="flex flex-wrap items-center gap-3 border-b bg-white px-4 py-2.5">
         <div className="min-w-0 flex-1">
@@ -376,7 +367,7 @@ export default function TeacherLiveClassRoom() {
                 title="The number after the name is the board this student is currently on"
                 className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                   focusedStudentId === student.studentId
-                    ? "bg-slate-800 text-white"
+                    ? "bg-chestnut text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
