@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@bluethub/ui-kit";
-import { Plus, Undo2, Trash2, Pencil, Eraser } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import BoardCanvas, { type BoardCanvasHandle } from "./board-canvas";
+import BoardToolRail from "./board/board-tool-rail";
+import BoardPageNav from "./board/board-page-nav";
+import { BoardPropertiesPanel, BoardPropertiesTrigger } from "./board/board-properties-panel";
 import { useLiveBoardStrokes } from "@/hooks/useLiveBoardStrokes";
 import type { LiveBoardHubClient, HubStroke } from "@/services/live-board-hub";
 
@@ -132,71 +135,29 @@ export default function LiveStudentBoard({
   return (
     <div className={`flex h-full flex-col gap-2 ${className ?? ""}`}>
       {canDraw && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white/90 px-3 py-2 shadow-sm">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setTool("pen")}
-              aria-label="Pen"
-              title="Pen"
-              className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
-                tool === "pen" ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
-              }`}
-            >
-              <Pencil className="size-3.5 text-slate-700" />
-            </button>
-            <button
-              onClick={() => setTool("eraser")}
-              aria-label="Eraser"
-              title="Eraser"
-              className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
-                tool === "eraser" ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
-              }`}
-            >
-              <Eraser className="size-3.5 text-slate-700" />
-            </button>
-          </div>
-          {isOwnBoard ? (
-            <div className={`flex items-center gap-1.5 ${tool === "eraser" ? "pointer-events-none opacity-30" : ""}`}>
-              {PALETTE.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  aria-label={`Use colour ${c}`}
-                  className={`size-7 rounded-full border-2 transition-transform ${
-                    color === c ? "scale-110 border-slate-800" : "border-transparent hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div
-              className={`flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 ${
-                tool === "eraser" ? "pointer-events-none opacity-30" : ""
-              }`}
-            >
-              <span className="size-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: TEACHER_INK_COLOR }} />
-              Teacher's ink
-            </div>
+        <div className={`flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-3.5 py-2.5 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.08)] ${isOwnBoard ? "justify-between" : "justify-end"}`}>
+          {isOwnBoard && (
+            <BoardPageNav
+              currentBoard={board.currentBoard}
+              availableBoards={board.availableBoards}
+              onSwitch={handleSwitchBoard}
+              onAdd={handleAddBoard}
+            />
           )}
-          <div className={`flex items-center gap-1.5 ${tool === "eraser" ? "pointer-events-none opacity-30" : ""}`}>
-            {WIDTHS.map((w) => (
-              <button
-                key={w}
-                onClick={() => setWidth(w)}
-                aria-label={`Use pen width ${w}`}
-                className={`flex size-7 items-center justify-center rounded-full border transition-colors ${
-                  width === w ? "border-slate-800 bg-slate-100" : "border-transparent hover:bg-slate-50"
-                }`}
-              >
-                <span className="rounded-full bg-slate-800" style={{ width: w + 2, height: w + 2 }} />
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-1.5">
-            <Button size="sm" variant="outline" onClick={handleUndo} title="Undo your last stroke">
-              <Undo2 className="size-4" />
-            </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <BoardPropertiesTrigger
+              tool={tool}
+              width={width}
+              onWidthChange={setWidth}
+              widths={WIDTHS}
+              eraserWidth={30}
+              colorMode={isOwnBoard ? "palette" : "fixed"}
+              color={color}
+              onColorChange={setColor}
+              palette={PALETTE}
+              fixedColor={TEACHER_INK_COLOR}
+              fixedColorLabel="Teacher's ink"
+            />
             <Button size="sm" variant="outline" onClick={handleClear} title="Clear this board">
               <Trash2 className="size-4" />
             </Button>
@@ -204,46 +165,46 @@ export default function LiveStudentBoard({
         </div>
       )}
 
-      <div className="min-h-0 flex-1">
-        <BoardCanvas
-          ref={canvasRef}
-          strokes={board.strokes}
-          canDraw={canDraw && loaded}
-          color={color}
-          width={width}
-          tool={tool}
-          currentBoard={board.currentBoard}
-          onSegment={(segment) => {
-            board.addStroke(segment); // optimistic local echo — no server echo for the author
-            void sendStroke(segment);
-          }}
-          onUndoSegments={(ids) => {
-            board.removeStrokes(ids);
-            ids.forEach((id) => void removeStroke(id));
-          }}
-          viewOnlyLabel={canDraw && !loaded ? "Loading board…" : viewOnlyLabel}
-        />
-      </div>
-
-      {isOwnBoard && canDraw && (
-        <div className="flex flex-wrap items-center gap-2">
-          {board.availableBoards.map((n) => (
-            <button
-              key={n}
-              onClick={() => handleSwitchBoard(n)}
-              className={`flex size-8 items-center justify-center rounded-full text-[11px] font-semibold leading-none text-white transition-colors ${
-                board.currentBoard === n ? "bg-green-600 hover:bg-green-700" : "bg-slate-500 hover:bg-slate-600"
-              }`}
-              title={`Switch to board B${n}`}
-            >
-              {n >= 10 ? "B" : `B${n}`}
-            </button>
-          ))}
-          <Button size="sm" variant="outline" onClick={handleAddBoard} className="size-8 rounded-full p-0" title="New board">
-            <Plus className="size-3.5" />
-          </Button>
+      <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row">
+        {canDraw && (
+          <BoardToolRail tool={tool} onToolChange={setTool} onUndo={handleUndo} className="order-2 md:order-none" />
+        )}
+        <div className="order-1 min-h-0 flex-1 md:order-none">
+          <BoardCanvas
+            ref={canvasRef}
+            strokes={board.strokes}
+            canDraw={canDraw && loaded}
+            color={color}
+            width={width}
+            tool={tool}
+            currentBoard={board.currentBoard}
+            onSegment={(segment) => {
+              board.addStroke(segment); // optimistic local echo — no server echo for the author
+              void sendStroke(segment);
+            }}
+            onUndoSegments={(ids) => {
+              board.removeStrokes(ids);
+              ids.forEach((id) => void removeStroke(id));
+            }}
+            viewOnlyLabel={canDraw && !loaded ? "Loading board…" : viewOnlyLabel}
+          />
         </div>
-      )}
+        {canDraw && (
+          <BoardPropertiesPanel
+            tool={tool}
+            width={width}
+            onWidthChange={setWidth}
+            widths={WIDTHS}
+            eraserWidth={30}
+            colorMode={isOwnBoard ? "palette" : "fixed"}
+            color={color}
+            onColorChange={setColor}
+            palette={PALETTE}
+            fixedColor={TEACHER_INK_COLOR}
+            fixedColorLabel="Teacher's ink"
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@bluethub/ui-kit";
 import { Hand, X } from "lucide-react";
 import type { HandQueueEntry } from "@/services/live-board-hub";
+import BoardSectionLabel from "./board/board-section-label";
 
 /** Small numbered circle — "1" for whoever raised first, "2" for the next,
  * etc. Position in the queue array, not a permanent ticket number, so it
@@ -24,8 +25,8 @@ export const RaiseHandButton = ({
 }) => (
   <button
     onClick={onToggle}
-    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-      raised ? "bg-amber-100 text-amber-700" : "text-slate-600 hover:bg-slate-100"
+    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+      raised ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 text-slate-600 hover:bg-slate-100"
     }`}
     title={raised ? "Lower your hand" : "Raise your hand"}
   >
@@ -61,14 +62,14 @@ export const RaisedHandsPanel = ({
         <Button
           size="sm"
           variant="outline"
-          className="gap-1.5 border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+          className="gap-1.5 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
         >
           <Hand className="size-3.5" />
           {queue.length}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-2">
-        <p className="px-1.5 pb-1.5 text-xs font-semibold text-slate-500">Raised hands</p>
+        <BoardSectionLabel className="px-1.5 pb-1.5">Raised hands</BoardSectionLabel>
         <div className="space-y-1">
           {queue.map((entry, i) => (
             <div
