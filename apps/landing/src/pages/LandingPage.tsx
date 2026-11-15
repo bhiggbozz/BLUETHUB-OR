@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/landing/navbar/Navbar";
+import { Company } from "@/components/landing/sections/Company";
 import { Hero } from "@/components/landing/sections/Hero";
 import { Problem } from "@/components/landing/sections/Problem";
 import { Solution } from "@/components/landing/sections/Solution";
@@ -16,7 +17,7 @@ import { Footer } from "@/components/landing/footer/Footer";
 // "@/components/landing/pricing/Pricing" and render <Pricing /> after <Pilot />.
 
 /**
- * First paint renders only what the first screen needs (hero + problem).
+ * First paint renders only what the first screen needs (company, hero, problem).
  * Everything below mounts in the browser's next idle period (at most ~1.2s
  * later), which splits one long main-thread task into two short ones.
  * If the URL already targets a section (e.g. /#demo), mount everything at once
@@ -58,6 +59,7 @@ export default function LandingPage() {
     <>
       <Navbar />
       <main id="main" tabIndex={-1} className="outline-none">
+        <Company />
         <Hero />
         <Problem />
         {ready ? (

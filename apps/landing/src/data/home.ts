@@ -7,9 +7,7 @@ import {
   BookOpenCheck,
   CalendarClock,
   CalendarDays,
-  FileText,
   LibraryBig,
-  MessageSquareText,
   CalendarX2,
   ClipboardCheck,
   Clock4,
@@ -24,19 +22,26 @@ import {
   SlidersHorizontal,
   Target,
   Users,
-  Wallet,
   WifiOff,
   type LucideIcon,
 } from "lucide-react";
 
+/** The company, shown before its product. Description is [CONFIRM]. */
+export const COMPANY = {
+  eyebrow: "Bluethub",
+  title: "We build technology that helps schools do more.",
+  lede: "Bluethub is a technology company building software for education. One of our products, Bluetsch, is a digital school: lessons, assessments and attendance in one place.",
+  confirm: "Company description, and what Bluethub does beyond Bluetsch.",
+  action: { label: "Book a demo", href: "#demo" },
+} as const;
+
 export const HERO = {
-  eyebrow: "For primary and secondary schools",
+  eyebrow: "Bluetsch · For primary and secondary schools",
   eyebrowConfirm: "Target market: primary and secondary schools (Nigeria first?)",
   title: "One place to teach, test and track your school.",
-  lede: "Bluethub gives your teachers, students and parents one simple platform for lessons, assessments and attendance. And it keeps working when the network doesn't.",
+  lede: "Bluetsch is a school management and e-learning platform: a digital school for your teachers, students and parents, with lessons, assessments and attendance in one place. And it keeps working when the network doesn't.",
   primary: { label: "Book a demo", href: "#demo" },
-  secondary: { label: "See how it works", href: "#how" },
-  trust: "Start with a 3-month pilot. Your school gets its own Bluethub address.",
+  trust: "Start with a 3-month pilot. Your school gets its own Bluetsch address.",
   badge: "3-month pilot · book a demo · ",
 } as const;
 
@@ -50,7 +55,7 @@ export const PROBLEM = {
   eyebrow: "Sound familiar?",
   title: "School still runs on paper, group chats and good luck.",
   lede: "Registers, exercise books, spreadsheets and WhatsApp groups. Things slip through the gaps, and the people who need answers find out last.",
-  action: { label: "See how Bluethub fixes this", href: "#solution" },
+  action: { label: "Book a demo", href: "#demo" },
 };
 
 export const PAINS: Pain[] = [
@@ -62,7 +67,7 @@ export const PAINS: Pain[] = [
 ];
 
 export const SOLUTION = {
-  eyebrow: "The Bluethub way",
+  eyebrow: "The Bluetsch way",
   title: "Everything your school does, finally connected.",
   lede: "Classes, lessons, tests, attendance and parents live in one system, with a home for every role. Set it up once and every page stays in step.",
   action: { label: "Book a demo", href: "#demo" },
@@ -149,7 +154,7 @@ export const ROLES: RoleFeature[] = [
   },
 ];
 
-export type RoadmapPreviewId = "fees" | "reports" | "sms" | "timetable" | "calendar" | "library";
+export type RoadmapPreviewId = "timetable" | "calendar" | "library";
 
 export interface RoadmapItem {
   id: RoadmapPreviewId;
@@ -160,7 +165,7 @@ export interface RoadmapItem {
 }
 
 export interface RoadmapGroup {
-  id: "next" | "later";
+  id: "later";
   label: string;
   when: string;
   items: RoadmapItem[];
@@ -170,20 +175,11 @@ export interface RoadmapGroup {
 export const ROADMAP = {
   eyebrow: "Roadmap",
   title: "Built for today. Growing with your school.",
-  lede: "Everything above is live now. Here's what we're building next, in the order school leaders ask for it.",
-  cta: { label: "Request a feature", subject: "Feature request for Bluethub" },
+  lede: "Everything above is live now. Here's what's coming later, in the order school leaders ask for it.",
+  action: { label: "Book a demo", href: "#demo" },
+  featureRequestSubject: "Feature request for Bluetsch",
   timingConfirm: "Priority order and timing for each group.",
   groups: [
-    {
-      id: "next",
-      label: "Next up",
-      when: "Early 2027",
-      items: [
-        { id: "fees", icon: Wallet, name: "Fee tracking", line: "See who has paid, who owes and what's overdue, without chasing receipts." },
-        { id: "reports", icon: FileText, name: "Report cards", line: "Turn the scores already in Bluethub into end-of-term reports in minutes." },
-        { id: "sms", icon: MessageSquareText, name: "SMS alerts", line: "Reach parents without data or a smartphone, for absences, results and notices." },
-      ],
-    },
     {
       id: "later",
       label: "Later",
@@ -200,13 +196,13 @@ export const ROADMAP = {
 export const HOW = {
   eyebrow: "Getting started",
   title: "Up and running without the upheaval.",
-  lede: "We set Bluethub up with you, so your staff can keep teaching.",
-  action: { label: "Start your 3-month pilot", href: "#pilot" },
+  lede: "We set Bluetsch up with you, so your staff can keep teaching.",
+  action: { label: "Start your 3-month pilot", href: "#demo" },
   steps: [
-    { title: "Book a demo", line: "See Bluethub with your classes in mind, and agree what your pilot should prove." },
+    { title: "Book a demo", line: "See Bluetsch with your classes in mind, and agree what your pilot should prove." },
     {
       title: "We set up your school",
-      line: "Your own Bluethub address and logo, with your classes, subjects and curriculum.",
+      line: "Your own Bluetsch address and logo, with your classes, subjects and curriculum.",
       confirm: "Who performs setup?",
     },
     { title: "Add your people", line: "Register teachers, students and parents. Everyone gets their own login and role." },
@@ -227,7 +223,7 @@ export interface Benefit {
 export const RESULTS = {
   eyebrow: "What changes",
   title: "Less admin. More teaching.",
-  lede: "Here's what Bluethub takes off your staff's plate from day one.",
+  lede: "Here's what Bluetsch takes off your staff's plate from day one.",
 };
 
 export const BENEFITS: Benefit[] = [
@@ -247,7 +243,7 @@ export const FACTS = [
 ];
 
 /** Figures Bluethub will supply later; shown as labelled placeholders. */
-export const RESULT_PLACEHOLDERS = ["Schools on Bluethub", "Hours saved per teacher each week", "Change in attendance"];
+export const RESULT_PLACEHOLDERS = ["Schools on Bluetsch", "Hours saved per teacher each week", "Change in attendance"];
 
 export const TESTIMONIAL_PLACEHOLDERS = [
   { hint: "A principal on what changed for their staff and school.", who: "Name, Principal, School" },
@@ -285,7 +281,7 @@ export const SECURITY_POINTS: SecurityPoint[] = [
 
 export const PILOT = {
   eyebrow: "Pilot offer",
-  title: "Try Bluethub for three months.",
+  title: "Try Bluetsch for three months.",
   lede: "Run it with real classes, see what changes, then decide.",
   ledeConfirm: "Free or paid pilot?",
   included: [
@@ -297,13 +293,12 @@ export const PILOT = {
   ],
   includedConfirm: "Confirm what the pilot includes.",
   primary: { label: "Start your pilot", href: "#demo" },
-  secondary: { label: "Questions? Talk to us", href: "#faq" },
   badge: "3-month pilot · start this term · ",
 };
 
 export const FAQ: { q: string; a: string; confirm?: string }[] = [
   {
-    q: "What does Bluethub cost?",
+    q: "What does Bluetsch cost?",
     a: "Every school starts with a 3-month pilot so you can see the value first. After that, pricing depends on the size of your school, and we'll give you a clear quote.",
     confirm: "Pricing approach after the pilot.",
   },
@@ -313,7 +308,7 @@ export const FAQ: { q: string; a: string; confirm?: string }[] = [
   },
   {
     q: "Do we need special devices?",
-    a: "No. Bluethub runs in the web browser on phones, tablets and laptops, and can be installed like an app. QR attendance uses the phone's camera.",
+    a: "No. Bluetsch runs in the web browser on phones, tablets and laptops, and can be installed like an app. QR attendance uses the phone's camera.",
     confirm: "Minimum device requirements.",
   },
   {
@@ -347,7 +342,7 @@ export const FAQ: { q: string; a: string; confirm?: string }[] = [
 
 export const DEMO = {
   eyebrow: "Book a demo",
-  title: "See Bluethub with your school in mind.",
+  title: "See Bluetsch with your school in mind.",
   lede: "Tell us a little about your school. We'll set up a demo and plan your 3-month pilot together.",
   points: ["A 30-minute walkthrough for your leadership team", "Your questions about setup, data and pricing answered", "A pilot plan built around your school"],
   pointsConfirm: "Demo length and format.",

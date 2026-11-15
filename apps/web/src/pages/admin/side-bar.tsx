@@ -207,9 +207,9 @@ export const CloseIcon = () => (
 // ─── Section label ────────────────────────────────────────────────────────────
 
 function SectionLabel({ label, isCollapsed }: { label: string; isCollapsed: boolean }) {
-    if (isCollapsed) return <div className="my-2 border-t border-chestnut/15" />;
+    if (isCollapsed) return <div className="my-2 border-t border-chestnut/15 dark:border-white/[0.06]" />;
     return (
-        <p className="px-3.5 mb-2 text-[10px] font-semibold tracking-[0.16em] text-chestnut/50 uppercase">
+        <p className="px-3.5 mb-2 text-[10px] font-semibold tracking-[0.16em] text-chestnut/50 uppercase dark:text-zinc-500">
             {label}
         </p>
     );
@@ -219,6 +219,10 @@ function SectionLabel({ label, isCollapsed }: { label: string; isCollapsed: bool
 // This (not a left accent bar) is now the primary active-state signal — a
 // flat chip at rest, a chestnut→forestBlue-light gradient with an inset
 // highlight + drop shadow when active, giving real dimension in plain CSS.
+//
+// Dark mode is quieter: no chip at rest, and the indigo-filled SVGs are
+// recoloured to neutral grey (brightness-0 + invert), so the gradient tile on
+// the active item is the only brand colour in the list.
 
 function NavIconTile({ src, active, isLogout }: { src: string; active: boolean; isLogout?: boolean }) {
     if (isLogout) {
@@ -234,14 +238,16 @@ function NavIconTile({ src, active, isLogout }: { src: string; active: boolean; 
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 ease-out",
                 active
                     ? "bg-gradient-to-br from-chestnut to-forestBlue-light shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35),0_3px_8px_-2px_rgba(41,35,130,0.55)]"
-                    : "bg-chestnut/10 group-hover:bg-chestnut/15",
+                    : "bg-chestnut/10 group-hover:bg-chestnut/15 dark:bg-transparent dark:group-hover:bg-transparent",
             ].join(" ")}
         >
             <img
                 src={src}
                 alt=""
                 aria-hidden="true"
-                className={`h-[15px] w-[15px] object-contain transition-all duration-200 ${active ? "brightness-0 invert" : "opacity-80"
+                className={`h-[15px] w-[15px] object-contain transition-all duration-200 ${active
+                        ? "brightness-0 invert"
+                        : "opacity-80 dark:brightness-0 dark:invert dark:opacity-50 dark:group-hover:opacity-90"
                     }`}
             />
         </span>
@@ -272,10 +278,10 @@ function PlainNavLink({
                 [
                     "relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl transition-all duration-200 ease-out cursor-pointer group",
                     isLogout
-                        ? "hover:bg-red-50 dark:hover:bg-red-950"
+                        ? "hover:bg-red-50 dark:hover:bg-red-950/40"
                         : isActive
-                            ? "bg-chestnut/10"
-                            : "text-chestnut hover:bg-chestnut/[0.06]",
+                            ? "bg-chestnut/10 dark:bg-white/[0.07]"
+                            : "text-chestnut hover:bg-chestnut/[0.06] dark:hover:bg-white/[0.04]",
                     isCollapsed ? "justify-center" : "",
                 ].join(" ")
             }
@@ -286,10 +292,10 @@ function PlainNavLink({
                     {!isCollapsed && (
                         <span
                             className={`text-xs truncate transition-colors duration-200 ${isLogout
-                                    ? "text-red-500 font-medium"
+                                    ? "text-red-500 font-medium dark:text-red-400"
                                     : isActive
-                                        ? "text-chestnut font-semibold"
-                                        : "text-chestnut font-medium"
+                                        ? "text-chestnut font-semibold dark:text-white"
+                                        : "text-chestnut font-medium dark:text-zinc-400 dark:group-hover:text-zinc-100"
                                 }`}
                         >
                             {link.name}
@@ -325,22 +331,28 @@ function DropdownNavItem({
                     "relative w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 ease-out cursor-pointer group",
                     // Always has a faint tinted "container" look — even closed,
                     // it should read as something that expands, not a plain link.
+                    // Dark mode drops the container: on near-black the tint read as heavy boxes.
                     isOpen
-                        ? "bg-chestnut/10 border-chestnut/15"
-                        : "text-chestnut border-chestnut/[0.08] bg-chestnut/[0.025] hover:bg-chestnut/[0.06] hover:border-chestnut/15",
+                        ? "bg-chestnut/10 border-chestnut/15 dark:bg-white/[0.04] dark:border-transparent"
+                        : "text-chestnut border-chestnut/[0.08] bg-chestnut/[0.025] hover:bg-chestnut/[0.06] hover:border-chestnut/15 dark:border-transparent dark:bg-transparent dark:hover:bg-white/[0.04] dark:hover:border-transparent",
                     isCollapsed ? "justify-center" : "justify-between",
                 ].join(" ")}
             >
                 <div className="flex items-center gap-3 min-w-0">
                     <NavIconTile src={link.icons} active={isOpen} />
                     {!isCollapsed && (
-                        <span className={`text-xs truncate transition-colors duration-200 ${isOpen ? "text-chestnut font-semibold" : "text-chestnut font-medium"}`}>
+                        <span
+                            className={`text-xs truncate transition-colors duration-200 ${isOpen
+                                    ? "text-chestnut font-semibold dark:text-white"
+                                    : "text-chestnut font-medium dark:text-zinc-400 dark:group-hover:text-zinc-100"
+                                }`}
+                        >
                             {link.name}
                         </span>
                     )}
                 </div>
                 {!isCollapsed && (
-                    <span className="text-chestnut opacity-50">
+                    <span className="text-chestnut opacity-50 dark:text-zinc-400">
                         <ChevronIcon open={isOpen} />
                     </span>
                 )}
@@ -348,7 +360,7 @@ function DropdownNavItem({
 
             <div
                 style={{ display: !isCollapsed && isOpen ? "block" : "none" }}
-                className="mt-1 ml-9 border-l-2 border-chestnut/15 space-y-0.5"
+                className="mt-1 ml-9 border-l-2 border-chestnut/15 space-y-0.5 dark:border-l dark:border-white/10"
             >
                 {link.children?.map((child) => {
                     if (child.disabled) {
@@ -357,7 +369,7 @@ function DropdownNavItem({
                                 key={child.name}
                                 aria-disabled="true"
                                 title="Coming soon"
-                                className="block text-xs py-1.5 px-3 rounded-lg font-medium text-chestnut opacity-40 cursor-not-allowed select-none"
+                                className="block text-xs py-1.5 px-3 rounded-lg font-medium text-chestnut opacity-40 cursor-not-allowed select-none dark:text-zinc-500"
                             >
                                 {child.name}
                             </div>
@@ -373,8 +385,8 @@ function DropdownNavItem({
                                 [
                                     "block text-xs py-1.5 px-3 rounded-lg transition-all duration-150",
                                     isActive
-                                        ? "bg-chestnut/10 text-chestnut font-semibold"
-                                        : "text-chestnut font-medium opacity-80 hover:opacity-100 hover:bg-chestnut/[0.06]",
+                                        ? "bg-chestnut/10 text-chestnut font-semibold dark:bg-white/[0.07] dark:text-white"
+                                        : "text-chestnut font-medium opacity-80 hover:opacity-100 hover:bg-chestnut/[0.06] dark:text-zinc-400 dark:opacity-100 dark:hover:text-zinc-100 dark:hover:bg-white/[0.04]",
                                 ].join(" ")
                             }
                         >
@@ -548,23 +560,23 @@ const SideBar = () => {
     return (
         <aside
             className={[
-                "h-full bg-background border-r border-chestnut/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
+                "h-full bg-background border-r border-chestnut/10 dark:border-white/[0.06] flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-[68px]" : "w-[252px]",
             ].join(" ")}
         >
             {/* Header */}
             <div
-                className={`flex items-center px-4 py-5 border-b border-chestnut/10 shrink-0 ${isCollapsed ? "justify-center" : "justify-between"
+                className={`flex items-center px-4 py-5 border-b border-chestnut/10 dark:border-white/[0.06] shrink-0 ${isCollapsed ? "justify-center" : "justify-between"
                     }`}
             >
                 {!isCollapsed && (
                     <div className="flex items-center gap-6 min-w-0">
                         <img src={school.logoUrl || bluethub} alt={school.schoolName ||'bluetsch'} className="h-7 w-auto shrink-0 rounded-sm dark:bg-white dark:p-0.5" />
                         <div className="min-w-0">
-                            <p className="text-[10px] font-semibold text-chestnut/50 truncate">
+                            <p className="text-[10px] font-semibold text-chestnut/50 truncate dark:text-zinc-500">
                                 {school?.schoolName ? school.schoolName : "BB"}
                             </p>
-                            <p className="text-[13px] font-bold text-chestnut truncate">
+                            <p className="text-[13px] font-bold text-chestnut truncate dark:text-zinc-100">
                                 {user?.roleName ? user.roleName : "Administrator"}
                             </p>
                         </div>
@@ -573,10 +585,10 @@ const SideBar = () => {
                 <button
                     type="button"
                     onClick={toggleSidebar}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-chestnut/10 active:scale-95 transition-all duration-150 shrink-0"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-chestnut/10 dark:hover:bg-white/[0.06] active:scale-95 transition-all duration-150 shrink-0"
                     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
-                    <img src={isCollapsed ? arrowMenuOpen : arrowMenu} alt="toggle" className="w-4 h-4" />
+                    <img src={isCollapsed ? arrowMenuOpen : arrowMenu} alt="toggle" className="w-4 h-4 dark:brightness-0 dark:invert dark:opacity-50" />
                 </button>
             </div>
 
@@ -587,15 +599,16 @@ const SideBar = () => {
                         {initials}
                     </div>
                 ) : (
-                    <div className="rounded-xl bg-gradient-to-br from-chestnut to-chestnut/85 px-3.5 py-3 flex items-center gap-3 shadow-lg shadow-chestnut/20">
-                        <div className="w-9 h-9 rounded-full bg-white/15 ring-2 ring-white/25 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                    // Dark mode: a calm surface card; the brand colour moves to the avatar.
+                    <div className="rounded-xl bg-gradient-to-br from-chestnut to-chestnut/85 px-3.5 py-3 flex items-center gap-3 shadow-lg shadow-chestnut/20 dark:bg-none dark:bg-white/[0.04] dark:border dark:border-white/[0.06] dark:shadow-none">
+                        <div className="w-9 h-9 rounded-full bg-white/15 ring-2 ring-white/25 flex items-center justify-center text-white text-[11px] font-bold shrink-0 dark:bg-chestnut/25 dark:ring-chestnut/40 dark:text-chestnut">
                             {initials}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xs font-semibold text-white truncate">
+                            <p className="text-xs font-semibold text-white truncate dark:text-zinc-100">
                                 {user?.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "Admin User"}
                             </p>
-                            <p className="text-[10px] text-white/60 truncate">{user?.emailAddress ?? ""}</p>
+                            <p className="text-[10px] text-white/60 truncate dark:text-zinc-500">{user?.emailAddress ?? ""}</p>
                         </div>
                     </div>
                 )}
@@ -677,14 +690,14 @@ export const MobileNav = ({ isOpen, setIsOpen }: IMobileNav) => {
                 ].join(" ")}
             >
                 {/* Drawer header */}
-                <div className="flex items-center justify-between px-4 py-5 border-b border-chestnut/10 shrink-0">
+                <div className="flex items-center justify-between px-4 py-5 border-b border-chestnut/10 dark:border-white/[0.06] shrink-0">
                     <div className="flex items-center gap-2">
                         <img src={bluethub} alt="Bluethub" className="h-7 dark:bg-white dark:p-0.5 dark:rounded-sm" />
                         <div>
-                            <p className="text-[10px] font-semibold text-chestnut/50">
+                            <p className="text-[10px] font-semibold text-chestnut/50 dark:text-zinc-500">
                                 {school?.schoolName ? school.schoolName : "BB"}
                             </p>
-                            <p className="text-[13px] font-bold text-chestnut">
+                            <p className="text-[13px] font-bold text-chestnut dark:text-zinc-100">
                                 {user?.roleName ? user.roleName : "Administrator"}
                             </p>
                         </div>
@@ -692,7 +705,7 @@ export const MobileNav = ({ isOpen, setIsOpen }: IMobileNav) => {
                     <button
                         type="button"
                         onClick={() => setIsOpen(false)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-chestnut/10 active:scale-95 text-chestnut transition-all duration-150"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-chestnut/10 dark:hover:bg-white/[0.06] active:scale-95 text-chestnut dark:text-zinc-400 transition-all duration-150"
                         aria-label="Close navigation"
                     >
                         <CloseIcon />

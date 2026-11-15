@@ -8,50 +8,28 @@ import { Cta } from "@/components/common/Cta";
 import { Reveal, Stagger } from "@/components/common/motion";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { cn } from "@/lib/utils";
 
 // The dialog and its concept mockups load only when someone first opens a preview.
 const RoadmapPreviewDialog = lazy(() => import("./RoadmapPreviewDialog"));
 
-/** One status system for the whole section: filled dot = next up, ring = later. */
-function StatusDot({ group, className }: { group: RoadmapGroup["id"]; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "inline-block size-2 shrink-0 rounded-full",
-        group === "next" ? "bg-primary shadow-[0_0_0_4px_var(--color-primary-soft)]" : "border-[1.5px] border-muted-foreground",
-        className,
-      )}
-    />
-  );
-}
-
 function GroupHeading({ group, first }: { group: RoadmapGroup; first: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <StatusDot group={group.id} />
+      <span aria-hidden className="inline-block size-2 shrink-0 rounded-full border-[1.5px] border-muted-foreground" />
       <h3 className="text-sm font-semibold tracking-[0.14em] text-heading uppercase">{group.label}</h3>
       <span className="text-caption tabular-nums">
         {group.when}
         {first && <Confirm note={ROADMAP.timingConfirm} />}
       </span>
-      {/* Connector: solid and drawn in for "next", dotted for "later". */}
+      {/* Dotted connector: these features are further out. */}
       <span aria-hidden className="relative h-px flex-1 overflow-hidden">
-        <span
-          className={cn(
-            "draw-line absolute inset-0",
-            group.id === "next"
-              ? "bg-gradient-to-r from-primary/70 via-primary/30 to-transparent"
-              : "bg-[repeating-linear-gradient(90deg,var(--color-border-strong)_0_4px,transparent_4px_10px)]",
-          )}
-        />
+        <span className="draw-line absolute inset-0 bg-[repeating-linear-gradient(90deg,var(--color-border-strong)_0_4px,transparent_4px_10px)]" />
       </span>
     </div>
   );
 }
 
-function RoadmapCard({ item, group, onPreview }: { item: RoadmapItem; group: RoadmapGroup["id"]; onPreview: () => void }) {
+function RoadmapCard({ item, onPreview }: { item: RoadmapItem; onPreview: () => void }) {
   return (
     <Card className="card-lift group h-full gap-0 rounded-lg border-border p-5 shadow-soft sm:p-6 md:p-8">
       {/* Phone: icon and title share a row. Larger screens: icon above. */}
@@ -63,12 +41,11 @@ function RoadmapCard({ item, group, onPreview }: { item: RoadmapItem; group: Roa
         <span aria-hidden className="flex-1 text-lg font-semibold tracking-[-0.01em] text-heading sm:hidden">
           {item.name}
         </span>
-        <StatusDot group={group} className="sm:mt-2" />
       </div>
       <h4 className="mt-6 text-lg font-semibold tracking-[-0.01em] text-heading max-sm:sr-only">
         {item.name}
         {item.confirm && <Confirm note={item.confirm} />}
-        <span className="sr-only">, {group === "next" ? "next up" : "later"}</span>
+        <span className="sr-only">, later</span>
       </h4>
       <p className="mt-3 max-w-[60ch] flex-1 text-[0.9375rem] text-muted-foreground sm:mt-2">{item.line}</p>
       <button
@@ -88,7 +65,7 @@ export function Roadmap() {
   const [open, setOpen] = useState<RoadmapItem | null>(null);
   // Stays true after the first open so the dialog can animate out and restore focus.
   const [everOpened, setEverOpened] = useState(false);
-  const mailto = `mailto:${SITE.email}?subject=${encodeURIComponent(ROADMAP.cta.subject)}`;
+  const mailto = `mailto:${SITE.email}?subject=${encodeURIComponent(ROADMAP.featureRequestSubject)}`;
 
   return (
     <Section id="roadmap" labelledBy="roadmap-title">
@@ -99,8 +76,8 @@ export function Roadmap() {
         title={ROADMAP.title}
         lede={ROADMAP.lede}
         action={
-          <Cta href={mailto} tone="secondary" arrow>
-            {ROADMAP.cta.label}
+          <Cta href={ROADMAP.action.href} tone="secondary" arrow>
+            {ROADMAP.action.label}
           </Cta>
         }
       />
@@ -108,13 +85,6 @@ export function Roadmap() {
       <div className="space-y-14 md:space-y-16">
         {ROADMAP.groups.map((group, gi) => (
           <section key={group.id} aria-label={`${group.label}, ${group.when}`} className="relative">
-            {group.id === "next" && (
-              // Accent glow behind the "Next up" row: decorative, static.
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-[10%] top-10 -bottom-6 -z-0 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--color-primary)_14%,transparent),transparent)] blur-2xl"
-              />
-            )}
             <Reveal className="relative">
               <GroupHeading group={group} first={gi === 0} />
             </Reveal>
@@ -122,7 +92,7 @@ export function Roadmap() {
               <Stagger>
                 {group.items.map((item) => (
                   <Reveal as="li" key={item.id} className="sm:last:col-span-2 lg:last:col-span-1">
-                    <RoadmapCard item={item} group={group.id} onPreview={() => {
+                    <RoadmapCard item={item} onPreview={() => {
                         setEverOpened(true);
                         setOpen(item);
                       }} />

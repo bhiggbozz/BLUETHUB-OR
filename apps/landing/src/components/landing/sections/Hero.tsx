@@ -25,7 +25,7 @@ function Orbit() {
 
 export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="relative overflow-hidden">
+    <section id="bluetsch" aria-labelledby="hero-title" className="relative scroll-mt-20 overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(60rem_28rem_at_80%_-10%,var(--color-primary-soft),transparent_70%)]"
@@ -38,10 +38,9 @@ export function Hero() {
             {HERO.eyebrow}
             <Confirm note={HERO.eyebrowConfirm} />
           </Reveal>
-          {/* The h1 is the LCP element: it renders immediately, no entrance animation. */}
-          <h1 id="hero-title" className="text-display mt-6 max-w-[15ch]">
+                    <h2 id="hero-title" className="text-h1 mt-6 max-w-[18ch]">
             {HERO.title}
-          </h1>
+          </h2>
           <Reveal as="p" delay={80} className="text-lede mt-6 measure">
             {HERO.lede}
           </Reveal>
@@ -50,10 +49,7 @@ export function Hero() {
             <Cta href={HERO.primary.href} size="lg" arrow className="max-sm:w-full xl:h-11 xl:px-5 xl:text-[0.9375rem]">
               {HERO.primary.label}
             </Cta>
-            <Cta href={HERO.secondary.href} size="lg" tone="secondary" className="max-sm:w-full xl:h-11 xl:px-5 xl:text-[0.9375rem]">
-              {HERO.secondary.label}
-            </Cta>
-            <CircularBadge text={HERO.badge} href="#pilot" label="About the 3-month pilot" className="ml-2 size-24 max-lg:hidden" />
+            <CircularBadge text={HERO.badge} href="#demo" label="Book a demo and start the 3-month pilot" className="ml-2 size-24 max-lg:hidden" />
           </Reveal>
 
           <Reveal as="p" delay={240} className="text-caption mt-8 flex items-center gap-3">

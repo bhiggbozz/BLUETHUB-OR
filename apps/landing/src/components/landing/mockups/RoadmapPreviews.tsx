@@ -1,6 +1,6 @@
-import { Check, Send, Signal } from "lucide-react";
+import { Check } from "lucide-react";
 import type { RoadmapPreviewId } from "@/data/home";
-import { APP, BrowserFrame, PhoneFrame } from "./frames";
+import { APP, BrowserFrame } from "./frames";
 
 /**
  * Concept previews for roadmap features. These screens do not exist yet:
@@ -15,142 +15,6 @@ const chip = (tone: "ok" | "warn" | "bad" | "muted") =>
     bad: "bg-rose-50 text-rose-800",
     muted: "bg-slate-100 text-slate-700",
   })[tone];
-
-function FeesPreview() {
-  const rows: [string, string, string, string, "ok" | "warn" | "bad"][] = [
-    ["Adaeze Nwosu", "JSS 1 Gold", "₦85,000", "Paid", "ok"],
-    ["Tunde Bakare", "JSS 1 Gold", "₦40,000", "Part paid", "warn"],
-    ["Chioma Obi", "JSS 2 Gold", "₦0", "Overdue", "bad"],
-    ["Ibrahim Kabir", "SS 1 Science", "₦95,000", "Paid", "ok"],
-  ];
-  return (
-    <BrowserFrame path="/admin/fees" label="Concept preview of fee tracking">
-      <div className="bg-[#f8f9fc] p-4 text-[10px] text-slate-700">
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            ["Collected", "₦4.2m", "text-emerald-700"],
-            ["Outstanding", "₦1.1m", "text-amber-800"],
-            ["Overdue", "23 students", "text-rose-700"],
-          ].map(([l, v, c]) => (
-            <div key={l} className="rounded-lg bg-white p-2.5 ring-1 ring-black/[0.05]">
-              <p className="text-slate-600">{l}</p>
-              <p className={`mt-0.5 text-[13px] font-bold tabular-nums ${c}`}>{v}</p>
-            </div>
-          ))}
-        </div>
-        <table className="mt-3 w-full overflow-hidden rounded-lg bg-white text-left ring-1 ring-black/[0.05]">
-          <thead className="text-[8.5px] text-slate-600 uppercase">
-            <tr>
-              <th className="px-3 py-1.5 font-medium">Student</th>
-              <th className="px-2 py-1.5 font-medium">Class</th>
-              <th className="px-2 py-1.5 font-medium">Paid</th>
-              <th className="px-2 py-1.5 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([n, c, p, s, t]) => (
-              <tr key={n} className="border-t border-black/[0.04]">
-                <td className="px-3 py-1.5 font-medium" style={{ color: APP.ink }}>
-                  {n}
-                </td>
-                <td className="px-2 py-1.5">{c}</td>
-                <td className="px-2 py-1.5 tabular-nums">{p}</td>
-                <td className="px-2 py-1.5">
-                  <span className={`rounded-full px-1.5 py-0.5 font-semibold ${chip(t)}`}>{s}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </BrowserFrame>
-  );
-}
-
-function ReportsPreview() {
-  const rows = [
-    ["Mathematics", 28, 54, "A"],
-    ["English Language", 25, 48, "B"],
-    ["Basic Science", 22, 41, "C"],
-    ["Civic Education", 27, 55, "A"],
-  ] as const;
-  return (
-    <BrowserFrame path="/admin/report-cards" label="Concept preview of report cards">
-      <div className="bg-[#f8f9fc] p-4 text-[10px] text-slate-700">
-        <div className="rounded-lg bg-white p-3 ring-1 ring-black/[0.05]">
-          <div className="flex items-center justify-between border-b border-black/[0.06] pb-2">
-            <div>
-              <p className="text-[12px] font-bold" style={{ color: APP.ink }}>
-                Ada Okafor
-              </p>
-              <p className="text-slate-600">JSS 2 Gold · First term</p>
-            </div>
-            <span className="rounded-md px-2 py-1 font-semibold text-white" style={{ background: APP.indigo }}>
-              Publish to parents
-            </span>
-          </div>
-          <table className="mt-2 w-full text-left">
-            <thead className="text-[8.5px] text-slate-600 uppercase">
-              <tr>
-                <th className="py-1 font-medium">Subject</th>
-                <th className="py-1 font-medium">CA</th>
-                <th className="py-1 font-medium">Exam</th>
-                <th className="py-1 font-medium">Total</th>
-                <th className="py-1 font-medium">Grade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([s, ca, ex, g]) => (
-                <tr key={s} className="border-t border-black/[0.04]">
-                  <td className="py-1 font-medium" style={{ color: APP.ink }}>
-                    {s}
-                  </td>
-                  <td className="py-1 tabular-nums">{ca}</td>
-                  <td className="py-1 tabular-nums">{ex}</td>
-                  <td className="py-1 font-semibold tabular-nums">{ca + ex}</td>
-                  <td className="py-1 font-bold" style={{ color: APP.indigo }}>
-                    {g}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-2 rounded-md bg-slate-50 p-2 text-slate-700 italic">
-            Class teacher: "A strong term. Keep practising Basic Science."
-          </p>
-        </div>
-      </div>
-    </BrowserFrame>
-  );
-}
-
-function SmsPreview() {
-  return (
-    <PhoneFrame label="Concept preview of SMS alerts to parents" className="mx-auto">
-      <div className="px-3.5 pt-8 pb-5 text-[10px]">
-        <div className="flex items-center justify-between text-[9px] text-slate-600">
-          <span className="font-semibold">Messages</span>
-          <Signal className="size-3" />
-        </div>
-        <p className="mt-3 text-center text-[9px] text-slate-600">BLUETHUB · Today 10:32</p>
-        <div className="mt-2 max-w-[85%] rounded-2xl rounded-tl-sm bg-slate-100 p-2.5 text-slate-800">
-          Greenfield School: Ada Okafor was marked absent from Mathematics at 10:15 today. Reply 1 if this is
-          expected.
-        </div>
-        <div className="mt-2 ml-auto max-w-[30%] rounded-2xl rounded-tr-sm p-2 text-center text-white" style={{ background: APP.indigo }}>
-          1
-        </div>
-        <div className="mt-2 max-w-[85%] rounded-2xl rounded-tl-sm bg-slate-100 p-2.5 text-slate-800">
-          Thank you. Ada's class teacher has been told.
-        </div>
-        <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">
-          <span className="flex-1">Works on any phone, no data needed</span>
-          <Send className="size-3" />
-        </div>
-      </div>
-    </PhoneFrame>
-  );
-}
 
 function TimetablePreview() {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -280,9 +144,6 @@ function LibraryPreview() {
 }
 
 export const ROADMAP_PREVIEWS: Record<RoadmapPreviewId, () => React.ReactElement> = {
-  fees: FeesPreview,
-  reports: ReportsPreview,
-  sms: SmsPreview,
   timetable: TimetablePreview,
   calendar: CalendarPreview,
   library: LibraryPreview,

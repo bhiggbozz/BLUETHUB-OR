@@ -1,12 +1,12 @@
 /**
- * Site-wide configuration and copy for the Bluethub product site.
+ * Site-wide configuration and copy for the Bluethub company site, home of Bluetsch.
  * Copy deck: apps/landing/docs/copy-deck.md. Assumptions carry a [CONFIRM] note
  * and render a marker in development builds only.
  */
 
 export const SITE = {
   name: "Bluethub",
-  tagline: "One place to teach, test and track your school.",
+  tagline: "Technology that helps schools do more.",
   /** Canonical origin. [CONFIRM] */
   url: "https://bluethub.com",
   /** Public contact email. [CONFIRM] */
@@ -21,6 +21,7 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
+  { label: "Bluetsch", href: "/#bluetsch" },
   { label: "Features", href: "/#features" },
   { label: "How it works", href: "/#how" },
   { label: "Security", href: "/#security" },
@@ -44,8 +45,9 @@ export const SOCIAL_LINKS: ExternalLink[] = [
 
 export const FOOTER_GROUPS: { title: string; links: NavLink[] }[] = [
   {
-    title: "Product",
+    title: "Bluetsch",
     links: [
+      { label: "Overview", href: "/#bluetsch" },
       { label: "Features", href: "/#features" },
       { label: "How it works", href: "/#how" },
       { label: "Roadmap", href: "/#roadmap" },

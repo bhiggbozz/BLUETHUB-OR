@@ -1,4 +1,6 @@
-# Bluethub product site: buyer, sitemap and copy deck
+# Bluethub company site: Bluetsch buyer, sitemap and copy deck
+
+> Bluethub is the company (bluethub.com). Bluetsch is its product, the digital school platform (bluetsch.com). The page opens with a short company intro, marked [CONFIRM] in `src/data/home.ts`, and everything below it is Bluetsch copy. Every button leads to the demo form, and the site does not link to bluetsch.com.
 
 Status: draft for review. Anything assumed is marked **[CONFIRM]**.
 Every product claim maps to a feature that exists in `apps/web` today. Features not built yet are labelled **Coming soon**.
@@ -10,7 +12,7 @@ Every product claim maps to a feature that exists in `apps/web` today. Features 
 | Who | Role in the decision | What they care about |
 |---|---|---|
 | **Proprietor / school owner** | Signs off spend | Cost, reputation with parents, fewer admin staff hours |
-| **Principal** (an *Administrator* in Bluethub) | Chooses and champions | Visibility across classes, staff accountability, results |
+| **Principal** (an *Administrator* in Bluetsch) | Chooses and champions | Visibility across classes, staff accountability, results |
 | **Head teacher / academic lead** | Makes it work day to day | Teacher workload, exam preparation, lesson quality |
 | **School administrator / IT officer** | Sets it up | Setup effort, accounts, passwords, devices |
 
@@ -44,15 +46,15 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
 ## 3. Copy deck
 
 ### SEO
-- **Title:** Bluethub · School management and e-learning that works offline
+- **Title:** Bluetsch · School management and e-learning that works offline
 - **Description:** Lessons, assessments, QR attendance and parent updates in one platform for your school, and it keeps working when the internet doesn't. Start a 3-month pilot.
 
 ### 1 · Hero
 - **Eyebrow:** For primary and secondary schools **[CONFIRM]**
 - **H1:** One place to teach, test and track your school.
-- **Supporting line:** Bluethub gives your teachers, students and parents one simple platform for lessons, assessments and attendance. And it keeps working when the network doesn't.
+- **Supporting line:** Bluetsch gives your teachers, students and parents one simple platform for lessons, assessments and attendance. And it keeps working when the network doesn't.
 - **CTAs:** Book a demo · See how it works
-- **Trust cue:** Start with a 3-month pilot. Your school gets its own Bluethub address.
+- **Trust cue:** Start with a 3-month pilot. Your school gets its own Bluetsch address.
 - **Rotating badge:** 3-MONTH PILOT · BOOK A DEMO ·
 
 ### 2 · The problem
@@ -65,10 +67,10 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
   - **Lessons lost to bad network.** When the connection drops, the class stops, and absent students miss it for good.
   - **Parents who hear at the end of term.** By the time a report goes home, it's too late to help.
   - **Leaders working blind.** No single view of which classes, subjects or teachers need support.
-- **CTA:** See how Bluethub fixes this
+- **CTA:** See how Bluetsch fixes this
 
 ### 3 · The solution
-- **Eyebrow:** The Bluethub way
+- **Eyebrow:** The Bluetsch way
 - **H2:** Everything your school does, finally connected.
 - **Line:** Classes, lessons, tests, attendance and parents live in one system, with a home for every role. Set it up once and every page stays in step.
 - **Before → after:**
@@ -126,10 +128,10 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
 ### 5 · How it works
 - **Eyebrow:** Getting started
 - **H2:** Up and running without the upheaval.
-- **Line:** We set Bluethub up with you, so your staff can keep teaching.
+- **Line:** We set Bluetsch up with you, so your staff can keep teaching.
 - **Steps:**
-  1. **Book a demo.** See Bluethub with your classes in mind, and agree what your pilot should prove.
-  2. **We set up your school.** Your own Bluethub address and logo, with your classes, subjects and curriculum. **[CONFIRM who does setup]**
+  1. **Book a demo.** See Bluetsch with your classes in mind, and agree what your pilot should prove.
+  2. **We set up your school.** Your own Bluetsch address and logo, with your classes, subjects and curriculum. **[CONFIRM who does setup]**
   3. **Add your people.** Register teachers, students and parents. Everyone gets their own login and role.
   4. **Go live.** Teachers start recording, testing and taking attendance, with our support through the first weeks. **[CONFIRM support]**
 - **CTA:** Start your 3-month pilot
@@ -137,7 +139,7 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
 ### 6 · Benefits and results
 - **Eyebrow:** What changes
 - **H2:** Less admin. More teaching.
-- **Line:** Here's what Bluethub takes off your staff's plate from day one.
+- **Line:** Here's what Bluetsch takes off your staff's plate from day one.
 - **Benefits:**
   - **Teaching survives bad network.** Lessons and attendance work offline and sync when you're back online.
   - **Fewer evenings marking.** Quizzes and objective questions mark themselves.
@@ -146,7 +148,7 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
   - **Exam prep that targets weak spots.** Exam Focus shows the questions a class keeps missing.
   - **Parents who stay involved.** Attendance and practice quizzes, right on their phone.
 - **Product facts (count-up):** 4 ways students can answer · 3 types of attendance session · 6 kinds of user, each with its own access
-- **Placeholders (to supply):** Schools on Bluethub · Hours saved per teacher each week · Change in attendance; two testimonial slots (a principal, a parent)
+- **Placeholders (to supply):** Schools on Bluetsch · Hours saved per teacher each week · Change in attendance; two testimonial slots (a principal, a parent)
 
 ### 7 · Security and privacy
 - **Eyebrow:** Security and privacy
@@ -164,15 +166,15 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
 
 ### 8 · Pilot offer
 - **Eyebrow:** Pilot offer
-- **H2:** Try Bluethub for three months.
+- **H2:** Try Bluetsch for three months.
 - **Line:** Run it with real classes, see what changes, then decide. **[CONFIRM: free or paid pilot]**
 - **Included:** Your own school address and branding · Setup of classes, subjects and curriculum · Accounts for staff, students and parents · Every current feature for every role · A review together at the end **[CONFIRM]**
 - **CTA:** Start your pilot · Questions? Talk to us
 
 ### 9 · FAQ
-1. **What does Bluethub cost?** Every school starts with a 3-month pilot so you can see the value first. After that, pricing depends on the size of your school, and we'll give you a clear quote. **[CONFIRM]**
+1. **What does Bluetsch cost?** Every school starts with a 3-month pilot so you can see the value first. After that, pricing depends on the size of your school, and we'll give you a clear quote. **[CONFIRM]**
 2. **Our internet is unreliable. Will it still work?** Yes. Teachers can record lessons and take attendance with no connection. Everything is saved on the device and syncs automatically when the network returns. Students can also download lessons to watch offline.
-3. **Do we need special devices?** No. Bluethub runs in the web browser on phones, tablets and laptops, and can be installed like an app. QR attendance uses the phone's camera. **[CONFIRM minimum specs]**
+3. **Do we need special devices?** No. Bluetsch runs in the web browser on phones, tablets and laptops, and can be installed like an app. QR attendance uses the phone's camera. **[CONFIRM minimum specs]**
 4. **How long does setup take, and who does it?** **[CONFIRM]** We set up your school's address, logo, classes and subjects with you, then you add your staff, students and parents.
 5. **Will our teachers need training?** Each role only sees what it needs, so it's quick to learn. We walk your staff through it during the pilot. **[CONFIRM]**
 6. **How do parents get access?** Your school creates a parent account and links it to their children. Parents sign in from any phone browser.
@@ -182,7 +184,7 @@ Nav: Features · How it works · Security · Pilot · FAQ · **Book a demo** (pr
 
 ### 10 · Demo request
 - **Eyebrow:** Book a demo
-- **H2:** See Bluethub with your school in mind.
+- **H2:** See Bluetsch with your school in mind.
 - **Line:** Tell us a little about your school. We'll set up a demo and plan your 3-month pilot together.
 - **Fields:** Your name · Your role (Proprietor or owner / Principal / Head teacher / School administrator / Teacher / Other) · School name · Work email ("We'll only use this to arrange your demo.") · Phone, optional ("Useful if email is slow to reach you.") · Number of students, optional (Under 200 / 200–500 / 500–1,000 / Over 1,000) · Anything we should know?, optional
 - **Submit:** Book my demo

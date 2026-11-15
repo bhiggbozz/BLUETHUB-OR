@@ -22,9 +22,6 @@ export function Pilot() {
             <Cta href={PILOT.primary.href} size="lg" arrow className="max-sm:w-full">
               {PILOT.primary.label}
             </Cta>
-            <Cta href={PILOT.secondary.href} size="lg" tone="secondary" className="max-sm:w-full">
-              {PILOT.secondary.label}
-            </Cta>
           </div>
         </div>
 

@@ -24,12 +24,11 @@ const QUIZZES = [
 /** Mirrors apps/web admin dashboard: "Performance by Classroom" + quiz breakdown. */
 export function AdminDashboardMock({ className }: { className?: string }) {
   return (
-    <BrowserFrame path="/admin" label="Preview of the Bluethub admin dashboard showing performance by classroom" className={className}>
+    <BrowserFrame path="/admin" label="Preview of the Bluetsch admin dashboard showing performance by classroom" className={className}>
       <div className="flex min-h-[19rem] bg-[#f8f9fc] text-[10px]">
         <aside className="hidden w-32 shrink-0 border-r border-black/[0.06] bg-white p-3 sm:block">
           <div className="mb-4 flex items-center gap-1.5">
-            <img src="/logo-192.png" alt="" className="size-5" />
-            <span className="text-[11px] font-bold">Bluethub</span>
+            <span className="text-[11px] font-bold">Bluetsch</span>
           </div>
           <ul className="space-y-0.5">
             {NAV.map((n) => (
