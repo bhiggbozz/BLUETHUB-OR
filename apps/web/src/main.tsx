@@ -6,6 +6,7 @@ import { AuthProvider } from "./contexts/auth-context.tsx"
 import { API } from "./services/auth.ts"
 import { getTenantFromUrl } from "./utils/subdomain.ts"
 import { ErrorBoundary } from "./component/ErrorBoundary";
+import { registerPwaUpdates } from "./utils/pwa-update";
 
 // main.tsx
 const tenantId = getTenantFromUrl()
@@ -15,26 +16,7 @@ if (!tenantId) {
 } else {
   API.defaults.headers.common["X-Tenant-ID"] = tenantId
 
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").then((registration:any) => {
-        registration.onupdatefound = () => {
-          const installingWorker = registration.installing
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === "installed") {
-              if (navigator.serviceWorker.controller) {
-                // console.log("New content is available; please refresh.")
-              } else {
-                // console.log("Content cached for offline use.")
-              }
-            }
-          }
-        }
-      }).catch((error) => {
-        console.error("Service worker registration failed:", error)
-      })
-    })
-  }
+  registerPwaUpdates()
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

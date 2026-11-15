@@ -14,10 +14,18 @@ export default defineConfig({
     tailwindcss(),
     svgr(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
+      // We register the service worker ourselves via `virtual:pwa-register`
+      // (see utils/pwa-update.ts) so we can prompt the user before reloading
+      // instead of swapping content under them mid-session.
+      injectRegister: false,
       workbox: {
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Without this, every deploy leaves the previous build's precached
+        // assets sitting in the cache forever — harmless for storage, but it's
+        // also what let a stale worker silently keep serving an old bundle.
+        cleanupOutdatedCaches: true,
       },
     }),
   ] as PluginOption[],

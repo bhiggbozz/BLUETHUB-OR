@@ -60,6 +60,7 @@
     "tailwindcss": "^4.1.18",
     "use-image": "^1.1.4",
     "uuid": "^13.0.0",
+    "workbox-window": "^7.4.1",
     "yup": "^1.7.1"
   },
   "devDependencies": {

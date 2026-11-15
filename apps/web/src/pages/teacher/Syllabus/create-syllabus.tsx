@@ -27,6 +27,15 @@ interface TopicItem {
 const isAdminRole = (roleName?: string) =>
     roleName === "Administrator" || roleName === "SuperAdministrator" || roleName === "HeadTeacher";
 
+// Classroom list only: a HeadTeacher is scoped to their own assigned
+// classrooms, same as any other teacher — only a true Administrator/
+// SuperAdministrator should see every classroom in the school. Kept
+// separate from `isAdminRole` above, which HeadTeacher still needs for
+// subject-fetching (they see every subject in a classroom, not just the
+// ones they personally teach).
+const isSchoolWideAdmin = (roleName?: string) =>
+    roleName === "Administrator" || roleName === "SuperAdministrator";
+
 interface FieldDropdownProps {
     label: string;
     placeholder: string;
@@ -247,6 +256,7 @@ const CreateSyllabus = () => {
     const navigate = useNavigate();
     const { user } = useAuthContext();
     const isAdmin = isAdminRole(user?.roleName);
+    const isSchoolWide = isSchoolWideAdmin(user?.roleName);
 
     const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
     const [selectedSubject, setSelectedSubject] = useState<SubjectItem | null>(null);
@@ -260,7 +270,7 @@ const CreateSyllabus = () => {
 
     useEffect(() => {
         if (!user?.id) return;
-        if (isAdmin) {
+        if (isSchoolWide) {
             schoolService.getAllClassRooms()
                 .then(({ data }) => {
                     const raw: any[] = (data as any).data?.classrooms ?? [];
@@ -289,7 +299,7 @@ const CreateSyllabus = () => {
             }
 
         }
-    }, [isAdmin, user?.id, user?.roleData]);
+    }, [isSchoolWide, user?.id, user?.roleData]);
 
     useEffect(() => {
         setSelectedSubject(null);

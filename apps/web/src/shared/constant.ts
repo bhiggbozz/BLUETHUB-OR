@@ -40,6 +40,7 @@ export const TACADEMIC_GROUPS = [
           { name: "Per Student", path: "/teacher/module/quiz?view=student", roles: ["ClassTeacher", "HeadTeacher"] },
           { name: "Classroom Assessment", path: "/teacher/module/assessment" },
           { name: "Subject", path: "/teacher/module/subject" },
+          { name: "Manage Subjects", path: "/teacher/module/classroom-subjects", roles: ["HeadTeacher"] },
           { name: "Attendance Records", path: "/teacher/module/attendance" },
         ],
       },
